@@ -1,0 +1,12 @@
+services:
+  dblistener:
+    build:
+      context: ../../
+      dockerfile: ./DbListener/Dockerfile
+    container_name: "dblistener"
+    restart: on-failure
+    networks:
+      - dblistener
+
+networks:
+  cblistener:
