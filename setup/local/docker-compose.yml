@@ -6,25 +6,20 @@ services:
     container_name: "dblistener"
     restart: on-failure
     networks:
-      - dblistener
+      - db
 
-  dbinterface:
-    image: softinstigate/restheart:8.1
-    container_name: dbinterface
+  api:
+    build:
+      context: ../../
+      dockerfile: ./Api/Dockerfile
+    container_name: "api"
     restart: on-failure
-    environment:
-      RHO: >
-          /mclient/connection-string->"mongodb://mongodb";
-          /http-listener/host->"0.0.0.0";
-    depends_on:
-      mongo1:
-        condition: service_healthy
-      mongo2:
-        condition: service_healthy
-      mongo3:
-        condition: service_healthy
     ports:
-      - "8080:8080"
+      - 10000:10000
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    networks:
+      - db
 
   mongo1:
     image: mongo:8-noble
@@ -42,6 +37,8 @@ services:
       retries: 30
     container_name: "mongodb1"
     restart: on-failure
+    networks:
+      - db
 
   mongo2:
     image: mongo:8-noble
@@ -52,6 +49,8 @@ services:
       - "host.docker.internal:host-gateway"
     container_name: "mongodb2"
     restart: on-failure
+    networks:
+      - db
 
   mongo3:
     image: mongo:8-noble
@@ -62,6 +61,8 @@ services:
       - "host.docker.internal:host-gateway"
     container_name: "mongodb3"
     restart: on-failure
+    networks:
+      - db
 
 networks:
-  dblistener:
+  db:
