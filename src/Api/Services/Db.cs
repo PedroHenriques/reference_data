@@ -9,16 +9,10 @@ public interface IDb
 
 public class Db : IDb
 {
-  private readonly MongoClient client;
+  private readonly IMongoClient client;
 
-  public Db()
+  public Db(IMongoClient mongoClient)
   {
-    MongoClient? mongoClient = new MongoClient("mongodb://admin:pw@localhost:27017/admin?authMechanism=SCRAM-SHA-256");
-    if (mongoClient == null)
-    {
-      throw new Exception("Mongo Client returned NULL.");
-    }
-
     this.client = mongoClient;
   }
 
