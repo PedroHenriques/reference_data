@@ -1,18 +1,18 @@
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0-noble AS build
 WORKDIR /source
-COPY --link ./Api/*.csproj .
+COPY --link ./src/DbListener/*.csproj .
 RUN dotnet restore --arch x64
-COPY --link ./Api .
+COPY --link ./src/DbListener .
 RUN dotnet publish --os linux --arch x64 --no-restore -o /app
 
 
 # Runtime stage
-FROM mcr.microsoft.com/dotnet/aspnet:8.0-noble-chiseled
+FROM mcr.microsoft.com/dotnet/runtime:8.0-noble-chiseled
 # https://www.gnu.org/software/gettext/manual/html_node/Locale-Environment-Variables.html
 ENV \
     LC_ALL=en_US.UTF-8 \
     LANG=en_US.UTF-8
 WORKDIR /app
 COPY --link --from=build /app .
-ENTRYPOINT ["dotnet", "Api.dll"]
+ENTRYPOINT ["dotnet", "DbListener.dll"]

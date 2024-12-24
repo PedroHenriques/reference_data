@@ -23,7 +23,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\DbListener\DbListener.csproj" />
+    <ProjectReference Include="..\..\src\DbListener\DbListener.csproj" />
   </ItemGroup>
 
 </Project>

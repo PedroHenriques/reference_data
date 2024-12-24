@@ -1,66 +1,96 @@
 services:
-  dblistener:
-    build:
-      context: ../../
-      dockerfile: ./DbListener/Dockerfile
-    container_name: "dblistener"
-    restart: on-failure
-    networks:
-      - db
+  # dblistener:
+  #   build:
+  #     context: ../../
+  #     dockerfile: ./src/DbListener/Dockerfile
+  #   container_name: "dblistener"
+  #   restart: on-failure
+  #   networks:
+  #     - db
 
-  api:
-    build:
-      context: ../../
-      dockerfile: ./Api/Dockerfile
-    container_name: "api"
-    restart: on-failure
-    ports:
-      - 10000:10000
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    networks:
-      - db
+  # api:
+  #   build:
+  #     context: ../../
+  #     dockerfile: ./src/Api/Dockerfile
+  #   container_name: "api"
+  #   restart: on-failure
+  #   depends_on: 
+  #     - mongo1
+  #   environment:
+  #     - DOTNET_ENVIRONMENT=Development
+  #     - mongoConStr="mongodb://mongo1:27017,mongo2:27018,mongo3:27019/?replicaSet=rs0"
+  #   ports:
+  #     - 10000:10000
+  #   networks:
+  #     - db
 
-  mongo1:
+  mongo:
     image: mongo:8-noble
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    command: ["--bind_ip_all", "--port", "27017"]
+    # command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
     ports:
       - 27017:27017
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    healthcheck:
-      test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'host.docker.internal:27017',priority:1},{_id:1,host:'host.docker.internal:27018',priority:0.5},{_id:2,host:'host.docker.internal:27019',priority:0.5}]}) }" | mongosh --port 27017 --quiet
-      interval: 5s
-      timeout: 30s
-      start_period: 0s
-      start_interval: 1s
-      retries: 30
+    # healthcheck:
+    #   test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'host.docker.internal:27017',priority:1},{_id:1,host:'host.docker.internal:27018',priority:0.5},{_id:2,host:'host.docker.internal:27019',priority:0.5}]}) }" | mongosh --port 27017 --quiet
+    #   interval: 5s
+    #   timeout: 30s
+    #   start_period: 0s
+    #   start_interval: 1s
+    #   retries: 30
     container_name: "mongodb1"
     restart: on-failure
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=admin
+      - MONGO_INITDB_ROOT_PASSWORD=pw
+      - MONGO_INITDB_DATABASE=RefData
     networks:
       - db
 
-  mongo2:
-    image: mongo:8-noble
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27018"]
-    ports:
-      - 27018:27018
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    container_name: "mongodb2"
-    restart: on-failure
-    networks:
-      - db
+  # mongo2:
+  #   image: mongo:8-noble
+  #   command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27018"]
+  #   ports:
+  #     - 27018:27018
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   container_name: "mongodb2"
+  #   restart: on-failure
+  #   depends_on: 
+  #     - mongo1
+  #   networks:
+  #     - db
 
-  mongo3:
-    image: mongo:8-noble
-    command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27019"]
+  # mongo3:
+  #   image: mongo:8-noble
+  #   command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27019"]
+  #   ports:
+  #     - 27019:27019
+  #   extra_hosts:
+  #     - "host.docker.internal:host-gateway"
+  #   container_name: "mongodb3"
+  #   restart: on-failure
+  #   depends_on: 
+  #     - mongo1
+  #   networks:
+  #     - db
+
+  mongo-express:
+    image: mongo-express:latest
+    environment:
+      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_PORT=27017
+      - ME_CONFIG_MONGODB_ENABLE_ADMIN=false
+      - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
+      - ME_CONFIG_MONGODB_AUTH_USERNAME=admin
+      - ME_CONFIG_MONGODB_AUTH_PASSWORD=pw
+      - ME_CONFIG_BASICAUTH_USERNAME=appUser
+      - ME_CONFIG_BASICAUTH_PASSWORD=appPw
+    depends_on:
+        - mongo
     ports:
-      - 27019:27019
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    container_name: "mongodb3"
-    restart: on-failure
+      - "9000:8081"
     networks:
       - db
 
