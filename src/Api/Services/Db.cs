@@ -17,15 +17,8 @@ public class Db : IDb
   }
 
   public async void InsertOne<T>(string dbName, string collName, T document) {
-    IMongoDatabase? db = this.client.GetDatabase(dbName);
-    if (db == null) {
-      throw new Exception($"Could not find the database '{dbName}'.");
-    }
-
-    IMongoCollection<T>? dbColl = db.GetCollection<T>(collName);
-    if (dbColl == null) {
-      throw new Exception($"Could not find the collection '{collName}'.");
-    }
+    IMongoDatabase db = this.client.GetDatabase(dbName);
+    IMongoCollection<T> dbColl = db.GetCollection<T>(collName);
 
     await dbColl.InsertOneAsync(document);
   }
