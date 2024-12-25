@@ -29,6 +29,7 @@ public class DbTests : IDisposable
   {
     this.dbClientMock.Reset();
     this.dbDatabaseMock.Reset();
+    this.dbCollectionMock.Reset();
   }
 
   [Fact]
