@@ -1,6 +1,5 @@
 using EntityModel = Api.Models.Entity;
 using Api.Services;
-using Microsoft.AspNetCore.Mvc;
 using EntityHandler = Api.Handlers.Entity;
 
 namespace Api.Routers;
@@ -19,9 +18,9 @@ public class Entities
   {
     this._app.MapPost(
       "/entities/",
-      ([FromBody] EntityModel entity, IDb db) =>
+      (EntityModel entity, IDb db) =>
       {
-        EntityHandler.Create(db , entity);
+        EntityHandler.Create(db, entity);
         return TypedResults.Ok<EntityModel>(entity);
       }
     );
