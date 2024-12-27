@@ -1,5 +1,6 @@
 using Api.Models;
 using Api.Services;
+using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
 
@@ -23,6 +24,8 @@ public class DbTests : IDisposable
       .Returns(this.dbCollectionMock.Object);
     this.dbCollectionMock.Setup(s => s.InsertOneAsync(It.IsAny<Entity>(), null, default))
       .Returns(Task.Delay(1));
+    this.dbCollectionMock.Setup(s => s.ReplaceOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<Entity>(), null as ReplaceOptions, default))
+      .Returns(Task.FromResult(new ReplaceOneResult.Acknowledged(0, 0, null) as ReplaceOneResult));
   }
 
   public void Dispose()
@@ -58,5 +61,57 @@ public class DbTests : IDisposable
     Entity testDoc = new Entity { Name = "" };
     sut.InsertOne<Entity>("", "", testDoc);
     this.dbCollectionMock.Verify(m => m.InsertOneAsync(testDoc, null, default), Times.Once());
+  }
+
+  [Fact]
+  public void ReplaceOne_ItShouldCallGetDatabaseFromTheMongoClientOnceWithTheProvidedDbName()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    sut.ReplaceOne<Entity>("some test db name", "", new Entity {}, ObjectId.GenerateNewId().ToString());
+    this.dbClientMock.Verify(m => m.GetDatabase("some test db name", null), Times.Once());
+  }
+
+  [Fact]
+  public void ReplaceOne_ItShouldCallGetCollectionFromTheMongoDatabaseOnceWithTheProvidedCollectionName()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    sut.ReplaceOne<Entity>("", "another test col name", new Entity {}, ObjectId.GenerateNewId().ToString());
+    this.dbDatabaseMock.Verify(m => m.GetCollection<Entity>("another test col name", null), Times.Once());
+  }
+
+  [Fact]
+  public void ReplaceOne_ItShouldCallReplaceOneAsyncFromTheMongoCollectionOnceWithTheCorrectFilter()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    Entity testDoc = new Entity {};
+    ObjectId testId = ObjectId.GenerateNewId();
+    sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString());
+
+    Assert.Equal(
+      new BsonDocument(new Dictionary<string, dynamic> () {
+        {
+          "_id",  testId
+        }
+      }),
+      (this.dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Document
+    );
+  }
+
+  [Fact]
+  public void ReplaceOne_ItShouldCallReplaceOneAsyncFromTheMongoCollectionOnceWithTheProvidedDocument()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    Entity testDoc = new Entity {};
+    ObjectId testId = ObjectId.GenerateNewId();
+    sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString());
+
+    Assert.Equal(
+      testDoc,
+      this.dbCollectionMock.Invocations[0].Arguments[1]
+    );
   }
 }
