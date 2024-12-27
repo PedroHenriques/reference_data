@@ -3,10 +3,12 @@ set -e;
 
 WATCH=0;
 PROJ="";
+USE_DOCKER=0;
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -w|--watch) WATCH=1; shift 1;;
+    --docker) USE_DOCKER=1; shift 1;;
 
     -*) echo "unknown option: $1" >&2; exit 1;;
     *) PROJ=$1; shift 1;;
@@ -23,4 +25,8 @@ if [ $WATCH -eq 1 ]; then
   CMD="dotnet watch test -q --project ${PROJ}";
 fi
 
-docker run --rm -it -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "$CMD";
+if [ $USE_DOCKER -eq 1 ]; then
+  docker run --rm -it -v "./:/app/" -w "/app/" -u $(id -u ${USER}):$(id -g ${USER}) mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "$CMD";
+else
+  $CMD;
+fi
