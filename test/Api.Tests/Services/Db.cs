@@ -25,7 +25,7 @@ public class DbTests : IDisposable
     this.dbCollectionMock.Setup(s => s.InsertOneAsync(It.IsAny<Entity>(), null, default))
       .Returns(Task.Delay(1));
     this.dbCollectionMock.Setup(s => s.ReplaceOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<Entity>(), null as ReplaceOptions, default))
-      .Returns(Task.FromResult(new ReplaceOneResult.Acknowledged(0, 0, null) as ReplaceOneResult));
+      .Returns(Task.FromResult(new ReplaceOneResult.Acknowledged(1, 1, null) as ReplaceOneResult));
   }
 
   public void Dispose()
@@ -64,31 +64,31 @@ public class DbTests : IDisposable
   }
 
   [Fact]
-  public void ReplaceOne_ItShouldCallGetDatabaseFromTheMongoClientOnceWithTheProvidedDbName()
+  public async void ReplaceOne_ItShouldCallGetDatabaseFromTheMongoClientOnceWithTheProvidedDbName()
   {
     IDb sut = new Db(this.dbClientMock.Object);
 
-    sut.ReplaceOne<Entity>("some test db name", "", new Entity {}, ObjectId.GenerateNewId().ToString());
+    await sut.ReplaceOne<Entity>("some test db name", "", new Entity {}, ObjectId.GenerateNewId().ToString());
     this.dbClientMock.Verify(m => m.GetDatabase("some test db name", null), Times.Once());
   }
 
   [Fact]
-  public void ReplaceOne_ItShouldCallGetCollectionFromTheMongoDatabaseOnceWithTheProvidedCollectionName()
+  public async void ReplaceOne_ItShouldCallGetCollectionFromTheMongoDatabaseOnceWithTheProvidedCollectionName()
   {
     IDb sut = new Db(this.dbClientMock.Object);
 
-    sut.ReplaceOne<Entity>("", "another test col name", new Entity {}, ObjectId.GenerateNewId().ToString());
+    await sut.ReplaceOne<Entity>("", "another test col name", new Entity {}, ObjectId.GenerateNewId().ToString());
     this.dbDatabaseMock.Verify(m => m.GetCollection<Entity>("another test col name", null), Times.Once());
   }
 
   [Fact]
-  public void ReplaceOne_ItShouldCallReplaceOneAsyncFromTheMongoCollectionOnceWithTheCorrectFilter()
+  public async void ReplaceOne_ItShouldCallReplaceOneAsyncFromTheMongoCollectionOnceWithTheCorrectFilter()
   {
     IDb sut = new Db(this.dbClientMock.Object);
 
     Entity testDoc = new Entity {};
     ObjectId testId = ObjectId.GenerateNewId();
-    sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString());
+    await sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString());
 
     Assert.Equal(
       new BsonDocument(new Dictionary<string, dynamic> () {
@@ -101,17 +101,29 @@ public class DbTests : IDisposable
   }
 
   [Fact]
-  public void ReplaceOne_ItShouldCallReplaceOneAsyncFromTheMongoCollectionOnceWithTheProvidedDocument()
+  public async void ReplaceOne_ItShouldCallReplaceOneAsyncFromTheMongoCollectionOnceWithTheProvidedDocument()
   {
     IDb sut = new Db(this.dbClientMock.Object);
 
     Entity testDoc = new Entity {};
     ObjectId testId = ObjectId.GenerateNewId();
-    sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString());
+    await sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString());
 
-    Assert.Equal(
-      testDoc,
-      this.dbCollectionMock.Invocations[0].Arguments[1]
-    );
+    Assert.Equal(testDoc, this.dbCollectionMock.Invocations[0].Arguments[1]);
+  }
+
+  [Fact]
+  public async void ReplaceOne_IfNoDocumentsAreReplaced_ItShouldThrowAnKeyNotFoundException()
+  {
+    this.dbCollectionMock.Setup(s => s.ReplaceOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<Entity>(), null as ReplaceOptions, default))
+      .Returns(Task.FromResult(new ReplaceOneResult.Acknowledged(0, 0, null) as ReplaceOneResult));
+
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    Entity testDoc = new Entity {};
+    ObjectId testId = ObjectId.GenerateNewId();
+
+    KeyNotFoundException exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString()));
+    Assert.Equal($"Could not find the document with ID '{testId}'", exception.Message);
   }
 }
