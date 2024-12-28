@@ -18,9 +18,9 @@ public class Entities
   {
     this._app.MapPost(
       "/entities/",
-      (EntityModel entity, IDb db) =>
+      async (EntityModel entity, IDb db) =>
       {
-        EntityHandler.Create(db, entity);
+        await EntityHandler.Create(db, entity);
         return TypedResults.Ok<EntityModel>(entity);
       }
     );

@@ -5,7 +5,7 @@ namespace Api.Services;
 
 public interface IDb
 {
-  public void InsertOne<T>(string dbName, string collName, T document);
+  public Task InsertOne<T>(string dbName, string collName, T document);
   public Task ReplaceOne<T>(string dbName, string collName, T document,
     string id);
 }
@@ -19,7 +19,7 @@ public class Db : IDb
     this._client = mongoClient;
   }
 
-  public async void InsertOne<T>(string dbName, string collName, T document)
+  public async Task InsertOne<T>(string dbName, string collName, T document)
   {
     IMongoDatabase db = this._client.GetDatabase(dbName);
     IMongoCollection<T> dbColl = db.GetCollection<T>(collName);

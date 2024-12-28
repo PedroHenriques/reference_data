@@ -12,7 +12,8 @@ public class EntityTests : IDisposable
   {
     this.dbClientMock = new Mock<IDb>(MockBehavior.Strict);
 
-    this.dbClientMock.Setup(s => s.InsertOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel>()));
+    this.dbClientMock.Setup(s => s.InsertOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel>()))
+      .Returns(Task.Delay(1));
   }
 
   public void Dispose()
@@ -21,11 +22,11 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public void Create_ItShouldCallInsertOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  public async void Create_ItShouldCallInsertOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     EntityModel testEntity = new EntityModel{Name = ""};
 
-    Entity.Create(this.dbClientMock.Object, testEntity);
+    await Entity.Create(this.dbClientMock.Object, testEntity);
     this.dbClientMock.Verify(m => m.InsertOne<EntityModel>("RefData", "Entities", testEntity), Times.Once());
   }
 }

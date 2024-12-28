@@ -36,30 +36,30 @@ public class DbTests : IDisposable
   }
 
   [Fact]
-  public void InsertOne_ItShouldCallGetDatabaseFromTheMongoClientOnceWithTheProvidedDbName()
+  public async void InsertOne_ItShouldCallGetDatabaseFromTheMongoClientOnceWithTheProvidedDbName()
   {
     IDb sut = new Db(this.dbClientMock.Object);
 
-    sut.InsertOne<Entity>("test db name", "", new Entity { Name = "" });
+    await sut.InsertOne<Entity>("test db name", "", new Entity { Name = "" });
     this.dbClientMock.Verify(m => m.GetDatabase("test db name", null), Times.Once());
   }
 
   [Fact]
-  public void InsertOne_ItShouldCallGetCollectionFromTheMongoDatabaseOnceWithTheProvidedCollectionName()
+  public async void InsertOne_ItShouldCallGetCollectionFromTheMongoDatabaseOnceWithTheProvidedCollectionName()
   {
     IDb sut = new Db(this.dbClientMock.Object);
 
-    sut.InsertOne<Entity>("", "test col name", new Entity { Name = "" });
+    await sut.InsertOne<Entity>("", "test col name", new Entity { Name = "" });
     this.dbDatabaseMock.Verify(m => m.GetCollection<Entity>("test col name", null), Times.Once());
   }
   
   [Fact]
-  public void InsertOne_ItShouldCallInsertOneAsyncFromTheMongoCollectionOnceWithTheProvidedDocument()
+  public async void InsertOne_ItShouldCallInsertOneAsyncFromTheMongoCollectionOnceWithTheProvidedDocument()
   {
     IDb sut = new Db(this.dbClientMock.Object);
 
     Entity testDoc = new Entity { Name = "" };
-    sut.InsertOne<Entity>("", "", testDoc);
+    await sut.InsertOne<Entity>("", "", testDoc);
     this.dbCollectionMock.Verify(m => m.InsertOneAsync(testDoc, null, default), Times.Once());
   }
 

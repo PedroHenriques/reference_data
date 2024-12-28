@@ -8,9 +8,9 @@ public class Entity
   private readonly static string _dbName = "RefData";
   private readonly static string _dbCollName = "Entities";
 
-  public static void Create(IDb dbClient, EntityModel entity)
+  public static async Task Create(IDb dbClient, EntityModel entity)
   {
-    dbClient.InsertOne<EntityModel>(_dbName, _dbCollName, entity);
+    await dbClient.InsertOne<EntityModel>(_dbName, _dbCollName, entity);
   }
 }
 
