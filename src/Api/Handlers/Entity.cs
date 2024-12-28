@@ -12,5 +12,16 @@ public class Entity
   {
     await dbClient.InsertOne<EntityModel>(_dbName, _dbCollName, entity);
   }
+
+  public static async Task Replace(IDb dbClient, EntityModel entity)
+  {
+    if (entity.Id == null)
+    {
+      throw new Exception("Couldn't determine the Entity's ID.");
+    }
+
+    await dbClient.ReplaceOne<EntityModel>(_dbName, _dbCollName, entity,
+      entity.Id);
+  }
 }
 
