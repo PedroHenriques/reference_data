@@ -46,5 +46,10 @@ public class Db : IDb
     {
       throw new KeyNotFoundException($"Could not find the document with ID '{id}'");
     }
+
+    if (replaceRes.ModifiedCount == 0)
+    {
+      throw new Exception($"Could not replace the document with ID '{id}'");
+    }
   }
 }

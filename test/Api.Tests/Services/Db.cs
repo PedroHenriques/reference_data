@@ -113,7 +113,7 @@ public class DbTests : IDisposable
   }
 
   [Fact]
-  public async void ReplaceOne_IfNoDocumentIsFound_ItShouldThrowAnKeyNotFoundException()
+  public async void ReplaceOne_IfNoDocumentIsFound_ItShouldThrowAKeyNotFoundException()
   {
     this.dbCollectionMock.Setup(s => s.ReplaceOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<Entity>(), null as ReplaceOptions, default))
       .Returns(Task.FromResult(new ReplaceOneResult.Acknowledged(0, 1, null) as ReplaceOneResult));
@@ -125,5 +125,20 @@ public class DbTests : IDisposable
 
     KeyNotFoundException exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString()));
     Assert.Equal($"Could not find the document with ID '{testId}'", exception.Message);
+  }
+
+  [Fact]
+  public async void ReplaceOne_IfNoDocumentIsReplaced_ItShouldThrowAnException()
+  {
+    this.dbCollectionMock.Setup(s => s.ReplaceOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<Entity>(), null as ReplaceOptions, default))
+      .Returns(Task.FromResult(new ReplaceOneResult.Acknowledged(1, 0, null) as ReplaceOneResult));
+
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    Entity testDoc = new Entity {};
+    ObjectId testId = ObjectId.GenerateNewId();
+
+    Exception exception = await Assert.ThrowsAsync<Exception>(() => sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString()));
+    Assert.Equal($"Could not replace the document with ID '{testId}'", exception.Message);
   }
 }
