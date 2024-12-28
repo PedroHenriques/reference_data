@@ -42,7 +42,7 @@ public class Db : IDb
       document
     );
 
-    if (replaceRes.ModifiedCount == 0)
+    if (replaceRes.MatchedCount == 0)
     {
       throw new KeyNotFoundException($"Could not find the document with ID '{id}'");
     }

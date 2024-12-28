@@ -113,10 +113,10 @@ public class DbTests : IDisposable
   }
 
   [Fact]
-  public async void ReplaceOne_IfNoDocumentsAreReplaced_ItShouldThrowAnKeyNotFoundException()
+  public async void ReplaceOne_IfNoDocumentIsFound_ItShouldThrowAnKeyNotFoundException()
   {
     this.dbCollectionMock.Setup(s => s.ReplaceOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<Entity>(), null as ReplaceOptions, default))
-      .Returns(Task.FromResult(new ReplaceOneResult.Acknowledged(0, 0, null) as ReplaceOneResult));
+      .Returns(Task.FromResult(new ReplaceOneResult.Acknowledged(0, 1, null) as ReplaceOneResult));
 
     IDb sut = new Db(this.dbClientMock.Object);
 
