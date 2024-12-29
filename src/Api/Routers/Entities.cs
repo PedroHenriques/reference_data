@@ -1,6 +1,7 @@
 using EntityModel = Api.Models.Entity;
 using Api.Services;
 using EntityHandler = Api.Handlers.Entity;
+using Microsoft.AspNetCore.Mvc;
 
 namespace Api.Routers;
 
@@ -12,6 +13,7 @@ public class Entities
     this._app = app;
 
     Post();
+    Put();
   }
 
   private void Post()
@@ -21,6 +23,18 @@ public class Entities
       async (EntityModel entity, IDb db) =>
       {
         await EntityHandler.Create(db, entity);
+        return TypedResults.Ok<EntityModel>(entity);
+      }
+    );
+  }
+
+  private void Put()
+  {
+    this._app.MapPut(
+      "/entities/{id}",
+      async (EntityModel entity, IDb db) =>
+      {
+        await EntityHandler.Replace(db, entity);
         return TypedResults.Ok<EntityModel>(entity);
       }
     );
