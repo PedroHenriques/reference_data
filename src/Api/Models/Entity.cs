@@ -37,6 +37,17 @@ public class Entity
       throw new Exception("Deserializing Entity produced NULL.");
     }
 
+    if (context.Request.Method == System.Net.WebRequestMethods.Http.Put)
+    {
+      Object? id = context.Request.RouteValues["id"];
+      if (id == null)
+      {
+        throw new KeyNotFoundException("No ID provided in the route.");
+      }
+
+      entity.Id = id.ToString();
+    }
+
     return entity;
   }
 }
