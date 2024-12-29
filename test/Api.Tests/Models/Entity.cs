@@ -54,7 +54,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void BindAsync_IfTheRequestBodyIsEMpty_ItShouldThrowAnExceptionWithTheExpectedMessage()
+  public async void BindAsync_IfTheRequestBodyIsEmpty_ItShouldThrowAnExceptionWithTheExpectedMessage()
   {
     this._contextMock.Setup(s => s.Request.Body)
       .Returns(new MemoryStream(Encoding.UTF8.GetBytes("")));
