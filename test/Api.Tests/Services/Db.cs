@@ -26,6 +26,8 @@ public class DbTests : IDisposable
       .Returns(Task.Delay(1));
     this.dbCollectionMock.Setup(s => s.ReplaceOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<Entity>(), null as ReplaceOptions, default))
       .Returns(Task.FromResult(new ReplaceOneResult.Acknowledged(1, 1, null) as ReplaceOneResult));
+    this.dbCollectionMock.Setup(s => s.UpdateOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<BsonDocumentUpdateDefinition<Entity>>(), null, default))
+      .Returns(Task.FromResult(new UpdateResult.Acknowledged(1, 1, null) as UpdateResult));
   }
 
   public void Dispose()
@@ -92,11 +94,11 @@ public class DbTests : IDisposable
 
     this.dbCollectionMock.Verify(m => m.ReplaceOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<Entity>(), null as ReplaceOptions, default));
     Assert.Equal(
-      new BsonDocument(new Dictionary<string, dynamic> () {
+      new BsonDocument {
         {
           "_id",  testId
         }
-      }),
+      },
       (this.dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Document
     );
   }
@@ -141,5 +143,91 @@ public class DbTests : IDisposable
 
     Exception exception = await Assert.ThrowsAsync<Exception>(() => sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString()));
     Assert.Equal($"Could not replace the document with ID '{testId}'", exception.Message);
+  }
+
+  [Fact]
+  public async void DeleteOne_ItShouldCallGetDatabaseFromTheMongoClientOnceWithTheProvidedDbName()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    await sut.DeleteOne<Entity>("another test db name", "", ObjectId.GenerateNewId().ToString());
+    this.dbClientMock.Verify(m => m.GetDatabase("another test db name", null), Times.Once());
+  }
+
+    [Fact]
+  public async void DeleteOne_ItShouldCallGetCollectionFromTheMongoDatabaseOnceWithTheProvidedCollectionName()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    await sut.DeleteOne<Entity>("", "random test col name", ObjectId.GenerateNewId().ToString());
+    this.dbDatabaseMock.Verify(m => m.GetCollection<Entity>("random test col name", null), Times.Once());
+  }
+
+  [Fact]
+  public async void DeleteOne_ItShouldCallUpdateOneAsyncFromTheMongoCollectionOnceWithTheCorrectFilter()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    ObjectId testId = ObjectId.GenerateNewId();
+    await sut.DeleteOne<Entity>("", "", testId.ToString());
+
+    this.dbCollectionMock.Verify(m => m.UpdateOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<BsonDocumentUpdateDefinition<Entity>>(), null, default));
+    Assert.Equal(
+      new BsonDocument {
+        {
+          "_id",  testId
+        }
+      },
+      (this.dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Document
+    );
+  }
+
+  [Fact]
+  public async void DeleteOne_ItShouldCallUpdateOneAsyncFromTheMongoCollectionOnceWithTheCorrectUpdateDefinition()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    ObjectId testId = ObjectId.GenerateNewId();
+    await sut.DeleteOne<Entity>("", "", testId.ToString());
+
+    this.dbCollectionMock.Verify(m => m.UpdateOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<BsonDocumentUpdateDefinition<Entity>>(), null, default));
+    Assert.Equal(
+      new BsonDocument {
+        {
+          "$currentDate", new BsonDocument {
+            { "deleted_at", true }
+          }
+        }
+      },
+      (this.dbCollectionMock.Invocations[0].Arguments[1] as dynamic).Document
+    );
+  }
+
+    [Fact]
+  public async void DeleteOne_IfNoDocumentIsFound_ItShouldThrowAKeyNotFoundException()
+  {
+    this.dbCollectionMock.Setup(s => s.UpdateOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<BsonDocumentUpdateDefinition<Entity>>(), null, default))
+      .Returns(Task.FromResult(new UpdateResult.Acknowledged(0, 1, null) as UpdateResult));
+
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    ObjectId testId = ObjectId.GenerateNewId();
+
+    KeyNotFoundException exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => sut.DeleteOne<Entity>("", "", testId.ToString()));
+    Assert.Equal($"Could not find the document with ID '{testId}'", exception.Message);
+  }
+
+  [Fact]
+  public async void DeleteOne_IfNoDocumentIsUpdated_ItShouldThrowAnException()
+  {
+    this.dbCollectionMock.Setup(s => s.UpdateOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<BsonDocumentUpdateDefinition<Entity>>(), null, default))
+      .Returns(Task.FromResult(new UpdateResult.Acknowledged(1, 0, null) as UpdateResult));
+
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    ObjectId testId = ObjectId.GenerateNewId();
+
+    Exception exception = await Assert.ThrowsAsync<Exception>(() => sut.DeleteOne<Entity>("", "", testId.ToString()));
+    Assert.Equal($"Could not update the document with ID '{testId}'", exception.Message);
   }
 }
