@@ -8,21 +8,23 @@ services:
   #   networks:
   #     - db
 
-  # api:
-  #   build:
-  #     context: ../../
-  #     dockerfile: ./src/Api/Dockerfile
-  #   container_name: "api"
-  #   restart: on-failure
-  #   depends_on: 
-  #     - mongo1
-  #   environment:
-  #     - DOTNET_ENVIRONMENT=Development
-  #     - mongoConStr="mongodb://mongo1:27017,mongo2:27018,mongo3:27019/?replicaSet=rs0"
-  #   ports:
-  #     - 10000:10000
-  #   networks:
-  #     - db
+  api:
+    build:
+      context: ../../
+      dockerfile: ./src/Api/Dockerfile
+    container_name: "api"
+    restart: on-failure
+    depends_on: 
+      - mongo
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=10000
+      - MONGO_CON_STR=mongodb://admin:pw@mongo:27017/admin?authMechanism=SCRAM-SHA-256
+      # - MONGO_CON_STR="mongodb://mongo1:27017,mongo2:27018,mongo3:27019/?replicaSet=rs0"
+    ports:
+      - 10000:10000
+    networks:
+      - db
 
   mongo:
     image: mongo:8-noble

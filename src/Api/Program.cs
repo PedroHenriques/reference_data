@@ -6,7 +6,12 @@ using Api.Routers;
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
 builder.Services.AddSingleton<IMongoClient>(sp => {
-  MongoClient? mongoClient = new MongoClient("mongodb://admin:pw@localhost:27017/admin?authMechanism=SCRAM-SHA-256");
+  string? mongoConStr = Environment.GetEnvironmentVariable("MONGO_CON_STR");
+  if (mongoConStr == null) {
+    throw new Exception("Could not get the 'MONGO_CON_STR' environment variable");
+  }
+
+  MongoClient? mongoClient = new MongoClient(mongoConStr);
   if (mongoClient == null)
   {
     throw new Exception("Mongo Client returned NULL.");
@@ -20,4 +25,4 @@ WebApplication app = builder.Build();
 
 Entities entitiesRouter = new Entities(app);
 
-app.Run("http://localhost:10000");
+app.Run();
