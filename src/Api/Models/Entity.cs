@@ -24,6 +24,11 @@ public class Entity
   [BsonElement("description")]
   public string? Desc { get; set; }
 
+  [JsonPropertyName("deletedAt")]
+  [JsonProperty("deletedAt")]
+  [BsonElement("deleted_at")]
+  public DateTime? DeletedAt { get; set; }
+
   public static async ValueTask<Entity?> BindAsync(HttpContext context)
   {
     Entity? entity;

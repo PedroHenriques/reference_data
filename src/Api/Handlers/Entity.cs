@@ -23,5 +23,10 @@ public class Entity
     await dbClient.ReplaceOne<EntityModel>(_dbName, _dbCollName, entity,
       entity.Id);
   }
+
+  public static async Task Delete(IDb dbClient, string id)
+  {
+    await dbClient.DeleteOne<EntityModel>(_dbName, _dbCollName, id);
+  }
 }
 

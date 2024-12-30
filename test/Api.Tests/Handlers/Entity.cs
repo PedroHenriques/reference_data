@@ -16,6 +16,8 @@ public class EntityTests : IDisposable
       .Returns(Task.Delay(1));
     this.dbClientMock.Setup(s => s.ReplaceOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel>(), It.IsAny<string>()))
       .Returns(Task.Delay(1));
+    this.dbClientMock.Setup(s => s.DeleteOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.Delay(1));
   }
 
   public void Dispose()
@@ -58,4 +60,14 @@ public class EntityTests : IDisposable
     await Assert.ThrowsAsync<Exception>(() => Entity.Replace(this.dbClientMock.Object, testEntity));
     this.dbClientMock.Verify(m => m.ReplaceOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel>(), It.IsAny<string>()), Times.Never());
   }
+
+  [Fact]
+  public async void Delete_ItShouldCallDeleteOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  {
+    string testId = "rng test id";
+
+    await Entity.Delete(this.dbClientMock.Object, testId);
+    this.dbClientMock.Verify(m => m.DeleteOne<EntityModel>("RefData", "Entities", testId), Times.Once());
+  }
+
 }
