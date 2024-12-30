@@ -14,6 +14,7 @@ public class Entities
 
     Post();
     Put();
+    Delete();
   }
 
   private void Post()
@@ -36,6 +37,18 @@ public class Entities
       {
         await EntityHandler.Replace(db, entity);
         return TypedResults.Ok<EntityModel>(entity);
+      }
+    );
+  }
+
+  private void Delete()
+  {
+    this._app.MapDelete(
+      "/entities/{id}",
+      async (IDb db, [FromRoute] string id) =>
+      {
+        await EntityHandler.Delete(db, id);
+        return Results.Ok();
       }
     );
   }
