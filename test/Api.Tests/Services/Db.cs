@@ -90,6 +90,7 @@ public class DbTests : IDisposable
     ObjectId testId = ObjectId.GenerateNewId();
     await sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString());
 
+    this.dbCollectionMock.Verify(m => m.ReplaceOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<Entity>(), null as ReplaceOptions, default));
     Assert.Equal(
       new BsonDocument(new Dictionary<string, dynamic> () {
         {
@@ -109,7 +110,7 @@ public class DbTests : IDisposable
     ObjectId testId = ObjectId.GenerateNewId();
     await sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString());
 
-    Assert.Equal(testDoc, this.dbCollectionMock.Invocations[0].Arguments[1]);
+    this.dbCollectionMock.Verify(m => m.ReplaceOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), testDoc, null as ReplaceOptions, default));
   }
 
   [Fact]
