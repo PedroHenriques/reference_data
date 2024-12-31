@@ -1,3 +1,4 @@
+using Api.Services.Types.Db;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
@@ -9,6 +10,8 @@ public interface IDb
   public Task ReplaceOne<T>(string dbName, string collName, T document,
     string id);
   public Task DeleteOne<T>(string dbName, string collName, string id);
+  public Task<FindResult<T>> Find<T>(string dbName, string collName, int page,
+    int size);
 }
 
 public class Db : IDb
@@ -84,4 +87,54 @@ public class Db : IDb
       throw new Exception($"Could not update the document with ID '{id}'");
     }
   }
-}
+
+  public async Task<FindResult<T>> Find<T>(string dbName, string collName,
+    int page, int size)
+  {
+    IMongoDatabase db = this._client.GetDatabase(dbName);
+    IMongoCollection<T> dbColl = db.GetCollection<T>(collName);
+
+    BsonDocument sortStage = new BsonDocument
+    {
+      {
+        "$sort", new BsonDocument
+        {
+          { "_id", 1 }
+        }
+      }
+    };
+
+    BsonDocument facetStage = new BsonDocument
+    {
+      {
+        "$facet", new BsonDocument {
+          { "metadata", new BsonArray {
+            new BsonDocument { { "$count", "totalCount" } }
+          } },
+          { "data", new BsonArray {
+            new BsonDocument { { "$skip", (page - 1) * size } },
+            new BsonDocument { { "$limit", size } }
+          } }
+        }
+      }
+    };
+
+    IAsyncCursor<AggregateResult<T>> resultsCursor = await dbColl.AggregateAsync(
+      PipelineDefinition<T, AggregateResult<T>>.Create(
+        new [] { sortStage, facetStage }
+      )
+    );
+
+    AggregateResult<T> results = await resultsCursor.FirstAsync();
+    int totalCount = results.Metadata.First().TotalCount;
+
+    return new FindResult<T> {
+      Metadata = new FindResultMetadata {
+        Page = page,
+        PageSize = size,
+        TotalCount = totalCount,
+        TotalPages = (int)Math.Ceiling((double)totalCount / size)
+      },
+      Data = results.Data
+    };
+  }}

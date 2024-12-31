@@ -1,5 +1,6 @@
 using Api.Models;
 using Api.Services;
+using Api.Services.Types.Db;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
@@ -8,18 +9,21 @@ namespace Api.Tests.Services;
 
 public class DbTests : IDisposable
 {
-  private Mock<IMongoClient> dbClientMock;
-  private Mock<IMongoDatabase> dbDatabaseMock;
-  private Mock<IMongoCollection<Entity>> dbCollectionMock;
+  private readonly Mock<IMongoClient> dbClientMock;
+  private readonly Mock<IMongoDatabase> dbDatabaseMock;
+  private readonly Mock<IMongoCollection<Entity>> dbCollectionMock;
+  private readonly Mock<IAsyncCursor<AggregateResult<Entity>>> _aggregateCursor;
 
   public DbTests()
   {
     this.dbClientMock = new Mock<IMongoClient>(MockBehavior.Strict);
     this.dbDatabaseMock = new Mock<IMongoDatabase>(MockBehavior.Strict);
     this.dbCollectionMock = new Mock<IMongoCollection<Entity>>(MockBehavior.Strict);
+    this._aggregateCursor = new Mock<IAsyncCursor<AggregateResult<Entity>>>();
 
     this.dbClientMock.Setup(s => s.GetDatabase(It.IsAny<string>(), null))
       .Returns(this.dbDatabaseMock.Object);
+    
     this.dbDatabaseMock.Setup(s => s.GetCollection<Entity>(It.IsAny<string>(), null))
       .Returns(this.dbCollectionMock.Object);
     this.dbCollectionMock.Setup(s => s.InsertOneAsync(It.IsAny<Entity>(), null, default))
@@ -28,6 +32,11 @@ public class DbTests : IDisposable
       .Returns(Task.FromResult(new ReplaceOneResult.Acknowledged(1, 1, null) as ReplaceOneResult));
     this.dbCollectionMock.Setup(s => s.UpdateOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<BsonDocumentUpdateDefinition<Entity>>(), null, default))
       .Returns(Task.FromResult(new UpdateResult.Acknowledged(1, 1, null) as UpdateResult));
+    this.dbCollectionMock.Setup(s => s.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default))
+      .Returns(Task.FromResult(this._aggregateCursor.Object));
+    
+    this._aggregateCursor.Setup(s => s.Current).Returns(new [] { new AggregateResult<Entity> { Metadata = new [] { new AggregateResultMetadata {} } } });
+    this._aggregateCursor.Setup(s => s.MoveNextAsync(default)).Returns(Task.FromResult(true));
   }
 
   public void Dispose()
@@ -35,6 +44,7 @@ public class DbTests : IDisposable
     this.dbClientMock.Reset();
     this.dbDatabaseMock.Reset();
     this.dbCollectionMock.Reset();
+    this._aggregateCursor.Reset();
   }
 
   [Fact]
@@ -230,4 +240,104 @@ public class DbTests : IDisposable
     Exception exception = await Assert.ThrowsAsync<Exception>(() => sut.DeleteOne<Entity>("", "", testId.ToString()));
     Assert.Equal($"Could not update the document with ID '{testId}'", exception.Message);
   }
+
+  [Fact]
+  public async void Find_ItShouldCallGetDatabaseFromTheMongoClientOnceWithTheProvidedDbName()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    await sut.Find<Entity>("find test db name", "", 0, 0);
+    this.dbClientMock.Verify(m => m.GetDatabase("find test db name", null), Times.Once());
+  }
+
+  [Fact]
+  public async void Find_ItShouldCallGetCollectionFromTheMongoDatabaseOnceWithTheProvidedCollectionName()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    await sut.Find<Entity>("", "random find test col name", 0, 0);
+    this.dbDatabaseMock.Verify(m => m.GetCollection<Entity>("random find test col name", null), Times.Once());
+  }
+
+  [Fact]
+  public async void Find_ItShouldCallAggregateAsyncFromTheMongoCollectionOnceWithTheExpectedFirstStageOfThePipeline()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    await sut.Find<Entity>("", "", 0, 0);
+    this.dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
+    Assert.Equal(
+      new BsonDocument
+      {
+        {
+          "$sort", new BsonDocument
+          {
+            { "_id", 1 }
+          }
+        }
+      },
+      (this.dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[0]
+    );
+  }
+
+  [Fact]
+  public async void Find_ItShouldCallAggregateAsyncFromTheMongoCollectionOnceWithTheExpectedSecondStageOfThePipeline()
+  {
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    await sut.Find<Entity>("", "", 3, 10);
+    this.dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
+    Assert.Equal(
+      new BsonDocument
+      {
+        {
+          "$facet", new BsonDocument {
+            { "metadata", new BsonArray {
+              new BsonDocument { { "$count", "totalCount" } }
+            } },
+            { "data", new BsonArray {
+              new BsonDocument { { "$skip", 20 } },
+              new BsonDocument { { "$limit", 10 } }
+            } }
+          }
+        }
+      },
+      (this.dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[1]
+    );
+  }
+
+  [Fact]
+  public async void Find_ItShouldReturnTheExpectedValue()
+  {
+    AggregateResult<Entity> aggregateRes = new AggregateResult<Entity> {
+      Metadata = new [] {
+        new AggregateResultMetadata {
+          TotalCount = 123
+        }
+      },
+      Data = new [] {
+        new Entity {},
+        new Entity {},
+        new Entity {},
+        new Entity {},
+      }
+    };
+    this._aggregateCursor.Setup(s => s.Current).Returns(new [] { aggregateRes });
+    
+    IDb sut = new Db(this.dbClientMock.Object);
+
+    Assert.Equal(
+      new FindResult<Entity> {
+        Metadata = new FindResultMetadata {
+          Page = 6,
+          PageSize = 2,
+          TotalCount = 123,
+          TotalPages = 62
+        },
+        Data = aggregateRes.Data
+      },
+      await sut.Find<Entity>("", "", 6, 2)
+    );
+  }
+
 }
