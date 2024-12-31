@@ -8,6 +8,7 @@ namespace Api.Routers;
 public class Entities
 {
   private readonly WebApplication _app;
+
   public Entities(WebApplication app)
   {
     this._app = app;
@@ -24,7 +25,7 @@ public class Entities
       async (EntityModel entity, IDb db) =>
       {
         await EntityHandler.Create(db, entity);
-        return TypedResults.Ok<EntityModel>(entity);
+        return TypedResults.Ok(entity);
       }
     );
   }
@@ -36,7 +37,7 @@ public class Entities
       async (EntityModel entity, IDb db) =>
       {
         await EntityHandler.Replace(db, entity);
-        return TypedResults.Ok<EntityModel>(entity);
+        return TypedResults.Ok(entity);
       }
     );
   }
