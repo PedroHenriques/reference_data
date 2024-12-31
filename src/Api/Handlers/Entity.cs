@@ -1,4 +1,5 @@
 using Api.Services;
+using Api.Services.Types.Db;
 using EntityModel = Api.Models.Entity;
 
 namespace Api.Handlers;
@@ -27,6 +28,12 @@ public class Entity
   public static async Task Delete(IDb dbClient, string id)
   {
     await dbClient.DeleteOne<EntityModel>(_dbName, _dbCollName, id);
+  }
+
+  public static async Task<FindResult<EntityModel>> Select(IDb dbClient,
+    int page, int size)
+  {
+    return await dbClient.Find<EntityModel>(_dbName, _dbCollName, page, size);
   }
 }
 
