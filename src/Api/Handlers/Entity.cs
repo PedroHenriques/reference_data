@@ -33,7 +33,8 @@ public class Entity
   public static async Task<FindResult<EntityModel>> Select(IDb dbClient,
     int page, int size)
   {
-    return await dbClient.Find<EntityModel>(_dbName, _dbCollName, page, size);
+    return await dbClient.Find<EntityModel>(_dbName, _dbCollName, page, size,
+      null);
   }
 }
 

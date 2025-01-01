@@ -11,7 +11,7 @@ public interface IDb
     string id);
   public Task DeleteOne<T>(string dbName, string collName, string id);
   public Task<FindResult<T>> Find<T>(string dbName, string collName, int page,
-    int size);
+    int size, BsonDocument? match);
 }
 
 public class Db : IDb
@@ -89,12 +89,22 @@ public class Db : IDb
   }
 
   public async Task<FindResult<T>> Find<T>(string dbName, string collName,
-    int page, int size)
+    int page, int size, BsonDocument? match)
   {
     IMongoDatabase db = this._client.GetDatabase(dbName);
     IMongoCollection<T> dbColl = db.GetCollection<T>(collName);
 
-    BsonDocument sortStage = new BsonDocument
+    List<BsonDocument> stages = new List<BsonDocument>();
+
+    if (match != null) {
+      if (match.Contains("$match") == false) {
+        throw new Exception("The BsonDocument provided for 'match' does not contain a '$match' statement.");
+      }
+
+      stages.Add(match);
+    }
+
+    stages.Add(new BsonDocument
     {
       {
         "$sort", new BsonDocument
@@ -102,9 +112,9 @@ public class Db : IDb
           { "_id", 1 }
         }
       }
-    };
+    });
 
-    BsonDocument facetStage = new BsonDocument
+    stages.Add(new BsonDocument
     {
       {
         "$facet", new BsonDocument {
@@ -117,15 +127,13 @@ public class Db : IDb
           } }
         }
       }
-    };
+    });
 
-    IAsyncCursor<AggregateResult<T>> resultsCursor = await dbColl.AggregateAsync(
-      PipelineDefinition<T, AggregateResult<T>>.Create(
-        new [] { sortStage, facetStage }
-      )
+    IAsyncCursor<AggregateResult<T>> resultCursor = await dbColl.AggregateAsync(
+      PipelineDefinition<T, AggregateResult<T>>.Create(stages)
     );
 
-    AggregateResult<T> results = await resultsCursor.FirstAsync();
+    AggregateResult<T> results = await resultCursor.FirstAsync();
     int totalCount = results.Metadata.First().TotalCount;
 
     return new FindResult<T> {
