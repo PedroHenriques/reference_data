@@ -97,11 +97,9 @@ public class Db : IDb
     List<BsonDocument> stages = new List<BsonDocument>();
 
     if (match != null) {
-      if (match.Contains("$match") == false) {
-        throw new Exception("The BsonDocument provided for 'match' does not contain a '$match' statement.");
-      }
-
-      stages.Add(match);
+      stages.Add(new BsonDocument {
+        { "$match", match }
+      });
     }
 
     stages.Add(new BsonDocument

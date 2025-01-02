@@ -346,18 +346,15 @@ public class DbTests : IDisposable
     IDb sut = new Db(this._dbClientMock.Object);
     BsonDocument testMatch = new BsonDocument
     {
-      {
-        "$match", new BsonDocument
-        {
-          { "some property", "hello from test" }
-        }
-      }
+      { "some property", "hello from test" }
     };
 
     await sut.Find<Entity>("", "", 0, 0, testMatch);
     this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
     Assert.Equal(
-      testMatch,
+      new BsonDocument {
+        { "$match", testMatch }
+      },
       (this._dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[0]
     );
   }
@@ -406,24 +403,6 @@ public class DbTests : IDisposable
         }
       },
       (this._dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[2]
-    );
-  }
-
-  [Fact]
-  public async void Find_IfAMatchBsondocumentIsProvidedWithoutAMatchClause_ItShouldThrowAnException()
-  {
-    IDb sut = new Db(this._dbClientMock.Object);
-    BsonDocument testMatch = new BsonDocument
-    {
-      {
-        "something", new BsonDocument {}
-      }
-    };
-
-    var exception = await Assert.ThrowsAsync<Exception>(() => sut.Find<Entity>("", "", 0, 0, testMatch));
-    Assert.Equal(
-      "The BsonDocument provided for 'match' does not contain a '$match' statement.",
-      exception.Message
     );
   }
 }
