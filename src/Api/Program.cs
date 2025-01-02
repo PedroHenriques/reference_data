@@ -24,5 +24,6 @@ builder.Services.AddScoped<EntityModel>();
 WebApplication app = builder.Build();
 
 Entities entitiesRouter = new Entities(app);
+EntityData entityDataRouter = new EntityData(app);
 
 app.Run();
