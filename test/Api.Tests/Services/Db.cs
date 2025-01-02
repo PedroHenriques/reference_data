@@ -80,7 +80,7 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    await sut.ReplaceOne<Entity>("some test db name", "", new Entity {}, ObjectId.GenerateNewId().ToString());
+    await sut.ReplaceOne<Entity>("some test db name", "", new Entity { Name = "" }, ObjectId.GenerateNewId().ToString());
     this._dbClientMock.Verify(m => m.GetDatabase("some test db name", null), Times.Once());
   }
 
@@ -89,7 +89,7 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    await sut.ReplaceOne<Entity>("", "another test col name", new Entity {}, ObjectId.GenerateNewId().ToString());
+    await sut.ReplaceOne<Entity>("", "another test col name", new Entity { Name = "" }, ObjectId.GenerateNewId().ToString());
     this._dbDatabaseMock.Verify(m => m.GetCollection<Entity>("another test col name", null), Times.Once());
   }
 
@@ -98,7 +98,7 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    Entity testDoc = new Entity {};
+    Entity testDoc = new Entity { Name = "" };
     ObjectId testId = ObjectId.GenerateNewId();
     await sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString());
 
@@ -118,7 +118,7 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    Entity testDoc = new Entity {};
+    Entity testDoc = new Entity { Name = "" };
     ObjectId testId = ObjectId.GenerateNewId();
     await sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString());
 
@@ -133,7 +133,7 @@ public class DbTests : IDisposable
 
     IDb sut = new Db(this._dbClientMock.Object);
 
-    Entity testDoc = new Entity {};
+    Entity testDoc = new Entity { Name = "" };
     ObjectId testId = ObjectId.GenerateNewId();
 
     KeyNotFoundException exception = await Assert.ThrowsAsync<KeyNotFoundException>(() => sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString()));
@@ -148,7 +148,7 @@ public class DbTests : IDisposable
 
     IDb sut = new Db(this._dbClientMock.Object);
 
-    Entity testDoc = new Entity {};
+    Entity testDoc = new Entity { Name = "" };
     ObjectId testId = ObjectId.GenerateNewId();
 
     Exception exception = await Assert.ThrowsAsync<Exception>(() => sut.ReplaceOne<Entity>("", "", testDoc, testId.ToString()));
@@ -316,10 +316,10 @@ public class DbTests : IDisposable
         }
       },
       Data = new [] {
-        new Entity {},
-        new Entity {},
-        new Entity {},
-        new Entity {},
+        new Entity { Name = "" },
+        new Entity { Name = "" },
+        new Entity { Name = "" },
+        new Entity { Name = "" },
       }
     };
     this._aggregateCursor.Setup(s => s.Current).Returns(new [] { aggregateRes });
@@ -337,6 +337,33 @@ public class DbTests : IDisposable
         Data = aggregateRes.Data
       },
       await sut.Find<Entity>("", "", 6, 2, null)
+    );
+  }
+
+  [Fact]
+  public async void Find_IfTheCursorIsEmpty_ItShouldReturnTheExpectedValue()
+  {
+    AggregateResult<Entity> aggregateRes = new AggregateResult<Entity> {
+      Metadata = Array.Empty<AggregateResultMetadata>(),
+      Data = new [] {
+        new Entity { Name = "" },
+      }
+    };
+    this._aggregateCursor.Setup(s => s.Current).Returns(new [] { aggregateRes });
+    
+    IDb sut = new Db(this._dbClientMock.Object);
+
+    Assert.Equal(
+      new FindResult<Entity> {
+        Metadata = new FindResultMetadata {
+          Page = 16,
+          PageSize = 20,
+          TotalCount = 0,
+          TotalPages = 0
+        },
+        Data = aggregateRes.Data
+      },
+      await sut.Find<Entity>("", "", 16, 20, null)
     );
   }
 

@@ -132,7 +132,8 @@ public class Db : IDb
     );
 
     AggregateResult<T> results = await resultCursor.FirstAsync();
-    int totalCount = results.Metadata.First().TotalCount;
+    int totalCount = results.Metadata.Length == 0 ? 0 : results.Metadata.First()
+      .TotalCount;
 
     return new FindResult<T> {
       Metadata = new FindResultMetadata {
