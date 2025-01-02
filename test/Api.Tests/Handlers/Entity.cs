@@ -22,7 +22,7 @@ public class EntityTests : IDisposable
     this._dbClientMock.Setup(s => s.DeleteOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
       .Returns(Task.Delay(1));
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
-      .Returns(Task.FromResult(new FindResult<EntityModel> {}));
+      .Returns(Task.FromResult(new FindResult<EntityModel> { }));
   }
 
   public void Dispose()
@@ -33,7 +33,7 @@ public class EntityTests : IDisposable
   [Fact]
   public async void Create_ItShouldCallInsertOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
-    EntityModel testEntity = new EntityModel{Name = ""};
+    EntityModel testEntity = new EntityModel { Name = "" };
 
     await Entity.Create(this._dbClientMock.Object, testEntity);
     this._dbClientMock.Verify(m => m.InsertOne<EntityModel>("RefData", "Entities", testEntity), Times.Once());
@@ -42,7 +42,7 @@ public class EntityTests : IDisposable
   [Fact]
   public async void Replace_ItShouldCallReplaceOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
-    EntityModel testEntity = new EntityModel{ Id = "test id" };
+    EntityModel testEntity = new EntityModel { Id = "test id", Name = "" };
 
     await Entity.Replace(this._dbClientMock.Object, testEntity);
     this._dbClientMock.Verify(m => m.ReplaceOne<EntityModel>("RefData", "Entities", testEntity, "test id"), Times.Once());
@@ -51,7 +51,7 @@ public class EntityTests : IDisposable
   [Fact]
   public async void Replace_IfTheProvidedEntityDoesNotHaveAnId_ItShouldThrowAnException()
   {
-    EntityModel testEntity = new EntityModel{};
+    EntityModel testEntity = new EntityModel { Name = "" };
 
     Exception e = await Assert.ThrowsAsync<Exception>(() => Entity.Replace(this._dbClientMock.Object, testEntity));
     Assert.Equal("Couldn't determine the Entity's ID.", e.Message);
@@ -60,7 +60,7 @@ public class EntityTests : IDisposable
   [Fact]
   public async void Replace_IfTheProvidedEntityDoesNotHaveAnId_ItShouldNotCallReplaceOneFromTheProvidedDbClient()
   {
-    EntityModel testEntity = new EntityModel{};
+    EntityModel testEntity = new EntityModel { Name = "" };
 
     await Assert.ThrowsAsync<Exception>(() => Entity.Replace(this._dbClientMock.Object, testEntity));
     this._dbClientMock.Verify(m => m.ReplaceOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel>(), It.IsAny<string>()), Times.Never());
