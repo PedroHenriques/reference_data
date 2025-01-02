@@ -17,7 +17,7 @@ public class Entity
   [JsonPropertyName("name")]
   [JsonProperty("name")]
   [BsonElement("name")]
-  public string? Name { get; set; }
+  public required string Name { get; set; }
 
   [JsonPropertyName("description")]
   [JsonProperty("description")]
@@ -40,6 +40,10 @@ public class Entity
     if (entity == null)
     {
       throw new Exception("Deserializing Entity produced NULL.");
+    }
+
+    if (entity.Name == null) {
+      throw new Exception("No name provided.");
     }
 
     if (context.Request.Method == System.Net.WebRequestMethods.Http.Put)

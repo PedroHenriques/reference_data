@@ -73,6 +73,16 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
+  public async void BindAsync_IfTheRequestBodyDoesNotHaveAValueForTheNameProperty_ItShouldThrowAnExceptionWithTheExpectedMessage()
+  {
+    this._contextMock.Setup(s => s.Request.Body)
+      .Returns(new MemoryStream(Encoding.UTF8.GetBytes("{\"description\": \"some test desc\"}")));
+    
+    Exception e = await Assert.ThrowsAsync<Exception>(async () => await Entity.BindAsync(this._contextMock.Object));
+    Assert.Equal("No name provided.", e.Message);
+  }
+
+  [Fact]
   public async void BindAsync_IfTheRequestBodyIsEmpty_ItShouldThrowAnExceptionWithTheExpectedMessage()
   {
     this._contextMock.Setup(s => s.Request.Body)
