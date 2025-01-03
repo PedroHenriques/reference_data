@@ -162,4 +162,33 @@ public class EntityDataTests : IDisposable
     var res = await EntityData.Replace(this._dbClientMock.Object, testEntityId.ToString(), testDocId.ToString(), testDoc);
     Assert.Equal(testDoc, res);
   }
+
+  [Fact]
+  public async void Replace_IfThereIsNoActiveEntityWithProvidedName_ItShouldNotCallInsertOneFromTheProvidedDbClient()
+  {
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
+
+    try
+    {
+      await EntityData.Replace(this._dbClientMock.Object, ObjectId.GenerateNewId().ToString(), ObjectId.GenerateNewId().ToString(), new ExpandoObject());      
+      Assert.Fail();
+    }
+    catch (System.Exception)
+    {
+      this._dbClientMock.Verify(m => m.InsertOne<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()), Times.Never());
+    }
+  }
+
+  [Fact]
+  public async void Replace_IfThereIsNoActiveEntityWithProvidedName_ItShouldThrowAnException()
+  {
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
+    
+    string testEntityId = ObjectId.GenerateNewId().ToString();
+
+    Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Replace(this._dbClientMock.Object, testEntityId, ObjectId.GenerateNewId().ToString(), new ExpandoObject()));
+    Assert.Equal($"No valid entity with the ID '{testEntityId}' exists.", e.Message);
+  }
 }
