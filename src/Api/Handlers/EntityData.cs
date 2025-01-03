@@ -37,6 +37,14 @@ public class EntityData
     return data;
   }
 
+  public static async Task Delete(IDb dbClient, string entityId, string docId)
+  {
+    var findResult = await FindEntity(dbClient, entityId);
+
+    string entityName = findResult.Data[0].Name;
+    await dbClient.DeleteOne<EntityModel>(_dbName, entityName, docId);
+  }
+
   private static async Task<FindResult<EntityModel>> FindEntity(IDb dbClient,
     string entityId)
   {

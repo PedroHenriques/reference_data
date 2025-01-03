@@ -22,6 +22,8 @@ public class EntityDataTests : IDisposable
       .Returns(Task.Delay(1));
     this._dbClientMock.Setup(s => s.ReplaceOne<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>(), It.IsAny<string>()))
       .Returns(Task.Delay(1));
+    this._dbClientMock.Setup(s => s.DeleteOne<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.Delay(1));
   }
 
   public void Dispose()
@@ -189,6 +191,75 @@ public class EntityDataTests : IDisposable
     string testEntityId = ObjectId.GenerateNewId().ToString();
 
     Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Replace(this._dbClientMock.Object, testEntityId, ObjectId.GenerateNewId().ToString(), new ExpandoObject()));
+    Assert.Equal($"No valid entity with the ID '{testEntityId}' exists.", e.Message);
+  }
+
+  [Fact]
+  public async void Delete_ItShouldCallFindOfTheDbServiceToCheckIfTheRequestedEntityExistsAndIsActive()
+  {
+    ObjectId testEntityId = ObjectId.GenerateNewId();
+    ObjectId testDocId = ObjectId.GenerateNewId();
+
+    await EntityData.Delete(this._dbClientMock.Object, testEntityId.ToString(), testDocId.ToString());
+    this._dbClientMock.Verify(
+      m => m.Find<EntityModel>(
+        "RefData",
+        "Entities",
+        1,
+        1,
+        new BsonDocument {
+          {
+            "$and",
+            new BsonArray {
+              new BsonDocument { { "_id", testEntityId } },
+              new BsonDocument { { "deleted_at", BsonNull.Value } },
+            }
+          }
+        }
+      ),
+      Times.Once()
+    );
+  }
+
+  [Fact]
+  public async void Delete_ItShouldCallDeleteOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  {
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new [] { new EntityModel { Name = "rng test entity name" } } }));
+
+    ObjectId testEntityId = ObjectId.GenerateNewId();
+    ObjectId testDocId = ObjectId.GenerateNewId();
+
+    await EntityData.Delete(this._dbClientMock.Object, testEntityId.ToString(), testDocId.ToString());
+    this._dbClientMock.Verify(m => m.DeleteOne<EntityModel>("RefData", "rng test entity name", testDocId.ToString()), Times.Once());
+  }
+
+  [Fact]
+  public async void Delete_IfThereIsNoActiveEntityWithProvidedName_ItShouldNotCallInsertOneFromTheProvidedDbClient()
+  {
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
+
+    try
+    {
+      await EntityData.Delete(this._dbClientMock.Object, ObjectId.GenerateNewId().ToString(), ObjectId.GenerateNewId().ToString());      
+      Assert.Fail();
+    }
+    catch (System.Exception)
+    {
+      this._dbClientMock.Verify(m => m.InsertOne<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()), Times.Never());
+    }
+  }
+
+  [Fact]
+  public async void Delete_IfThereIsNoActiveEntityWithProvidedName_ItShouldThrowAnException()
+  {
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
+    
+    string testEntityId = ObjectId.GenerateNewId().ToString();
+
+    Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Delete(this._dbClientMock.Object, testEntityId, ObjectId.GenerateNewId().ToString()));
     Assert.Equal($"No valid entity with the ID '{testEntityId}' exists.", e.Message);
   }
 }
