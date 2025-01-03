@@ -17,7 +17,7 @@ public class EntityDataTests : IDisposable
     this._dbClientMock = new Mock<IDb>(MockBehavior.Strict);
 
     this._dbClientMock.Setup(s => s.Find<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
-      .Returns(Task.FromResult(new FindResult<dynamic> { }));
+      .Returns(Task.FromResult(new FindResult<dynamic> { Data = Array.Empty<dynamic>() }));
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "" } } }));
     this._dbClientMock.Setup(s => s.InsertOne<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
@@ -307,7 +307,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async void Select_ItShouldReturnTheResultOfCallingFindFromTheProvidedDbClient()
   {
-    var expectedResult = new FindResult<dynamic> { Metadata = new FindResultMetadata { Page = 6 } };
+    var expectedResult = new FindResult<dynamic> { Metadata = new FindResultMetadata { Page = 6 }, Data = Array.Empty<dynamic>() };
     this._dbClientMock.Setup(s => s.Find<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
       .Returns(Task.FromResult(expectedResult));
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))

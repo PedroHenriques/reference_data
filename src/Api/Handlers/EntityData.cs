@@ -51,7 +51,16 @@ public class EntityData
     var findResult = await FindEntity(dbClient, entityId);
 
     string entityName = findResult.Data[0].Name;
-    return await dbClient.Find<dynamic>(_dbName, entityName, page, size, null);
+    var result = await dbClient.Find<dynamic>(_dbName, entityName, page, size,
+      null);
+
+    foreach (var item in result.Data)
+    {
+      item.id = item._id.ToString();
+      ((IDictionary<String, Object>)item).Remove("_id");
+    }
+
+    return result;
   }
 
   private static async Task<FindResult<EntityModel>> FindEntity(IDb dbClient,
