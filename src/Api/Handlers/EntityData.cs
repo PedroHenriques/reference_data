@@ -1,7 +1,6 @@
 using EntityModel = Api.Models.Entity;
 using Api.Services;
 using MongoDB.Bson;
-using System.Dynamic;
 using Api.Services.Types.Db;
 
 namespace Api.Handlers;
