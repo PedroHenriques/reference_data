@@ -16,6 +16,8 @@ public class EntityData
     this._app = app;
 
     Post();
+    Put();
+    Delete();
   }
 
   private void Post()
@@ -31,6 +33,36 @@ public class EntityData
           bodyObject);
 
         return TypedResults.Ok(insertedDoc);
+      }
+    );
+  }
+
+  private void Put()
+  {
+    this._app.MapPut(
+      "/data/{entityId}/{docId}",
+      async ([FromRoute] string entityId, [FromRoute] string docId,
+        [FromBody] dynamic body, IDb db) =>
+      {
+        var bodyObject = JsonConvert.DeserializeObject<ExpandoObject>(
+          body.ToString(), new ExpandoObjectConverter());
+        
+        var insertedDoc = await EntityDataHandler.Replace(db, entityId, docId,
+          bodyObject);
+
+        return TypedResults.Ok(insertedDoc);
+      }
+    );
+  }
+
+  private void Delete()
+  {
+    this._app.MapDelete(
+      "/data/{entityId}/{docId}",
+      async ([FromRoute] string entityId, [FromRoute] string docId, IDb db) =>
+      {
+        await EntityDataHandler.Delete(db, entityId, docId);
+        return Results.Ok();
       }
     );
   }
