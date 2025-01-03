@@ -9,7 +9,7 @@ public class EntityData
 {
   private readonly static string _dbName = "RefData";
 
-  public static async Task<object> Create(IDb dbClient, string entityId,
+  public static async Task<dynamic> Create(IDb dbClient, string entityId,
     dynamic data)
   {
     var findResult = await FindEntity(dbClient, entityId);
@@ -25,7 +25,7 @@ public class EntityData
     return data;
   }
 
-  public static async Task<object> Replace(IDb dbClient, string entityId,
+  public static async Task<dynamic> Replace(IDb dbClient, string entityId,
     string docId, dynamic data)
   {
     var findResult = await FindEntity(dbClient, entityId);
