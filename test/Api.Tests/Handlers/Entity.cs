@@ -81,4 +81,14 @@ public class EntityTests : IDisposable
     await Entity.Select(this._dbClientMock.Object, 73, 9410);
     this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, null), Times.Once());
   }
+
+  [Fact]
+  public async void Select_ItShouldReturnTheResultOfCallingFindFromTheProvidedDbClient()
+  {
+    var expectedResult = new FindResult<EntityModel> { };
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+      .Returns(Task.FromResult(expectedResult));
+
+    Assert.Equal(expectedResult, await Entity.Select(this._dbClientMock.Object, 73, 9410));
+  }
 }
