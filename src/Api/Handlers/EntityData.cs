@@ -66,14 +66,14 @@ public class EntityData
         }
       }
     };
-    var findResult = await dbClient.Find<EntityModel>(
-      _dbName, "Entities", 1, 1, match);
+    var findResult = await dbClient.Find<EntityModel>(_dbName, "Entities", 1, 1,
+      match);
 
     if (findResult.Metadata.TotalCount == 0)
     {
       throw new Exception($"No valid entity with the ID '{entityId}' exists.");
     }
-    
+
     return findResult;
   }
 }

@@ -16,7 +16,7 @@ public class EntityTests : IDisposable
     this._contextMock.Setup(s => s.Request.Body)
       .Returns(new MemoryStream(Encoding.UTF8.GetBytes("{\"name\": \"test name\", \"description\": \"test desc\"}")));
     this._contextMock.Setup(s => s.Request.Method).Returns(System.Net.WebRequestMethods.Http.Post);
-    this._contextMock.Setup(s => s.Request.RouteValues).Returns(new RouteValueDictionary{ { "id", "" } });
+    this._contextMock.Setup(s => s.Request.RouteValues).Returns(new RouteValueDictionary { { "id", "" } });
   }
 
   public void Dispose()
@@ -47,7 +47,7 @@ public class EntityTests : IDisposable
 
     Assert.IsType<Entity>(sutResult);
   }
-  
+
   [Fact]
   public async void BindAsync_ItShouldReturnAnInstanceOfTheModelEntityWithTheExpectedName()
   {
@@ -77,7 +77,7 @@ public class EntityTests : IDisposable
   {
     this._contextMock.Setup(s => s.Request.Body)
       .Returns(new MemoryStream(Encoding.UTF8.GetBytes("{\"description\": \"some test desc\"}")));
-    
+
     Exception e = await Assert.ThrowsAsync<Exception>(async () => await Entity.BindAsync(this._contextMock.Object));
     Assert.Equal("No name provided.", e.Message);
   }
@@ -87,7 +87,7 @@ public class EntityTests : IDisposable
   {
     this._contextMock.Setup(s => s.Request.Body)
       .Returns(new MemoryStream(Encoding.UTF8.GetBytes("")));
-    
+
     Exception e = await Assert.ThrowsAsync<Exception>(async () => await Entity.BindAsync(this._contextMock.Object));
     Assert.Equal("Deserializing Entity produced NULL.", e.Message);
   }
@@ -96,8 +96,8 @@ public class EntityTests : IDisposable
   public async void BindAsync_IfTheRequestMethodIsPut_ItShouldSetTheIdProvidedInTheRouteOnTheReturnedEntity()
   {
     this._contextMock.Setup(s => s.Request.Method).Returns(System.Net.WebRequestMethods.Http.Put);
-    this._contextMock.Setup(s => s.Request.RouteValues).Returns(new RouteValueDictionary{ { "id", "test Id" } });
-    
+    this._contextMock.Setup(s => s.Request.RouteValues).Returns(new RouteValueDictionary { { "id", "test Id" } });
+
     Entity? sutResult = await Entity.BindAsync(this._contextMock.Object);
 
     Assert.Equal("test Id", sutResult.Id);
@@ -107,8 +107,8 @@ public class EntityTests : IDisposable
   public async void BindAsync_IfTheRequestMethodIsPutAndTheRouteParamIdIsNull_ItShouldThrowAKeyNotFoundException()
   {
     this._contextMock.Setup(s => s.Request.Method).Returns(System.Net.WebRequestMethods.Http.Put);
-    this._contextMock.Setup(s => s.Request.RouteValues).Returns(new RouteValueDictionary{});
-    
+    this._contextMock.Setup(s => s.Request.RouteValues).Returns(new RouteValueDictionary { });
+
     KeyNotFoundException e = await Assert.ThrowsAsync<KeyNotFoundException>(async () => await Entity.BindAsync(this._contextMock.Object));
     Assert.Equal("No ID provided in the route.", e.Message);
   }

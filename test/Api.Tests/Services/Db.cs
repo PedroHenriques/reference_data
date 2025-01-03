@@ -23,7 +23,7 @@ public class DbTests : IDisposable
 
     this._dbClientMock.Setup(s => s.GetDatabase(It.IsAny<string>(), null))
       .Returns(this._dbDatabaseMock.Object);
-    
+
     this._dbDatabaseMock.Setup(s => s.GetCollection<Entity>(It.IsAny<string>(), null))
       .Returns(this._dbCollectionMock.Object);
     this._dbCollectionMock.Setup(s => s.InsertOneAsync(It.IsAny<Entity>(), null, default))
@@ -34,8 +34,8 @@ public class DbTests : IDisposable
       .Returns(Task.FromResult(new UpdateResult.Acknowledged(1, 1, null) as UpdateResult));
     this._dbCollectionMock.Setup(s => s.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default))
       .Returns(Task.FromResult(this._aggregateCursor.Object));
-    
-    this._aggregateCursor.Setup(s => s.Current).Returns(new [] { new AggregateResult<Entity> { Metadata = new [] { new AggregateResultMetadata {} } } });
+
+    this._aggregateCursor.Setup(s => s.Current).Returns(new[] { new AggregateResult<Entity> { Metadata = new[] { new AggregateResultMetadata { } } } });
     this._aggregateCursor.Setup(s => s.MoveNextAsync(default)).Returns(Task.FromResult(true));
   }
 
@@ -64,7 +64,7 @@ public class DbTests : IDisposable
     await sut.InsertOne<Entity>("", "test col name", new Entity { Name = "" });
     this._dbDatabaseMock.Verify(m => m.GetCollection<Entity>("test col name", null), Times.Once());
   }
-  
+
   [Fact]
   public async void InsertOne_ItShouldCallInsertOneAsyncFromTheMongoCollectionOnceWithTheProvidedDocument()
   {
@@ -164,7 +164,7 @@ public class DbTests : IDisposable
     this._dbClientMock.Verify(m => m.GetDatabase("another test db name", null), Times.Once());
   }
 
-    [Fact]
+  [Fact]
   public async void DeleteOne_ItShouldCallGetCollectionFromTheMongoDatabaseOnceWithTheProvidedCollectionName()
   {
     IDb sut = new Db(this._dbClientMock.Object);
@@ -213,7 +213,7 @@ public class DbTests : IDisposable
     );
   }
 
-    [Fact]
+  [Fact]
   public async void DeleteOne_IfNoDocumentIsFound_ItShouldThrowAKeyNotFoundException()
   {
     this._dbCollectionMock.Setup(s => s.UpdateOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<BsonDocumentUpdateDefinition<Entity>>(), null, default))
@@ -309,26 +309,29 @@ public class DbTests : IDisposable
   [Fact]
   public async void Find_ItShouldReturnTheExpectedValue()
   {
-    AggregateResult<Entity> aggregateRes = new AggregateResult<Entity> {
-      Metadata = new [] {
+    AggregateResult<Entity> aggregateRes = new AggregateResult<Entity>
+    {
+      Metadata = new[] {
         new AggregateResultMetadata {
           TotalCount = 123
         }
       },
-      Data = new [] {
+      Data = new[] {
         new Entity { Name = "" },
         new Entity { Name = "" },
         new Entity { Name = "" },
         new Entity { Name = "" },
       }
     };
-    this._aggregateCursor.Setup(s => s.Current).Returns(new [] { aggregateRes });
-    
+    this._aggregateCursor.Setup(s => s.Current).Returns(new[] { aggregateRes });
+
     IDb sut = new Db(this._dbClientMock.Object);
 
     Assert.Equal(
-      new FindResult<Entity> {
-        Metadata = new FindResultMetadata {
+      new FindResult<Entity>
+      {
+        Metadata = new FindResultMetadata
+        {
           Page = 6,
           PageSize = 2,
           TotalCount = 123,
@@ -343,19 +346,22 @@ public class DbTests : IDisposable
   [Fact]
   public async void Find_IfTheCursorIsEmpty_ItShouldReturnTheExpectedValue()
   {
-    AggregateResult<Entity> aggregateRes = new AggregateResult<Entity> {
+    AggregateResult<Entity> aggregateRes = new AggregateResult<Entity>
+    {
       Metadata = Array.Empty<AggregateResultMetadata>(),
-      Data = new [] {
+      Data = new[] {
         new Entity { Name = "" },
       }
     };
-    this._aggregateCursor.Setup(s => s.Current).Returns(new [] { aggregateRes });
-    
+    this._aggregateCursor.Setup(s => s.Current).Returns(new[] { aggregateRes });
+
     IDb sut = new Db(this._dbClientMock.Object);
 
     Assert.Equal(
-      new FindResult<Entity> {
-        Metadata = new FindResultMetadata {
+      new FindResult<Entity>
+      {
+        Metadata = new FindResultMetadata
+        {
           Page = 16,
           PageSize = 20,
           TotalCount = 0,
@@ -391,7 +397,7 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    await sut.Find<Entity>("", "", 0, 0, new BsonDocument{ { "$match", "" } });
+    await sut.Find<Entity>("", "", 0, 0, new BsonDocument { { "$match", "" } });
     this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
     Assert.Equal(
       new BsonDocument
@@ -412,7 +418,7 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    await sut.Find<Entity>("", "", 3, 10, new BsonDocument{ { "$match", "" } });
+    await sut.Find<Entity>("", "", 3, 10, new BsonDocument { { "$match", "" } });
     this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
     Assert.Equal(
       new BsonDocument

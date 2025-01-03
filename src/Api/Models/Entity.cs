@@ -42,7 +42,8 @@ public class Entity
       throw new Exception("Deserializing Entity produced NULL.");
     }
 
-    if (entity.Name == null) {
+    if (entity.Name == null)
+    {
       throw new Exception("No name provided.");
     }
 

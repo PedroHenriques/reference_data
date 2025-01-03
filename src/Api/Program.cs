@@ -5,9 +5,11 @@ using Api.Routers;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
-builder.Services.AddSingleton<IMongoClient>(sp => {
+builder.Services.AddSingleton<IMongoClient>(sp =>
+{
   string? mongoConStr = Environment.GetEnvironmentVariable("MONGO_CON_STR");
-  if (mongoConStr == null) {
+  if (mongoConStr == null)
+  {
     throw new Exception("Could not get the 'MONGO_CON_STR' environment variable");
   }
 

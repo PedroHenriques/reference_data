@@ -8,7 +8,7 @@ public struct AggregateResult<T>
 {
   [BsonElement("metadata")]
   public AggregateResultMetadata[] Metadata { get; set; }
-  
+
   [BsonElement("data")]
   public T[] Data { get; set; }
 }

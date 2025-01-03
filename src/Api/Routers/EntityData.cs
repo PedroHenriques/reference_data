@@ -28,7 +28,7 @@ public class EntityData
       {
         var bodyObject = JsonConvert.DeserializeObject<ExpandoObject>(
           body.ToString(), new ExpandoObjectConverter());
-        
+
         var insertedDoc = await EntityDataHandler.Create(db, entityId,
           bodyObject);
 
@@ -46,7 +46,7 @@ public class EntityData
       {
         var bodyObject = JsonConvert.DeserializeObject<ExpandoObject>(
           body.ToString(), new ExpandoObjectConverter());
-        
+
         var insertedDoc = await EntityDataHandler.Replace(db, entityId, docId,
           bodyObject);
 

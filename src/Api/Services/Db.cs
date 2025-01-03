@@ -96,7 +96,8 @@ public class Db : IDb
 
     List<BsonDocument> stages = new List<BsonDocument>();
 
-    if (match != null) {
+    if (match != null)
+    {
       stages.Add(new BsonDocument {
         { "$match", match }
       });
@@ -135,8 +136,10 @@ public class Db : IDb
     int totalCount = results.Metadata.Length == 0 ? 0 : results.Metadata.First()
       .TotalCount;
 
-    return new FindResult<T> {
-      Metadata = new FindResultMetadata {
+    return new FindResult<T>
+    {
+      Metadata = new FindResultMetadata
+      {
         Page = page,
         PageSize = size,
         TotalCount = totalCount,
@@ -144,4 +147,5 @@ public class Db : IDb
       },
       Data = results.Data
     };
-  }}
+  }
+}

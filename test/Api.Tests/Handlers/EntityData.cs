@@ -11,7 +11,7 @@ namespace Api.Tests.Handlers;
 public class EntityDataTests : IDisposable
 {
   private readonly Mock<IDb> _dbClientMock;
-  
+
   public EntityDataTests()
   {
     this._dbClientMock = new Mock<IDb>(MockBehavior.Strict);
@@ -19,7 +19,7 @@ public class EntityDataTests : IDisposable
     this._dbClientMock.Setup(s => s.Find<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
       .Returns(Task.FromResult(new FindResult<dynamic> { }));
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
-      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new [] { new EntityModel { Name = "" } } }));
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "" } } }));
     this._dbClientMock.Setup(s => s.InsertOne<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
       .Returns(Task.Delay(1));
     this._dbClientMock.Setup(s => s.ReplaceOne<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>(), It.IsAny<string>()))
@@ -63,7 +63,7 @@ public class EntityDataTests : IDisposable
   public async void Create_ItShouldCallInsertOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
-      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new [] { new EntityModel { Name = "rng entity name" } } }));
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "rng entity name" } } }));
 
     ExpandoObject testDoc = new ExpandoObject();
     string testDocId = ObjectId.GenerateNewId().ToString();
@@ -76,7 +76,7 @@ public class EntityDataTests : IDisposable
   public async void Create_ItShouldReturnTheInsertedDocument()
   {
     string testDocId = ObjectId.GenerateNewId().ToString();
-    dynamic testDoc = new ExpandoObject{};
+    dynamic testDoc = new ExpandoObject { };
     testDoc.prop1 = "prop1 value";
     testDoc.prop2 = false;
 
@@ -92,7 +92,7 @@ public class EntityDataTests : IDisposable
 
     try
     {
-      await EntityData.Create(this._dbClientMock.Object, "rng entity name", new ExpandoObject());      
+      await EntityData.Create(this._dbClientMock.Object, "rng entity name", new ExpandoObject());
       Assert.Fail();
     }
     catch (System.Exception)
@@ -106,7 +106,7 @@ public class EntityDataTests : IDisposable
   {
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
-    
+
     string testDocId = ObjectId.GenerateNewId().ToString();
 
     Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Create(this._dbClientMock.Object, testDocId, new ExpandoObject()));
@@ -144,7 +144,7 @@ public class EntityDataTests : IDisposable
   public async void Replace_ItShouldCallReplaceOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
-      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new [] { new EntityModel { Name = "test entity name" } } }));
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "test entity name" } } }));
 
     ObjectId testEntityId = ObjectId.GenerateNewId();
     ObjectId testDocId = ObjectId.GenerateNewId();
@@ -159,7 +159,7 @@ public class EntityDataTests : IDisposable
   {
     ObjectId testEntityId = ObjectId.GenerateNewId();
     ObjectId testDocId = ObjectId.GenerateNewId();
-    dynamic testDoc = new ExpandoObject{};
+    dynamic testDoc = new ExpandoObject { };
     testDoc.prop1 = "prop1 value";
     testDoc.prop2 = false;
 
@@ -175,7 +175,7 @@ public class EntityDataTests : IDisposable
 
     try
     {
-      await EntityData.Replace(this._dbClientMock.Object, ObjectId.GenerateNewId().ToString(), ObjectId.GenerateNewId().ToString(), new ExpandoObject());      
+      await EntityData.Replace(this._dbClientMock.Object, ObjectId.GenerateNewId().ToString(), ObjectId.GenerateNewId().ToString(), new ExpandoObject());
       Assert.Fail();
     }
     catch (System.Exception)
@@ -189,7 +189,7 @@ public class EntityDataTests : IDisposable
   {
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
-    
+
     string testEntityId = ObjectId.GenerateNewId().ToString();
 
     Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Replace(this._dbClientMock.Object, testEntityId, ObjectId.GenerateNewId().ToString(), new ExpandoObject()));
@@ -227,7 +227,7 @@ public class EntityDataTests : IDisposable
   public async void Delete_ItShouldCallDeleteOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
-      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new [] { new EntityModel { Name = "rng test entity name" } } }));
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "rng test entity name" } } }));
 
     ObjectId testEntityId = ObjectId.GenerateNewId();
     ObjectId testDocId = ObjectId.GenerateNewId();
@@ -244,7 +244,7 @@ public class EntityDataTests : IDisposable
 
     try
     {
-      await EntityData.Delete(this._dbClientMock.Object, ObjectId.GenerateNewId().ToString(), ObjectId.GenerateNewId().ToString());      
+      await EntityData.Delete(this._dbClientMock.Object, ObjectId.GenerateNewId().ToString(), ObjectId.GenerateNewId().ToString());
       Assert.Fail();
     }
     catch (System.Exception)
@@ -258,7 +258,7 @@ public class EntityDataTests : IDisposable
   {
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
-    
+
     string testEntityId = ObjectId.GenerateNewId().ToString();
 
     Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Delete(this._dbClientMock.Object, testEntityId, ObjectId.GenerateNewId().ToString()));
@@ -296,7 +296,7 @@ public class EntityDataTests : IDisposable
   public async void Select_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
-      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new [] { new EntityModel { Name = "some test entity name" } } }));
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "some test entity name" } } }));
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
 
@@ -311,7 +311,7 @@ public class EntityDataTests : IDisposable
     this._dbClientMock.Setup(s => s.Find<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
       .Returns(Task.FromResult(expectedResult));
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
-      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new [] { new EntityModel { Name = "" } } }));
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "" } } }));
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
 
@@ -323,7 +323,7 @@ public class EntityDataTests : IDisposable
   {
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
-    
+
     string testEntityId = ObjectId.GenerateNewId().ToString();
 
     Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Select(this._dbClientMock.Object, testEntityId, 1, 1));
