@@ -16,6 +16,8 @@ public class EntityDataTests : IDisposable
   {
     this._dbClientMock = new Mock<IDb>(MockBehavior.Strict);
 
+    this._dbClientMock.Setup(s => s.Find<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+      .Returns(Task.FromResult(new FindResult<dynamic> { }));
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new [] { new EntityModel { Name = "" } } }));
     this._dbClientMock.Setup(s => s.InsertOne<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
@@ -262,4 +264,70 @@ public class EntityDataTests : IDisposable
     Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Delete(this._dbClientMock.Object, testEntityId, ObjectId.GenerateNewId().ToString()));
     Assert.Equal($"No valid entity with the ID '{testEntityId}' exists.", e.Message);
   }
+
+  [Fact]
+  public async void Select_ItShouldCallFindOfTheDbServiceToCheckIfTheRequestedEntityExistsAndIsActive()
+  {
+    ObjectId testEntityId = ObjectId.GenerateNewId();
+    ObjectId testDocId = ObjectId.GenerateNewId();
+
+    await EntityData.Select(this._dbClientMock.Object, testEntityId.ToString(), 1, 1);
+    this._dbClientMock.Verify(
+      m => m.Find<EntityModel>(
+        "RefData",
+        "Entities",
+        1,
+        1,
+        new BsonDocument {
+          {
+            "$and",
+            new BsonArray {
+              new BsonDocument { { "_id", testEntityId } },
+              new BsonDocument { { "deleted_at", BsonNull.Value } },
+            }
+          }
+        }
+      ),
+      Times.Once()
+    );
+  }
+
+  [Fact]
+  public async void Select_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  {
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new [] { new EntityModel { Name = "some test entity name" } } }));
+
+    string testEntityId = ObjectId.GenerateNewId().ToString();
+
+    await EntityData.Select(this._dbClientMock.Object, testEntityId, 123, 635);
+    this._dbClientMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 123, 635, null), Times.Once());
+  }
+
+  [Fact]
+  public async void Select_ItShouldReturnTheResultOfCallingFindFromTheProvidedDbClient()
+  {
+    var expectedResult = new FindResult<dynamic> { Metadata = new FindResultMetadata { Page = 6 } };
+    this._dbClientMock.Setup(s => s.Find<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+      .Returns(Task.FromResult(expectedResult));
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new [] { new EntityModel { Name = "" } } }));
+
+    string testEntityId = ObjectId.GenerateNewId().ToString();
+
+    Assert.Equal(expectedResult, await EntityData.Select(this._dbClientMock.Object, testEntityId, 73, 9410));
+  }
+
+  [Fact]
+  public async void Select_IfThereIsNoActiveEntityWithProvidedName_ItShouldThrowAnException()
+  {
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
+    
+    string testEntityId = ObjectId.GenerateNewId().ToString();
+
+    Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Select(this._dbClientMock.Object, testEntityId, 1, 1));
+    Assert.Equal($"No valid entity with the ID '{testEntityId}' exists.", e.Message);
+  }
+
 }

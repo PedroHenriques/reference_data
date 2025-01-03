@@ -45,6 +45,15 @@ public class EntityData
     await dbClient.DeleteOne<EntityModel>(_dbName, entityName, docId);
   }
 
+  public static async Task<FindResult<dynamic>> Select(IDb dbClient,
+    string entityId, int page, int size)
+  {
+    var findResult = await FindEntity(dbClient, entityId);
+
+    string entityName = findResult.Data[0].Name;
+    return await dbClient.Find<dynamic>(_dbName, entityName, page, size, null);
+  }
+
   private static async Task<FindResult<EntityModel>> FindEntity(IDb dbClient,
     string entityId)
   {
