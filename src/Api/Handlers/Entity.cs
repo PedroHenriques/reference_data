@@ -34,7 +34,7 @@ public class Entity
     int page, int size)
   {
     return await dbClient.Find<EntityModel>(_dbName, _dbCollName, page, size,
-      null);
+      null, false);
   }
 }
 

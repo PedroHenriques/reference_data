@@ -21,7 +21,7 @@ public class EntityTests : IDisposable
       .Returns(Task.Delay(1));
     this._dbClientMock.Setup(s => s.DeleteOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
       .Returns(Task.Delay(1));
-    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { }));
   }
 
@@ -79,14 +79,14 @@ public class EntityTests : IDisposable
   public async void Select_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     await Entity.Select(this._dbClientMock.Object, 73, 9410);
-    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, null), Times.Once());
+    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, null, false), Times.Once());
   }
 
   [Fact]
   public async void Select_ItShouldReturnTheResultOfCallingFindFromTheProvidedDbClient()
   {
     var expectedResult = new FindResult<EntityModel> { };
-    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>()))
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
       .Returns(Task.FromResult(expectedResult));
 
     Assert.Equal(expectedResult, await Entity.Select(this._dbClientMock.Object, 73, 9410));

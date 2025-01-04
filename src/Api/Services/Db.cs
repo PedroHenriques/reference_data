@@ -11,7 +11,7 @@ public interface IDb
     string id);
   public Task DeleteOne<T>(string dbName, string collName, string id);
   public Task<FindResult<T>> Find<T>(string dbName, string collName, int page,
-    int size, BsonDocument? match);
+    int size, BsonDocument? match, bool showDeleted);
 }
 
 public class Db : IDb
@@ -89,17 +89,39 @@ public class Db : IDb
   }
 
   public async Task<FindResult<T>> Find<T>(string dbName, string collName,
-    int page, int size, BsonDocument? match)
+    int page, int size, BsonDocument? match, bool showDeleted)
   {
     IMongoDatabase db = this._client.GetDatabase(dbName);
     IMongoCollection<T> dbColl = db.GetCollection<T>(collName);
 
     List<BsonDocument> stages = new List<BsonDocument>();
+    BsonDocument showActiveMatch = new BsonDocument {
+      { "deleted_at", BsonNull.Value }
+    };
 
-    if (match != null)
+    BsonDocument? matchContent = null;
+    if (match != null && showDeleted == false)
+    {
+      matchContent = new BsonDocument {
+        {
+          "$and",
+          new BsonArray { match, showActiveMatch }
+        }
+      };
+    }
+    else if (match != null)
+    {
+      matchContent = match;
+    }
+    else if (showDeleted == false)
+    {
+      matchContent = showActiveMatch;
+    }
+
+    if (matchContent != null)
     {
       stages.Add(new BsonDocument {
-        { "$match", match }
+        { "$match", matchContent }
       });
     }
 

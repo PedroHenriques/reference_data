@@ -52,7 +52,7 @@ public class EntityData
 
     string entityName = findResult.Data[0].Name;
     var result = await dbClient.Find<dynamic>(_dbName, entityName, page, size,
-      null);
+      null, false);
 
     foreach (var item in result.Data)
     {
@@ -76,7 +76,7 @@ public class EntityData
       }
     };
     var findResult = await dbClient.Find<EntityModel>(_dbName, "Entities", 1, 1,
-      match);
+      match, false);
 
     if (findResult.Metadata.TotalCount == 0)
     {

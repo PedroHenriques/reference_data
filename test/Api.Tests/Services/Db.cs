@@ -246,7 +246,7 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    await sut.Find<Entity>("find test db name", "", 0, 0, null);
+    await sut.Find<Entity>("find test db name", "", 0, 0, null, false);
     this._dbClientMock.Verify(m => m.GetDatabase("find test db name", null), Times.Once());
   }
 
@@ -255,7 +255,7 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    await sut.Find<Entity>("", "random find test col name", 0, 0, null);
+    await sut.Find<Entity>("", "random find test col name", 0, 0, null, false);
     this._dbDatabaseMock.Verify(m => m.GetCollection<Entity>("random find test col name", null), Times.Once());
   }
 
@@ -264,16 +264,13 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    await sut.Find<Entity>("", "", 0, 0, null);
+    await sut.Find<Entity>("", "", 0, 0, null, false);
     this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
     Assert.Equal(
       new BsonDocument
       {
         {
-          "$sort", new BsonDocument
-          {
-            { "_id", 1 }
-          }
+          "$match", new BsonDocument { { "deleted_at", BsonNull.Value } }
         }
       },
       (this._dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[0]
@@ -285,7 +282,28 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    await sut.Find<Entity>("", "", 3, 10, null);
+    await sut.Find<Entity>("", "", 0, 0, null, false);
+    this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
+    Assert.Equal(
+      new BsonDocument
+      {
+        {
+          "$sort", new BsonDocument
+          {
+            { "_id", 1 }
+          }
+        }
+      },
+      (this._dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[1]
+    );
+  }
+
+  [Fact]
+  public async void Find_ItShouldCallAggregateAsyncFromTheMongoCollectionOnceWithTheExpectedThirdStageOfThePipeline()
+  {
+    IDb sut = new Db(this._dbClientMock.Object);
+
+    await sut.Find<Entity>("", "", 3, 10, null, false);
     this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
     Assert.Equal(
       new BsonDocument
@@ -302,7 +320,7 @@ public class DbTests : IDisposable
           }
         }
       },
-      (this._dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[1]
+      (this._dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[2]
     );
   }
 
@@ -339,7 +357,7 @@ public class DbTests : IDisposable
         },
         Data = aggregateRes.Data
       },
-      await sut.Find<Entity>("", "", 6, 2, null)
+      await sut.Find<Entity>("", "", 6, 2, null, false)
     );
   }
 
@@ -369,7 +387,7 @@ public class DbTests : IDisposable
         },
         Data = aggregateRes.Data
       },
-      await sut.Find<Entity>("", "", 16, 20, null)
+      await sut.Find<Entity>("", "", 16, 20, null, false)
     );
   }
 
@@ -382,11 +400,21 @@ public class DbTests : IDisposable
       { "some property", "hello from test" }
     };
 
-    await sut.Find<Entity>("", "", 0, 0, testMatch);
+    await sut.Find<Entity>("", "", 0, 0, testMatch, false);
     this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
     Assert.Equal(
       new BsonDocument {
-        { "$match", testMatch }
+        {
+          "$match", new BsonDocument {
+            {
+              "$and",
+              new BsonArray {
+                testMatch,
+                new BsonDocument { { "deleted_at", BsonNull.Value } },
+              }
+            }
+          }
+        }
       },
       (this._dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[0]
     );
@@ -397,7 +425,7 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    await sut.Find<Entity>("", "", 0, 0, new BsonDocument { { "$match", "" } });
+    await sut.Find<Entity>("", "", 0, 0, new BsonDocument { { "$match", "" } }, false);
     this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
     Assert.Equal(
       new BsonDocument
@@ -418,7 +446,7 @@ public class DbTests : IDisposable
   {
     IDb sut = new Db(this._dbClientMock.Object);
 
-    await sut.Find<Entity>("", "", 3, 10, new BsonDocument { { "$match", "" } });
+    await sut.Find<Entity>("", "", 3, 10, new BsonDocument { { "$match", "" } }, false);
     this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
     Assert.Equal(
       new BsonDocument
@@ -436,6 +464,74 @@ public class DbTests : IDisposable
         }
       },
       (this._dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[2]
+    );
+  }
+
+  [Fact]
+  public async void Find_IfShowDeletedIsTrue_ItShouldCallAggregateAsyncFromTheMongoCollectionOnceWithTheExpectedFirstStageOfThePipeline()
+  {
+    IDb sut = new Db(this._dbClientMock.Object);
+
+    await sut.Find<Entity>("", "", 0, 0, null, true);
+    this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
+    Assert.Equal(
+      new BsonDocument
+      {
+        {
+          "$sort", new BsonDocument
+          {
+            { "_id", 1 }
+          }
+        }
+      },
+      (this._dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[0]
+    );
+  }
+
+  [Fact]
+  public async void Find_IfShowDeletedIsTrue_ItShouldCallAggregateAsyncFromTheMongoCollectionOnceWithTheExpectedSecondStageOfThePipeline()
+  {
+    IDb sut = new Db(this._dbClientMock.Object);
+
+    await sut.Find<Entity>("", "", 0, 0, null, true);
+    this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
+    Assert.Equal(
+      new BsonDocument
+      {
+        {
+          "$facet", new BsonDocument {
+            { "metadata", new BsonArray {
+              new BsonDocument { { "$count", "totalCount" } }
+            } },
+            { "data", new BsonArray {
+              new BsonDocument { { "$skip", 0 } },
+              new BsonDocument { { "$limit", 0 } }
+            } }
+          }
+        }
+      },
+      (this._dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[1]
+    );
+  }
+
+  [Fact]
+  public async void Find_IfAMatchBsondocumentIsProvidedAndShowDeletedIsTrue_ItShouldCallAggregateAsyncFromTheMongoCollectionOnceWithTheExpectedFirstStageOfThePipeline()
+  {
+    IDb sut = new Db(this._dbClientMock.Object);
+    BsonDocument testMatch = new BsonDocument
+    {
+      { "some property", "hello from test" }
+    };
+
+    await sut.Find<Entity>("", "", 0, 0, testMatch, true);
+    this._dbCollectionMock.Verify(m => m.AggregateAsync(It.IsAny<PipelineDefinition<Entity, AggregateResult<Entity>>>(), null, default), Times.Once);
+    Assert.Equal(
+      new BsonDocument {
+        {
+          "$match", testMatch
+        }
+      },
+      (this._dbCollectionMock.Invocations[0].Arguments[0] as dynamic).Documents[0]
     );
   }
 }
