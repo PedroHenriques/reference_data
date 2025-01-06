@@ -58,6 +58,7 @@ services:
     networks:
       - db
 
+  # Used to start the replica set in the MongoDb instance (will run once and exit)
   db-init:
     image: mongo:8-noble
     restart: "no"
