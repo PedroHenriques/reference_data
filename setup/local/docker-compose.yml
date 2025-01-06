@@ -5,8 +5,10 @@ services:
   #     dockerfile: ./src/DbListener/Dockerfile
   #   container_name: "dblistener"
   #   restart: on-failure
-  #   networks:
-  #     - db
+  # depends_on:
+  #   - mongodb
+  # networks:
+  #   - db
 
   api:
     build:
@@ -14,34 +16,40 @@ services:
       dockerfile: ./src/Api/Dockerfile
     container_name: "api"
     restart: on-failure
-    depends_on: 
-      - mongo
+    depends_on:
+      mongodb:
+        condition: service_healthy
     environment:
       - DOTNET_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=10000
-      - MONGO_CON_STR=mongodb://admin:pw@mongo:27017/admin?authMechanism=SCRAM-SHA-256
-      # - MONGO_CON_STR="mongodb://mongo1:27017,mongo2:27018,mongo3:27019/?replicaSet=rs0"
+      - MONGO_CON_STR=mongodb://admin:pw@mongodb:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
     ports:
       - 10000:10000
     networks:
       - db
 
-  mongo:
+  mongodb:
     image: mongo:8-noble
-    command: ["--bind_ip_all", "--port", "27017"]
-    # command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27017"]
+    entrypoint:
+      - bash
+      - -c
+      - |
+        openssl rand -base64 756 > /replica.key
+        chmod 400 /replica.key
+        chown 999:999 /replica.key
+        exec docker-entrypoint.sh $$@
+    command: [ "mongod", "--replSet", "rs0", "--bind_ip_all", "--port", "27017", "-keyFile", "/replica.key" ]
     ports:
       - 27017:27017
     extra_hosts:
       - "host.docker.internal:host-gateway"
-    # healthcheck:
-    #   test: echo "try { rs.status() } catch (err) { rs.initiate({_id:'rs0',members:[{_id:0,host:'host.docker.internal:27017',priority:1},{_id:1,host:'host.docker.internal:27018',priority:0.5},{_id:2,host:'host.docker.internal:27019',priority:0.5}]}) }" | mongosh --port 27017 --quiet
-    #   interval: 5s
-    #   timeout: 30s
-    #   start_period: 0s
-    #   start_interval: 1s
-    #   retries: 30
-    container_name: "mongodb1"
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    container_name: "mongodb"
     restart: on-failure
     environment:
       - MONGO_INITDB_ROOT_USERNAME=admin
@@ -50,38 +58,26 @@ services:
     networks:
       - db
 
-  # mongo2:
-  #   image: mongo:8-noble
-  #   command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27018"]
-  #   ports:
-  #     - 27018:27018
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
-  #   container_name: "mongodb2"
-  #   restart: on-failure
-  #   depends_on: 
-  #     - mongo1
-  #   networks:
-  #     - db
-
-  # mongo3:
-  #   image: mongo:8-noble
-  #   command: ["--replSet", "rs0", "--bind_ip_all", "--port", "27019"]
-  #   ports:
-  #     - 27019:27019
-  #   extra_hosts:
-  #     - "host.docker.internal:host-gateway"
-  #   container_name: "mongodb3"
-  #   restart: on-failure
-  #   depends_on: 
-  #     - mongo1
-  #   networks:
-  #     - db
+  db-init:
+    image: mongo:8-noble
+    restart: "no"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    command: >
+      mongosh --username admin --password pw --host mongodb:27017 --eval ' rs.initiate( {
+         _id : "rs0",
+         members: [
+            { _id: 0, host: "mongodb:27017" }
+         ]
+      }) '
+    networks:
+      - db
 
   mongo-express:
     image: mongo-express:latest
     environment:
-      - ME_CONFIG_MONGODB_SERVER=mongo
+      - ME_CONFIG_MONGODB_SERVER=mongodb
       - ME_CONFIG_MONGODB_PORT=27017
       - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
       - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
@@ -89,8 +85,10 @@ services:
       - ME_CONFIG_MONGODB_AUTH_PASSWORD=pw
       - ME_CONFIG_BASICAUTH_USERNAME=appUser
       - ME_CONFIG_BASICAUTH_PASSWORD=appPw
+      - ME_CONFIG_MONGODB_URL=mongodb://admin:pw@mongodb:27017/?replicaSet=rs0
     depends_on:
-        - mongo
+      mongodb:
+        condition: service_healthy
     ports:
       - "9000:8081"
     networks:
