@@ -1,14 +1,15 @@
 services:
-  # dblistener:
-  #   build:
-  #     context: ../../
-  #     dockerfile: ./src/DbListener/Dockerfile
-  #   container_name: "dblistener"
-  #   restart: on-failure
-  # depends_on:
-  #   - mongodb
-  # networks:
-  #   - db
+  dblistener:
+    build:
+      context: ../../
+      dockerfile: ./src/DbListener/Dockerfile
+    container_name: "dblistener"
+    restart: on-failure
+  depends_on:
+    mongodb:
+      condition: service_healthy
+  networks:
+    - db
 
   api:
     build:
