@@ -13,6 +13,7 @@ services:
     environment:
       - DOTNET_ENVIRONMENT=Development
       - MONGO_CON_STR=mongodb://admin:pw@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
+      - REDIS_CON_STR=dblistener_db:6379
     networks:
       - dblistener
       - dblistenerBd
