@@ -1,10 +1,9 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
-using SharedLibs;
 using SharedLibs.Types.Db;
 
-namespace Api.Tests.Services;
+namespace SharedLibs.Tests;
 
 public class Entity
 {
