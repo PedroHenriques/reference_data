@@ -1,7 +1,7 @@
 using EntityModel = Api.Models.Entity;
-using Api.Services;
 using MongoDB.Driver;
 using Api.Routers;
+using SharedLibs;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 

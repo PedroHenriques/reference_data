@@ -1,5 +1,5 @@
-using Api.Services;
-using Api.Services.Types.Db;
+using SharedLibs;
+using SharedLibs.Types.Db;
 using EntityModel = Api.Models.Entity;
 
 namespace Api.Handlers;

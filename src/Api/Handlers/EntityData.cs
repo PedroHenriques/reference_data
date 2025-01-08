@@ -1,7 +1,7 @@
 using EntityModel = Api.Models.Entity;
-using Api.Services;
 using MongoDB.Bson;
-using Api.Services.Types.Db;
+using SharedLibs;
+using SharedLibs.Types.Db;
 
 namespace Api.Handlers;
 

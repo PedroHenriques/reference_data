@@ -1,8 +1,8 @@
-using Api.Services.Types.Db;
+using SharedLibs.Types.Db;
 using MongoDB.Bson;
 using MongoDB.Driver;
 
-namespace Api.Services;
+namespace SharedLibs;
 
 public interface IDb
 {

@@ -1,11 +1,15 @@
-using Api.Models;
-using Api.Services;
-using Api.Services.Types.Db;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using Moq;
+using SharedLibs;
+using SharedLibs.Types.Db;
 
 namespace Api.Tests.Services;
+
+public class Entity
+{
+  public required string Name { get; set; }
+}
 
 public class DbTests : IDisposable
 {

@@ -1,10 +1,13 @@
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0-noble AS build
 WORKDIR /source
-COPY --link ./src/Api/*.csproj .
-RUN dotnet restore --arch x64
-COPY --link ./src/Api .
-RUN dotnet publish --os linux --arch x64 --no-restore -o /app
+COPY --link ./src/Api/Api.csproj ./Api/Api.csproj
+COPY --link ./src/SharedLibs/SharedLibs.csproj ./SharedLibs/SharedLibs.csproj
+RUN dotnet restore ./Api/Api.csproj --arch x64
+RUN dotnet restore ./SharedLibs/SharedLibs.csproj --arch x64
+COPY --link ./src/Api ./Api/
+COPY --link ./src/SharedLibs ./SharedLibs/
+RUN dotnet publish ./Api/Api.csproj --os linux --arch x64 --no-restore -o /app
 
 
 # Runtime stage

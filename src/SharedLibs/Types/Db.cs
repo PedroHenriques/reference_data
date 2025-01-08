@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 
-namespace Api.Services.Types.Db;
+namespace SharedLibs.Types.Db;
 
 public struct AggregateResult<T>
 {

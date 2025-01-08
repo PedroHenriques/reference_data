@@ -1,9 +1,9 @@
 using EntityModel = Api.Models.Entity;
-using Api.Services;
 using Moq;
 using Api.Handlers;
-using Api.Services.Types.Db;
 using MongoDB.Bson;
+using SharedLibs;
+using SharedLibs.Types.Db;
 
 namespace Api.Tests.Handlers;
 
