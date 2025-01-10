@@ -30,7 +30,7 @@ public class CacheTests : IDisposable
   {
     ICache sut = new Cache(this._redisClient.Object);
 
-    await sut.Get(RedisTypes.String, "");
+    await sut.Get(CacheTypes.String, "");
     this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
   }
 
@@ -39,7 +39,7 @@ public class CacheTests : IDisposable
   {
     ICache sut = new Cache(this._redisClient.Object);
 
-    await sut.Get(RedisTypes.String, "test key");
+    await sut.Get(CacheTypes.String, "test key");
     this._redisDb.Verify(m => m.StringGetAsync("test key", CommandFlags.None), Times.Once());
   }
 

@@ -1,6 +1,6 @@
 namespace SharedLibs.Types;
 
-public enum RedisTypes
+public enum CacheTypes
 {
   String
 }
