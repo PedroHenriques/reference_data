@@ -5,7 +5,8 @@ namespace SharedLibs;
 
 public interface ICache
 {
-  public RedisValue Get(RedisTypes type, RedisKey key);
+  public RedisValue Get(RedisTypes type, string key);
+  public Task<long> Enqueue(string queueName, RedisValue[] messages);
 }
 
 public class Cache : ICache
@@ -17,10 +18,17 @@ public class Cache : ICache
     this._client = client;
   }
 
-  public RedisValue Get(RedisTypes type, RedisKey key)
+  public RedisValue Get(RedisTypes type, string key)
   {
     IDatabase db = this._client.GetDatabase(0);
 
     return db.StringGet(key);
+  }
+
+  public Task<long> Enqueue(string queueName, RedisValue[] messages)
+  {
+    IDatabase db = this._client.GetDatabase(0);
+
+    return db.ListLeftPushAsync(queueName, messages, CommandFlags.None);
   }
 }
