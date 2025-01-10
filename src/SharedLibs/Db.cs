@@ -12,6 +12,8 @@ public interface IDb
   public Task DeleteOne<T>(string dbName, string collName, string id);
   public Task<FindResult<T>> Find<T>(string dbName, string collName, int page,
     int size, BsonDocument? match, bool showDeleted);
+  public Task<IChangeStreamCursor<ChangeStreamDocument<BsonDocument>>> WatchDb(
+    string dbName, ChangeStreamOptions? opts);
 }
 
 public class Db : IDb
@@ -169,5 +171,13 @@ public class Db : IDb
       },
       Data = results.Data
     };
+  }
+
+  public Task<IChangeStreamCursor<ChangeStreamDocument<BsonDocument>>> WatchDb(
+    string dbName, ChangeStreamOptions? opts = null)
+  {
+    IMongoDatabase db = this._client.GetDatabase(dbName);
+
+    return db.WatchAsync(opts);
   }
 }
