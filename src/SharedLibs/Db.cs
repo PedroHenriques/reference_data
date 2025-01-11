@@ -1,6 +1,7 @@
 using SharedLibs.Types.Db;
 using MongoDB.Bson;
 using MongoDB.Driver;
+using Newtonsoft.Json;
 
 namespace SharedLibs;
 
@@ -12,8 +13,8 @@ public interface IDb
   public Task DeleteOne<T>(string dbName, string collName, string id);
   public Task<FindResult<T>> Find<T>(string dbName, string collName, int page,
     int size, BsonDocument? match, bool showDeleted);
-  public Task<IChangeStreamCursor<ChangeStreamDocument<BsonDocument>>> WatchDb(
-    string dbName, ChangeStreamOptions? opts);
+  public IAsyncEnumerable<WatchData> WatchDb(string dbName,
+    ChangeStreamOptions? opts);
 }
 
 public class Db : IDb
@@ -173,11 +174,31 @@ public class Db : IDb
     };
   }
 
-  public Task<IChangeStreamCursor<ChangeStreamDocument<BsonDocument>>> WatchDb(
-    string dbName, ChangeStreamOptions? opts = null)
+  // Not unit testable due to WatchAsync() being an extension method of the
+  // MongoDb SDK.
+  public async IAsyncEnumerable<WatchData> WatchDb(string dbName,
+    ChangeStreamOptions? opts = null)
   {
     IMongoDatabase db = this._client.GetDatabase(dbName);
 
-    return db.WatchAsync(opts);
+    var cursor = await db.WatchAsync(opts);
+
+    foreach (var change in cursor.ToEnumerable())
+    {
+      yield return new WatchData
+      {
+        ChangeRecord = change.FullDocument.ToJson(),
+        ResumeData = new ResumeData
+        {
+          ResumeToken = change.ResumeToken.ToJson(),
+          ClusterTime = change.ClusterTime.ToString(),
+        },
+        Source = new ChangeSource
+        {
+          DbName = change.DatabaseNamespace.DatabaseName,
+          CollName = change.CollectionNamespace.CollectionName,
+        },
+      };
+    }
   }
 }

@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 
@@ -47,4 +48,35 @@ public struct FindResultMetadata
   [JsonPropertyName("totalPages")]
   [JsonProperty("totalPages")]
   public int TotalPages { get; set; }
+}
+
+public struct ResumeData
+{
+  [JsonPropertyName("resumeToken")]
+  [JsonProperty("resumeToken")]
+  public string? ResumeToken { get; set; }
+
+  [JsonPropertyName("clusterTime")]
+  [JsonProperty("clusterTime")]
+  public string? ClusterTime { get; set; }
+}
+
+public struct ChangeSource
+{
+  [JsonPropertyName("dbName")]
+  [JsonProperty("dbName")]
+  public string DbName { get; set; }
+
+  [JsonPropertyName("collName")]
+  [JsonProperty("collName")]
+  public string CollName { get; set; }
+}
+
+public struct WatchData
+{
+  public ResumeData ResumeData { get; set; }
+
+  public ChangeSource Source { get; set; }
+
+  public string ChangeRecord { get; set; }
 }
