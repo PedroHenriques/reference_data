@@ -1,10 +1,13 @@
 # Build stage
 FROM mcr.microsoft.com/dotnet/sdk:8.0-noble AS build
 WORKDIR /source
-COPY --link ./src/DbListener/*.csproj .
-RUN dotnet restore --arch x64
-COPY --link ./src/DbListener .
-RUN dotnet publish --os linux --arch x64 --no-restore -o /app
+COPY --link ./src/DbListener/DbListener.csproj ./DbListener/DbListener.csproj
+COPY --link ./src/SharedLibs/SharedLibs.csproj ./SharedLibs/SharedLibs.csproj
+RUN dotnet restore ./DbListener/DbListener.csproj --arch x64
+RUN dotnet restore ./SharedLibs/SharedLibs.csproj --arch x64
+COPY --link ./src/DbListener ./DbListener/
+COPY --link ./src/SharedLibs ./SharedLibs/
+RUN dotnet publish ./DbListener/DbListener.csproj --os linux --arch x64 --no-restore -o /app
 
 
 # Runtime stage
