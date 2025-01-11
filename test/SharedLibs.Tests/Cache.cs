@@ -14,9 +14,14 @@ public class CacheTests : IDisposable
     this._redisClient = new Mock<IConnectionMultiplexer>(MockBehavior.Strict);
     this._redisDb = new Mock<IDatabase>(MockBehavior.Strict);
 
-    this._redisClient.Setup(s => s.GetDatabase(It.IsAny<int>(), null)).Returns(this._redisDb.Object);
-    this._redisDb.Setup(s => s.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>())).Returns(Task.FromResult(new RedisValue { }));
-    this._redisDb.Setup(s => s.ListLeftPushAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue[]>(), It.IsAny<CommandFlags>())).Returns(Task.FromResult<long>(0));
+    this._redisClient.Setup(s => s.GetDatabase(It.IsAny<int>(), null))
+      .Returns(this._redisDb.Object);
+    this._redisDb.Setup(s => s.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
+      .Returns(Task.FromResult(new RedisValue { }));
+    this._redisDb.Setup(s => s.ListLeftPushAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue[]>(), It.IsAny<CommandFlags>()))
+      .Returns(Task.FromResult<long>(0));
+    this._redisDb.Setup(s => s.StringSetAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), null, It.IsAny<bool>(), It.IsAny<When>(), It.IsAny<CommandFlags>()))
+      .Returns(Task.FromResult<bool>(true));
   }
 
   public void Dispose()
@@ -35,7 +40,7 @@ public class CacheTests : IDisposable
   }
 
   [Fact]
-  public async void Get_IfTheRequestedGetIsString_ItShouldCallStringGetOnTheRedisDatabaseOnce()
+  public async void Get_IfTheRequestedGetIsString_ItShouldCallStringGetAsyncOnTheRedisDatabaseOnce()
   {
     ICache sut = new Cache(this._redisClient.Object);
 
@@ -72,5 +77,23 @@ public class CacheTests : IDisposable
     ICache sut = new Cache(this._redisClient.Object);
 
     Assert.Equal(123456789, await sut.Enqueue("", new[] { new RedisValue() }));
+  }
+
+  [Fact]
+  public async void Set_ItShouldCallGetDatabaseFromTheProvidedRedisClientOnce()
+  {
+    ICache sut = new Cache(this._redisClient.Object);
+
+    await sut.Set(CacheTypes.String, "", "");
+    this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
+  }
+
+  [Fact]
+  public async void Set_IfTheRequestedGetIsString_ItShouldCallStringSetAsyncOnTheRedisDatabaseOnce()
+  {
+    ICache sut = new Cache(this._redisClient.Object);
+
+    await sut.Set(CacheTypes.String, "test key", "test value");
+    this._redisDb.Verify(m => m.StringSetAsync("test key", "test value", null, false, When.Always, CommandFlags.None), Times.Once());
   }
 }

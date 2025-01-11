@@ -6,6 +6,7 @@ namespace SharedLibs;
 public interface ICache
 {
   public Task<RedisValue> Get(CacheTypes type, string key);
+  public Task<bool> Set(CacheTypes type, string key, RedisValue value);
   public Task<long> Enqueue(string queueName, RedisValue[] messages);
 }
 
@@ -23,6 +24,13 @@ public class Cache : ICache
     IDatabase db = this._client.GetDatabase(0);
 
     return db.StringGetAsync(key);
+  }
+
+  public Task<bool> Set(CacheTypes type, string key, RedisValue value)
+  {
+    IDatabase db = this._client.GetDatabase(0);
+
+    return db.StringSetAsync(key, value);
   }
 
   public Task<long> Enqueue(string queueName, RedisValue[] messages)
