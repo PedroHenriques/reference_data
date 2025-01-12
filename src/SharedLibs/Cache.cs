@@ -1,13 +1,12 @@
-using SharedLibs.Types;
 using StackExchange.Redis;
 
 namespace SharedLibs;
 
 public interface ICache
 {
-  public Task<RedisValue> Get(CacheTypes type, string key);
-  public Task<bool> Set(CacheTypes type, string key, RedisValue value);
-  public Task<long> Enqueue(string queueName, RedisValue[] messages);
+  public Task<string?> Get(string key);
+  public Task<bool> Set(string key, string value);
+  public Task<long> Enqueue(string queueName, string[] messages);
 }
 
 public class Cache : ICache
@@ -19,24 +18,34 @@ public class Cache : ICache
     this._client = client;
   }
 
-  public Task<RedisValue> Get(CacheTypes type, string key)
+  public async Task<string?> Get(string key)
   {
     IDatabase db = this._client.GetDatabase(0);
 
-    return db.StringGetAsync(key);
+    RedisValue result = await db.StringGetAsync(key);
+
+    if (result.HasValue == false || result.IsNullOrEmpty)
+    {
+      return null;
+    }
+
+    return result.ToString();
   }
 
-  public Task<bool> Set(CacheTypes type, string key, RedisValue value)
+  public Task<bool> Set(string key, string value)
   {
     IDatabase db = this._client.GetDatabase(0);
 
     return db.StringSetAsync(key, value);
   }
 
-  public Task<long> Enqueue(string queueName, RedisValue[] messages)
+  public Task<long> Enqueue(string queueName, string[] messages)
   {
+    RedisValue[] values = messages.Select(message => (RedisValue)message)
+      .ToArray();
+
     IDatabase db = this._client.GetDatabase(0);
 
-    return db.ListLeftPushAsync(queueName, messages, CommandFlags.None);
+    return db.ListLeftPushAsync(queueName, values, CommandFlags.None);
   }
 }

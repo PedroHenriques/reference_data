@@ -1,7 +1,7 @@
 using SharedLibs.Types.Db;
 using MongoDB.Bson;
 using MongoDB.Driver;
-using Newtonsoft.Json;
+using DbUtils = SharedLibs.Utils;
 
 namespace SharedLibs;
 
@@ -14,7 +14,7 @@ public interface IDb
   public Task<FindResult<T>> Find<T>(string dbName, string collName, int page,
     int size, BsonDocument? match, bool showDeleted);
   public IAsyncEnumerable<WatchData> WatchDb(string dbName,
-    ChangeStreamOptions? opts);
+    ResumeData? resumeData);
 }
 
 public class Db : IDb
@@ -177,17 +177,22 @@ public class Db : IDb
   // Not unit testable due to WatchAsync() being an extension method of the
   // MongoDb SDK.
   public async IAsyncEnumerable<WatchData> WatchDb(string dbName,
-    ChangeStreamOptions? opts = null)
+    ResumeData? resumeData = null)
   {
     IMongoDatabase db = this._client.GetDatabase(dbName);
 
+    ChangeStreamOptions? opts = null;
+    if (resumeData != null)
+    {
+      opts = DbUtils.Db.BuildStreamOpts(resumeData.GetValueOrDefault());
+    }
     var cursor = await db.WatchAsync(opts);
 
     foreach (var change in cursor.ToEnumerable())
     {
       yield return new WatchData
       {
-        ChangeRecord = change.FullDocument.ToJson(),
+        ChangeRecord = change.BackingDocument.ToJson(),
         ResumeData = new ResumeData
         {
           ResumeToken = change.ResumeToken.ToJson(),

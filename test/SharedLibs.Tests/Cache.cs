@@ -1,5 +1,4 @@
 using Moq;
-using SharedLibs.Types;
 using StackExchange.Redis;
 
 namespace SharedLibs.Tests;
@@ -35,17 +34,40 @@ public class CacheTests : IDisposable
   {
     ICache sut = new Cache(this._redisClient.Object);
 
-    await sut.Get(CacheTypes.String, "");
+    await sut.Get("");
     this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
   }
 
   [Fact]
-  public async void Get_IfTheRequestedGetIsString_ItShouldCallStringGetAsyncOnTheRedisDatabaseOnce()
+  public async void Get_ItShouldCallStringGetAsyncOnTheRedisDatabaseOnce()
   {
     ICache sut = new Cache(this._redisClient.Object);
 
-    await sut.Get(CacheTypes.String, "test key");
+    await sut.Get("test key");
     this._redisDb.Verify(m => m.StringGetAsync("test key", CommandFlags.None), Times.Once());
+  }
+
+  [Fact]
+  public async void Get_ItShouldReturnTheStringCastOfTheResultOfCallingStringGetAsyncOnTheRedisDatabase()
+  {
+    string expectedResult = "test string from Redis";
+    this._redisDb.Setup(s => s.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
+      .Returns(Task.FromResult(new RedisValue(expectedResult)));
+
+    ICache sut = new Cache(this._redisClient.Object);
+
+    Assert.Equal(expectedResult, await sut.Get("test key"));
+  }
+
+  [Fact]
+  public async void Get_IfTheResultOfCallingStringGetAsyncOnTheRedisDatabaseIsEmpty_ItShouldReturnNull()
+  {
+    this._redisDb.Setup(s => s.StringGetAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
+      .Returns(Task.FromResult(new RedisValue()));
+
+    ICache sut = new Cache(this._redisClient.Object);
+
+    Assert.Null(await sut.Get("test key"));
   }
 
   [Fact]
@@ -53,7 +75,7 @@ public class CacheTests : IDisposable
   {
     ICache sut = new Cache(this._redisClient.Object);
 
-    await sut.Enqueue("", new[] { new RedisValue() });
+    await sut.Enqueue("", new[] { "" });
     this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
   }
 
@@ -63,9 +85,9 @@ public class CacheTests : IDisposable
     ICache sut = new Cache(this._redisClient.Object);
 
     var expectedQName = "test queue name";
-    var expectedData = new[] { new RedisValue() };
+    var expectedData = new[] { "test data" };
     await sut.Enqueue(expectedQName, expectedData);
-    this._redisDb.Verify(m => m.ListLeftPushAsync(expectedQName, expectedData, CommandFlags.None), Times.Once());
+    this._redisDb.Verify(m => m.ListLeftPushAsync(expectedQName, new[] { new RedisValue("test data") }, CommandFlags.None), Times.Once());
   }
 
   [Fact]
@@ -76,7 +98,7 @@ public class CacheTests : IDisposable
 
     ICache sut = new Cache(this._redisClient.Object);
 
-    Assert.Equal(123456789, await sut.Enqueue("", new[] { new RedisValue() }));
+    Assert.Equal(123456789, await sut.Enqueue("", new[] { "" }));
   }
 
   [Fact]
@@ -84,7 +106,7 @@ public class CacheTests : IDisposable
   {
     ICache sut = new Cache(this._redisClient.Object);
 
-    await sut.Set(CacheTypes.String, "", "");
+    await sut.Set("", "");
     this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
   }
 
@@ -93,7 +115,7 @@ public class CacheTests : IDisposable
   {
     ICache sut = new Cache(this._redisClient.Object);
 
-    await sut.Set(CacheTypes.String, "test key", "test value");
+    await sut.Set("test key", "test value");
     this._redisDb.Verify(m => m.StringSetAsync("test key", "test value", null, false, When.Always, CommandFlags.None), Times.Once());
   }
 }
