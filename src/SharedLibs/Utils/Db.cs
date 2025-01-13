@@ -59,12 +59,12 @@ public class Db
     switch (change.GetValue("operationType").ToString())
     {
       case "insert":
-        result.InsertedOrEdited = buildDictFromBsonDoc(change["fullDocument"]
+        result.InsertedOrEdited = BuildDictFromBsonDoc(change["fullDocument"]
           .AsBsonDocument);
         break;
       case "replace":
         result.ChangeType = ChangeRecordTypes.Replace;
-        result.InsertedOrEdited = buildDictFromBsonDoc(change["fullDocument"]
+        result.InsertedOrEdited = BuildDictFromBsonDoc(change["fullDocument"]
           .AsBsonDocument);
         break;
       case "delete":
@@ -77,7 +77,7 @@ public class Db
     return result;
   }
 
-  private static Dictionary<string, dynamic?> buildDictFromBsonDoc(
+  private static Dictionary<string, dynamic?> BuildDictFromBsonDoc(
     BsonDocument doc)
   {
     Dictionary<string, dynamic?> dict = new Dictionary<string, dynamic?>();
