@@ -36,4 +36,55 @@ public class Db
 
     return null;
   }
+
+  public static ChangeRecord BuildChangeRecord(BsonDocument change)
+  {
+    ChangeRecord result = new ChangeRecord
+    {
+      ChangeType = ChangeRecordTypes.Insert,
+      Id = "",
+    };
+
+    try
+    {
+      result.Id = change["documentKey"]["_id"].ToString();
+    }
+    catch
+    {
+      throw new Exception(
+        $"The change stream's backing document with ID {change.GetValue("_id")} doesn't contain the value of 'documentKey'."
+      );
+    }
+
+    switch (change.GetValue("operationType").ToString())
+    {
+      case "insert":
+        result.InsertedOrEdited = buildDictFromBsonDoc(change["fullDocument"]
+          .AsBsonDocument);
+        break;
+      case "replace":
+        result.ChangeType = ChangeRecordTypes.Replace;
+        result.InsertedOrEdited = buildDictFromBsonDoc(change["fullDocument"]
+          .AsBsonDocument);
+        break;
+      case "delete":
+        result.ChangeType = ChangeRecordTypes.Delete;
+        break;
+      default:
+        break;
+    }
+
+    return result;
+  }
+
+  private static Dictionary<string, dynamic?> buildDictFromBsonDoc(
+    BsonDocument doc)
+  {
+    Dictionary<string, dynamic?> dict = new Dictionary<string, dynamic?>();
+    foreach (var elem in doc.Elements)
+    {
+      dict.Add(elem.Name, elem.Value.ToJson());
+    }
+    return dict;
+  }
 }

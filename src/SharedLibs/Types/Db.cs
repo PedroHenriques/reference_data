@@ -80,3 +80,22 @@ public struct WatchData
 
   public string ChangeRecord { get; set; }
 }
+
+public enum ChangeRecordTypes
+{
+  Insert,
+  Delete,
+  Updated,
+  Replace,
+}
+
+public struct ChangeRecord
+{
+  public required string Id { get; set; }
+
+  public required ChangeRecordTypes ChangeType { get; set; }
+
+  public Dictionary<string, dynamic?>? InsertedOrEdited { get; set; }
+
+  public Dictionary<string, dynamic?>? Removed { get; set; }
+}
