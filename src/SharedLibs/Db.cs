@@ -186,13 +186,14 @@ public class Db : IDb
     {
       opts = DbUtils.Db.BuildStreamOpts(resumeData.GetValueOrDefault());
     }
+
     var cursor = await db.WatchAsync(opts);
 
     foreach (var change in cursor.ToEnumerable())
     {
       yield return new WatchData
       {
-        ChangeRecord = change.BackingDocument.ToJson(),
+        ChangeRecord = DbUtils.Db.BuildChangeRecord(change.BackingDocument),
         ResumeData = new ResumeData
         {
           ResumeToken = change.ResumeToken.ToJson(),
