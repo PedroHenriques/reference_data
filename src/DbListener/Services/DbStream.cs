@@ -21,7 +21,7 @@ public static class DbStream
     {
       await cache.Enqueue("mongo_changes", new[] {
         JsonConvert.SerializeObject(new ChangeQueueItem{
-          ChangeRecord = change.ChangeRecord,
+          ChangeRecord = JsonConvert.SerializeObject(change.ChangeRecord),
           Source = JsonConvert.SerializeObject(change.Source),
         }),
       });
