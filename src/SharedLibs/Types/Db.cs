@@ -81,12 +81,17 @@ public struct WatchData
   public ChangeRecord ChangeRecord { get; set; }
 }
 
-public enum ChangeRecordTypes
+public record ChangeRecordTypes(int Id, string Name)
 {
-  Insert,
-  Delete,
-  Updated,
-  Replace,
+  public static ChangeRecordTypes Insert { get; } = new(1, "insert");
+
+  public static ChangeRecordTypes Delete { get; } = new(2, "delete");
+
+  public static ChangeRecordTypes Updated { get; } = new(3, "update");
+
+  public static ChangeRecordTypes Replace { get; } = new(4, "replace");
+
+  public override string ToString() => Name;
 }
 
 public struct ChangeRecord
