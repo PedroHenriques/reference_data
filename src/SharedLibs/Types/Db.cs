@@ -78,7 +78,7 @@ public struct WatchData
 
   public ChangeSource Source { get; set; }
 
-  public string ChangeRecord { get; set; }
+  public ChangeRecord ChangeRecord { get; set; }
 }
 
 public enum ChangeRecordTypes
@@ -91,11 +91,19 @@ public enum ChangeRecordTypes
 
 public struct ChangeRecord
 {
+  [JsonPropertyName("id")]
+  [JsonProperty("id")]
   public required string Id { get; set; }
 
+  [JsonPropertyName("changeType")]
+  [JsonProperty("changeType")]
   public required ChangeRecordTypes ChangeType { get; set; }
 
+  [JsonPropertyName("insertedOrEdited")]
+  [JsonProperty("insertedOrEdited")]
   public Dictionary<string, dynamic?>? InsertedOrEdited { get; set; }
 
+  [JsonPropertyName("removed")]
+  [JsonProperty("removed")]
   public string[]? Removed { get; set; }
 }
