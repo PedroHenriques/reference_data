@@ -70,6 +70,13 @@ public class Db
       case "delete":
         result.ChangeType = ChangeRecordTypes.Delete;
         break;
+      case "update":
+        result.ChangeType = ChangeRecordTypes.Updated;
+        result.InsertedOrEdited = BuildDictFromBsonDoc(
+          change["updateDescription"]["updatedFields"].AsBsonDocument);
+        result.Removed = change["updateDescription"]["removedFields"]
+          .AsBsonArray.Select(elem => elem.AsString).ToArray();
+        break;
       default:
         break;
     }

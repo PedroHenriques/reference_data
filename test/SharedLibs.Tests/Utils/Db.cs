@@ -1,5 +1,4 @@
 using MongoDB.Bson;
-using Newtonsoft.Json;
 using SharedLibs.Types.Db;
 
 namespace SharedLibs.Utils.Tests;
@@ -107,5 +106,34 @@ public class DbTests : IDisposable
     Assert.Equal(ChangeRecordTypes.Replace, result.ChangeType);
     Assert.Equal("67859332ec2196eefa69ac16", result.Id);
     Assert.Equal(expectedInsertedOrEdited, result.InsertedOrEdited);
+  }
+
+  [Fact]
+  public void BuildChangeRecord_IfTheChangeIsForAnUpdate_ItShouldReturnTheExpectedResult()
+  {
+    string changeStr = "{ \"_id\" : { \"_data\" : \"8267867A2D000000012B042C0100296E5A1004136DA7DB84F74CBAAFFF0F382113F33A463C6F7065726174696F6E54797065003C7570646174650046646F63756D656E744B65790046645F696400646786797ED75765301BE8E23B000004\" }, \"operationType\" : \"update\", \"clusterTime\" : { \"$timestamp\" : { \"t\" : 1736866349, \"i\" : 1 } }, \"wallTime\" : { \"$date\" : \"2025-01-14T14:52:29.913Z\" }, \"ns\" : { \"db\" : \"RefData\", \"coll\" : \"Entities\" }, \"documentKey\" : { \"_id\" : { \"$oid\" : \"6786797ed75765301be8e23b\" } }, \"updateDescription\" : { \"updatedFields\" : { \"name\" : \"new name\" }, \"removedFields\" : [\"description\"], \"truncatedArrays\" : [] } }";
+    Dictionary<string, dynamic?> expectedInsertedOrEdited = new Dictionary<string, dynamic?>
+    {
+      { "name", "\"new name\"" },
+    };
+    string[] expectedRemoved = new[] { "description" };
+
+    var result = Db.BuildChangeRecord(BsonDocument.Parse(changeStr));
+    Assert.Equal(ChangeRecordTypes.Updated, result.ChangeType);
+    Assert.Equal("6786797ed75765301be8e23b", result.Id);
+    Assert.Equal(expectedInsertedOrEdited, result.InsertedOrEdited);
+    Assert.Equal(expectedRemoved, result.Removed);
+  }
+
+  [Fact]
+  public void BuildChangeRecord_IfTheChangeDoesNotHaveADocumentKey_ItShouldThrowAnException()
+  {
+    string changeStr = "{ \"_id\" : { \"_data\" : \"8267867A2D000000012B042C0100296E5A1004136DA7DB84F74CBAAFFF0F382113F33A463C6F7065726174696F6E54797065003C7570646174650046646F63756D656E744B65790046645F696400646786797ED75765301BE8E23B000004\" }, \"operationType\" : \"update\", \"clusterTime\" : { \"$timestamp\" : { \"t\" : 1736866349, \"i\" : 1 } }, \"wallTime\" : { \"$date\" : \"2025-01-14T14:52:29.913Z\" }, \"ns\" : { \"db\" : \"RefData\", \"coll\" : \"Entities\" }, \"updateDescription\" : { \"updatedFields\" : { \"name\" : \"new name\" }, \"removedFields\" : [\"description\"], \"truncatedArrays\" : [] } }";
+
+    Exception e = Assert.Throws<Exception>(() => Db.BuildChangeRecord(BsonDocument.Parse(changeStr)));
+    Assert.Equal(
+      "The change stream's backing document with ID { \"_data\" : \"8267867A2D000000012B042C0100296E5A1004136DA7DB84F74CBAAFFF0F382113F33A463C6F7065726174696F6E54797065003C7570646174650046646F63756D656E744B65790046645F696400646786797ED75765301BE8E23B000004\" } doesn't contain the value of 'documentKey'.",
+      e.Message
+    );
   }
 }

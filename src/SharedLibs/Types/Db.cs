@@ -97,5 +97,5 @@ public struct ChangeRecord
 
   public Dictionary<string, dynamic?>? InsertedOrEdited { get; set; }
 
-  public Dictionary<string, dynamic?>? Removed { get; set; }
+  public string[]? Removed { get; set; }
 }
