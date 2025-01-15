@@ -32,9 +32,9 @@ services:
       - dblistener
       - dblistenerBd
 
-  dblistener_db_gui:
+  redis_gui:
     image: redislabs/redisinsight:latest
-    container_name: "dblistener_db_gui"
+    container_name: "redis_gui"
     restart: on-failure
     depends_on:
       dblistener_db:
