@@ -71,6 +71,24 @@ public class CacheTests : IDisposable
   }
 
   [Fact]
+  public async void Set_ItShouldCallGetDatabaseFromTheProvidedRedisClientOnce()
+  {
+    ICache sut = new Cache(this._redisClient.Object);
+
+    await sut.Set("", "");
+    this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
+  }
+
+  [Fact]
+  public async void Set_IfTheRequestedGetIsString_ItShouldCallStringSetAsyncOnTheRedisDatabaseOnce()
+  {
+    ICache sut = new Cache(this._redisClient.Object);
+
+    await sut.Set("test key", "test value");
+    this._redisDb.Verify(m => m.StringSetAsync("test key", "test value", null, false, When.Always, CommandFlags.None), Times.Once());
+  }
+
+  [Fact]
   public async void Enqueue_ItShouldCallGetDatabaseFromTheProvidedRedisClientOnce()
   {
     IQueue sut = new Cache(this._redisClient.Object);
@@ -99,23 +117,5 @@ public class CacheTests : IDisposable
     IQueue sut = new Cache(this._redisClient.Object);
 
     Assert.Equal(123456789, await sut.Enqueue("", new[] { "" }));
-  }
-
-  [Fact]
-  public async void Set_ItShouldCallGetDatabaseFromTheProvidedRedisClientOnce()
-  {
-    ICache sut = new Cache(this._redisClient.Object);
-
-    await sut.Set("", "");
-    this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
-  }
-
-  [Fact]
-  public async void Set_IfTheRequestedGetIsString_ItShouldCallStringSetAsyncOnTheRedisDatabaseOnce()
-  {
-    ICache sut = new Cache(this._redisClient.Object);
-
-    await sut.Set("test key", "test value");
-    this._redisDb.Verify(m => m.StringSetAsync("test key", "test value", null, false, When.Always, CommandFlags.None), Times.Once());
   }
 }
