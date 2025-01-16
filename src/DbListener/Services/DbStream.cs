@@ -7,7 +7,7 @@ namespace DbListener.Services;
 
 public static class DbStream
 {
-  public static async Task Watch(ICache cache, IDb db)
+  public static async Task Watch(ICache cache, IQueue queue, IDb db)
   {
     string? resume = await cache.Get("change_resume_data");
 
@@ -19,7 +19,7 @@ public static class DbStream
 
     await foreach (WatchData change in db.WatchDb("RefData", resumeData))
     {
-      await cache.Enqueue("mongo_changes", new[] {
+      await queue.Enqueue("mongo_changes", new[] {
         JsonConvert.SerializeObject(new ChangeQueueItem{
           ChangeRecord = JsonConvert.SerializeObject(change.ChangeRecord),
           Source = JsonConvert.SerializeObject(change.Source),

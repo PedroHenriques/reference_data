@@ -6,10 +6,14 @@ public interface ICache
 {
   public Task<string?> Get(string key);
   public Task<bool> Set(string key, string value);
+}
+
+public interface IQueue
+{
   public Task<long> Enqueue(string queueName, string[] messages);
 }
 
-public class Cache : ICache
+public class Cache : ICache, IQueue
 {
   private readonly IConnectionMultiplexer _client;
 

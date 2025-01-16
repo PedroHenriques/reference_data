@@ -32,5 +32,6 @@ if (redisClient == null)
 
 IDb db = new Db(mongoClient);
 ICache cache = new Cache(redisClient);
+IQueue queue = (IQueue)cache;
 
-await DbStream.Watch(cache, db);
+await DbStream.Watch(cache, queue, db);

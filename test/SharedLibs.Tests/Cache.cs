@@ -73,7 +73,7 @@ public class CacheTests : IDisposable
   [Fact]
   public async void Enqueue_ItShouldCallGetDatabaseFromTheProvidedRedisClientOnce()
   {
-    ICache sut = new Cache(this._redisClient.Object);
+    IQueue sut = new Cache(this._redisClient.Object);
 
     await sut.Enqueue("", new[] { "" });
     this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
@@ -82,7 +82,7 @@ public class CacheTests : IDisposable
   [Fact]
   public async void Enqueue_ItShouldCallListLeftPushAsyncOnTheRedisDatabaseOnce()
   {
-    ICache sut = new Cache(this._redisClient.Object);
+    IQueue sut = new Cache(this._redisClient.Object);
 
     var expectedQName = "test queue name";
     var expectedData = new[] { "test data" };
@@ -96,7 +96,7 @@ public class CacheTests : IDisposable
     this._redisDb.Setup(s => s.ListLeftPushAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue[]>(), It.IsAny<CommandFlags>()))
       .Returns(Task.FromResult<long>(123456789));
 
-    ICache sut = new Cache(this._redisClient.Object);
+    IQueue sut = new Cache(this._redisClient.Object);
 
     Assert.Equal(123456789, await sut.Enqueue("", new[] { "" }));
   }
