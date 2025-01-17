@@ -24,7 +24,7 @@ public class EntityData
   private void Post()
   {
     this._app.MapPost(
-      "/data/{entityId}/",
+      "/v1/data/{entityId}/",
       async ([FromRoute] string entityId, [FromBody] dynamic body, IDb db) =>
       {
         var bodyObject = JsonConvert.DeserializeObject<ExpandoObject>(
@@ -41,7 +41,7 @@ public class EntityData
   private void Put()
   {
     this._app.MapPut(
-      "/data/{entityId}/{docId}",
+      "/v1/data/{entityId}/{docId}",
       async ([FromRoute] string entityId, [FromRoute] string docId,
         [FromBody] dynamic body, IDb db) =>
       {
@@ -59,7 +59,7 @@ public class EntityData
   private void Delete()
   {
     this._app.MapDelete(
-      "/data/{entityId}/{docId}",
+      "/v1/data/{entityId}/{docId}",
       async ([FromRoute] string entityId, [FromRoute] string docId, IDb db) =>
       {
         await EntityDataHandler.Delete(db, entityId, docId);
@@ -71,7 +71,7 @@ public class EntityData
   private void Get()
   {
     this._app.MapGet(
-      "/data/{entityId}",
+      "/v1/data/{entityId}",
       async ([FromRoute] string entityId, [FromQuery] int page,
         [FromQuery] int pageSize, IDb db) =>
       {

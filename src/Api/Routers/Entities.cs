@@ -22,7 +22,7 @@ public class Entities
   private void Post()
   {
     this._app.MapPost(
-      "/entities/",
+      "/v1/entities/",
       async (EntityModel entity, IDb db) =>
       {
         await EntityHandler.Create(db, entity);
@@ -34,7 +34,7 @@ public class Entities
   private void Put()
   {
     this._app.MapPut(
-      "/entities/{id}",
+      "/v1/entities/{id}",
       async (EntityModel entity, IDb db) =>
       {
         await EntityHandler.Replace(db, entity);
@@ -46,7 +46,7 @@ public class Entities
   private void Delete()
   {
     this._app.MapDelete(
-      "/entities/{id}",
+      "/v1/entities/{id}",
       async (IDb db, [FromRoute] string id) =>
       {
         await EntityHandler.Delete(db, id);
@@ -58,7 +58,7 @@ public class Entities
   private void Get()
   {
     this._app.MapGet(
-      "/entities/",
+      "/v1/entities/",
       async (IDb db, [FromQuery] int page, [FromQuery] int pageSize) =>
       {
         var data = await EntityHandler.Select(db, page, pageSize);
