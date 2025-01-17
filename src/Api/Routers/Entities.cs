@@ -5,6 +5,8 @@ using SharedLibs;
 
 namespace Api.Routers;
 
+// Not unit testable due to WebApplication not exposing an interface and
+// the invoked methods being extension methods.
 public class Entities
 {
   private readonly WebApplication _app;
