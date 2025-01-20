@@ -272,7 +272,6 @@ public class EntityDataTests : IDisposable
   public async void Select_ItShouldCallFindOfTheDbServiceToCheckIfTheRequestedEntityExistsAndIsActive()
   {
     ObjectId testEntityId = ObjectId.GenerateNewId();
-    ObjectId testDocId = ObjectId.GenerateNewId();
 
     await EntityData.Select(this._dbClientMock.Object, testEntityId.ToString());
     this._dbClientMock.Verify(
@@ -294,6 +293,40 @@ public class EntityDataTests : IDisposable
       ),
       Times.Once()
     );
+  }
+
+  [Fact]
+  public async void Select_IfAValueForTheEntityNameArgumentIsProvided_ItShouldCallFindOfTheDbServiceToCheckIfTheRequestedEntityExistsAndIsActive()
+  {
+    string testEntityName = "some name";
+
+    await EntityData.Select(this._dbClientMock.Object, null, testEntityName);
+    this._dbClientMock.Verify(
+      m => m.Find<EntityModel>(
+        "RefData",
+        "Entities",
+        1,
+        1,
+        new BsonDocument {
+          {
+            "$and",
+            new BsonArray {
+              new BsonDocument { { "name", testEntityName } },
+              new BsonDocument { { "deleted_at", BsonNull.Value } },
+            }
+          }
+        },
+        false
+      ),
+      Times.Once()
+    );
+  }
+
+  [Fact]
+  public async void Select_IfNeitherAValueForTheEntityIdNorTheNameAreProvided_ItShouldThrowAnException()
+  {
+    Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Select(this._dbClientMock.Object));
+    Assert.Equal("Neither an entity Id nor an entity name were provided.", e.Message);
   }
 
   [Fact]
@@ -320,7 +353,7 @@ public class EntityDataTests : IDisposable
       { "_id", testDocId },
     };
 
-    await EntityData.Select(this._dbClientMock.Object, testEntityId, testDocId.ToString());
+    await EntityData.Select(this._dbClientMock.Object, testEntityId, null, testDocId.ToString());
     this._dbClientMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false), Times.Once());
   }
 
@@ -336,7 +369,7 @@ public class EntityDataTests : IDisposable
       { "prop 1", BsonNull.Value },
     };
 
-    await EntityData.Select(this._dbClientMock.Object, testEntityId, null, null, null, expectedMatch.ToString());
+    await EntityData.Select(this._dbClientMock.Object, testEntityId, null, null, null, null, expectedMatch.ToString());
     this._dbClientMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false), Times.Once());
   }
 
@@ -359,7 +392,7 @@ public class EntityDataTests : IDisposable
       } },
     };
 
-    await EntityData.Select(this._dbClientMock.Object, testEntityId, testDocId.ToString(), null, null, testMatch.ToString());
+    await EntityData.Select(this._dbClientMock.Object, testEntityId, null, testDocId.ToString(), null, null, testMatch.ToString());
     this._dbClientMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false), Times.Once());
   }
 
@@ -378,7 +411,7 @@ public class EntityDataTests : IDisposable
   }
 
   [Fact]
-  public async void Select_IfThereIsNoActiveEntityWithProvidedName_ItShouldThrowAnException()
+  public async void Select_IfThereIsNoActiveEntityWithProvidedId_ItShouldThrowAnException()
   {
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
@@ -389,4 +422,15 @@ public class EntityDataTests : IDisposable
     Assert.Equal($"No valid entity with the ID '{testEntityId}' exists.", e.Message);
   }
 
+  [Fact]
+  public async void Select_IfThereIsNoActiveEntityWithProvidedName_ItShouldThrowAnException()
+  {
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
+
+    string testEntityName = "test name";
+
+    Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Select(this._dbClientMock.Object, null, testEntityName));
+    Assert.Equal($"No valid entity with the NAME '{testEntityName}' exists.", e.Message);
+  }
 }

@@ -12,7 +12,7 @@ public class EntityData
   public static async Task<dynamic> Create(IDb dbClient, string entityId,
     dynamic data)
   {
-    var findResult = await FindEntity(dbClient, entityId);
+    var findResult = await FindEntity(dbClient, entityId, null);
 
     string entityName = findResult.Data[0].Name;
     ObjectId id = ObjectId.GenerateNewId();
@@ -28,7 +28,7 @@ public class EntityData
   public static async Task<dynamic> Replace(IDb dbClient, string entityId,
     string docId, dynamic data)
   {
-    var findResult = await FindEntity(dbClient, entityId);
+    var findResult = await FindEntity(dbClient, entityId, null);
 
     string entityName = findResult.Data[0].Name;
     await dbClient.ReplaceOne<dynamic>(_dbName, entityName, data, docId);
@@ -39,19 +39,22 @@ public class EntityData
 
   public static async Task Delete(IDb dbClient, string entityId, string docId)
   {
-    var findResult = await FindEntity(dbClient, entityId);
+    var findResult = await FindEntity(dbClient, entityId, null);
 
     string entityName = findResult.Data[0].Name;
     await dbClient.DeleteOne<EntityModel>(_dbName, entityName, docId);
   }
 
   public static async Task<FindResult<dynamic>> Select(IDb dbClient,
-    string entityId, string? docId = null, int? page = null, int? size = null,
-    string? match = null)
+    string? entityId = null, string? entityName = null, string? docId = null,
+    int? page = null, int? size = null, string? match = null)
   {
-    var findResult = await FindEntity(dbClient, entityId);
+    if (entityId == null && entityName == null)
+    {
+      throw new Exception("Neither an entity Id nor an entity name were provided.");
+    }
 
-    string entityName = findResult.Data[0].Name;
+    var findResult = await FindEntity(dbClient, entityId, entityName);
 
     BsonDocument? matchDocId = null;
     if (docId != null)
@@ -79,8 +82,8 @@ public class EntityData
       matchDoc = matchDocId ?? matchFilter;
     }
 
-    var result = await dbClient.Find<dynamic>(_dbName, entityName, page ?? 1,
-      size ?? 50, matchDoc, false);
+    var result = await dbClient.Find<dynamic>(_dbName, findResult.Data[0].Name,
+      page ?? 1, size ?? 50, matchDoc, false);
 
     foreach (var item in result.Data)
     {
@@ -92,13 +95,26 @@ public class EntityData
   }
 
   private static async Task<FindResult<EntityModel>> FindEntity(IDb dbClient,
-    string entityId)
+    string? entityId, string? entityName)
   {
+    BsonDocument? findMatch;
+    string noMatchErrorMsg;
+    if (entityId != null)
+    {
+      findMatch = new BsonDocument { { "_id", ObjectId.Parse(entityId) } };
+      noMatchErrorMsg = $"No valid entity with the ID '{entityId}' exists.";
+    }
+    else
+    {
+      findMatch = new BsonDocument { { "name", entityName } };
+      noMatchErrorMsg = $"No valid entity with the NAME '{entityName}' exists.";
+    }
+
     BsonDocument match = new BsonDocument {
       {
         "$and",
         new BsonArray {
-          new BsonDocument { { "_id", ObjectId.Parse(entityId) } },
+          findMatch,
           new BsonDocument { { "deleted_at", BsonNull.Value } },
         }
       }
@@ -108,7 +124,7 @@ public class EntityData
 
     if (findResult.Metadata.TotalCount == 0)
     {
-      throw new Exception($"No valid entity with the ID '{entityId}' exists.");
+      throw new Exception(noMatchErrorMsg);
     }
 
     return findResult;
