@@ -75,9 +75,10 @@ public class EntityData
     this._app.MapGet(
       "/v1/data/{entityId}",
       async ([FromRoute] string entityId, [FromQuery] int page,
-        [FromQuery] int pageSize, IDb db) =>
+        [FromQuery] int pageSize, [FromQuery] string? filter, IDb db) =>
       {
-        var data = await EntityDataHandler.Select(db, entityId, null, page, pageSize);
+        var data = await EntityDataHandler.Select(db, entityId, null, null,
+          page, pageSize, filter);
         return TypedResults.Ok(data);
       }
     );
