@@ -71,9 +71,9 @@ public class Entities
 
     this._app.MapGet(
       "/v1/entities/{id}",
-      async (IDb db, [FromRoute] string id, [FromQuery] string? filter) =>
+      async (IDb db, [FromRoute] string id) =>
       {
-        var data = await EntityHandler.Select(db, null, null, id, filter);
+        var data = await EntityHandler.Select(db, null, null, id);
         return TypedResults.Ok(data);
       }
     );
