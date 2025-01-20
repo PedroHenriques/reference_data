@@ -46,13 +46,41 @@ public class EntityData
   }
 
   public static async Task<FindResult<dynamic>> Select(IDb dbClient,
-    string entityId, int page, int size)
+    string entityId, string? docId = null, int? page = null, int? size = null,
+    string? match = null)
   {
     var findResult = await FindEntity(dbClient, entityId);
 
     string entityName = findResult.Data[0].Name;
-    var result = await dbClient.Find<dynamic>(_dbName, entityName, page, size,
-      null, false);
+
+    BsonDocument? matchDocId = null;
+    if (docId != null)
+    {
+      matchDocId = new BsonDocument{
+        { "_id", ObjectId.Parse(docId) }
+      };
+    }
+
+    BsonDocument? matchFilter = null;
+    if (match != null)
+    {
+      matchFilter = BsonDocument.Parse(match);
+    }
+
+    BsonDocument? matchDoc;
+    if (matchDocId != null && matchFilter != null)
+    {
+      matchDoc = new BsonDocument{
+        { "$and", new BsonArray{ matchDocId, matchFilter } },
+      };
+    }
+    else
+    {
+      matchDoc = matchDocId ?? matchFilter;
+    }
+
+    var result = await dbClient.Find<dynamic>(_dbName, entityName, page ?? 1,
+      size ?? 50, matchDoc, false);
 
     foreach (var item in result.Data)
     {

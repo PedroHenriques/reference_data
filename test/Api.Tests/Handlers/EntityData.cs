@@ -274,7 +274,7 @@ public class EntityDataTests : IDisposable
     ObjectId testEntityId = ObjectId.GenerateNewId();
     ObjectId testDocId = ObjectId.GenerateNewId();
 
-    await EntityData.Select(this._dbClientMock.Object, testEntityId.ToString(), 1, 1);
+    await EntityData.Select(this._dbClientMock.Object, testEntityId.ToString());
     this._dbClientMock.Verify(
       m => m.Find<EntityModel>(
         "RefData",
@@ -304,8 +304,63 @@ public class EntityDataTests : IDisposable
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
 
-    await EntityData.Select(this._dbClientMock.Object, testEntityId, 123, 635);
-    this._dbClientMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 123, 635, null, false), Times.Once());
+    await EntityData.Select(this._dbClientMock.Object, testEntityId);
+    this._dbClientMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, null, false), Times.Once());
+  }
+
+  [Fact]
+  public async void Select_IfAValueForTheDocIdArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  {
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "some test entity name" } } }));
+
+    string testEntityId = ObjectId.GenerateNewId().ToString();
+    var testDocId = ObjectId.GenerateNewId();
+    BsonDocument expectedMatch = new BsonDocument{
+      { "_id", testDocId },
+    };
+
+    await EntityData.Select(this._dbClientMock.Object, testEntityId, testDocId.ToString());
+    this._dbClientMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false), Times.Once());
+  }
+
+  [Fact]
+  public async void Select_IfAValueForTheMatchArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  {
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "some test entity name" } } }));
+
+    string testEntityId = ObjectId.GenerateNewId().ToString();
+    BsonDocument expectedMatch = new BsonDocument{
+      { "some", "value" },
+      { "prop 1", BsonNull.Value },
+    };
+
+    await EntityData.Select(this._dbClientMock.Object, testEntityId, null, null, null, expectedMatch.ToString());
+    this._dbClientMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false), Times.Once());
+  }
+
+  [Fact]
+  public async void Select_IfAValueForTheDocIdAndTheMatchArgumentsAreProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  {
+    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+      .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "some test entity name" } } }));
+
+    string testEntityId = ObjectId.GenerateNewId().ToString();
+    var testDocId = ObjectId.GenerateNewId();
+    BsonDocument testMatch = new BsonDocument{
+      { "some", "value" },
+      { "prop 1", BsonNull.Value },
+    };
+    var expectedMatch = new BsonDocument{
+      { "$and", new BsonArray {
+        new BsonDocument{ { "_id", testDocId } },
+        testMatch
+      } },
+    };
+
+    await EntityData.Select(this._dbClientMock.Object, testEntityId, testDocId.ToString(), null, null, testMatch.ToString());
+    this._dbClientMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false), Times.Once());
   }
 
   [Fact]
@@ -319,7 +374,7 @@ public class EntityDataTests : IDisposable
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
 
-    Assert.Equal(expectedResult, await EntityData.Select(this._dbClientMock.Object, testEntityId, 73, 9410));
+    Assert.Equal(expectedResult, await EntityData.Select(this._dbClientMock.Object, testEntityId));
   }
 
   [Fact]
@@ -330,7 +385,7 @@ public class EntityDataTests : IDisposable
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
 
-    Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Select(this._dbClientMock.Object, testEntityId, 1, 1));
+    Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Select(this._dbClientMock.Object, testEntityId));
     Assert.Equal($"No valid entity with the ID '{testEntityId}' exists.", e.Message);
   }
 
