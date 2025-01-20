@@ -61,9 +61,19 @@ public class Entities
   {
     this._app.MapGet(
       "/v1/entities/",
-      async (IDb db, [FromQuery] int page, [FromQuery] int pageSize) =>
+      async (IDb db, [FromQuery] int page, [FromQuery] int pageSize,
+        [FromQuery] string? filter) =>
       {
-        var data = await EntityHandler.Select(db, page, pageSize);
+        var data = await EntityHandler.Select(db, page, pageSize, null, filter);
+        return TypedResults.Ok(data);
+      }
+    );
+
+    this._app.MapGet(
+      "/v1/entities/{id}",
+      async (IDb db, [FromRoute] string id, [FromQuery] string? filter) =>
+      {
+        var data = await EntityHandler.Select(db, null, null, id, filter);
         return TypedResults.Ok(data);
       }
     );
