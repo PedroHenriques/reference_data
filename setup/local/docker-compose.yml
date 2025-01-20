@@ -1,4 +1,36 @@
 services:
+  notification:
+    build:
+      context: ../../
+      dockerfile: ./src/Notification/Dockerfile
+    container_name: "notification"
+    restart: on-failure
+    depends_on:
+      notification_db:
+        condition: service_healthy
+      dblistener_db:
+        condition: service_healthy
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - REDIS_CON_STR=notification_db:6379
+      - REDIS_CON_STR_QUEUE=dblistener_db:6379
+    networks:
+      - notification
+      - notificationDb
+      - dblistenerDb
+
+  notification_db:
+    image: redis:7-alpine
+    container_name: "notification_db"
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    networks:
+      - notificationDb
+
   dblistener:
     build:
       context: ../../
@@ -16,7 +48,7 @@ services:
       - REDIS_CON_STR=dblistener_db:6379
     networks:
       - dblistener
-      - dblistenerBd
+      - dblistenerDb
       - apiDb
 
   dblistener_db:
@@ -30,7 +62,7 @@ services:
       retries: 5
     networks:
       - dblistener
-      - dblistenerBd
+      - dblistenerDb
 
   redis_gui:
     image: redislabs/redisinsight:latest
@@ -42,7 +74,8 @@ services:
     ports:
       - "9001:5540"
     networks:
-      - dblistenerBd
+      - dblistenerDb
+      - notificationDb
 
   api:
     build:
@@ -134,4 +167,6 @@ networks:
   api:
   apiDb:
   dblistener:
-  dblistenerBd:
+  dblistenerDb:
+  notification:
+  notificationDb:
