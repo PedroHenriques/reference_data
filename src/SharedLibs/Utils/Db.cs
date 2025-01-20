@@ -21,6 +21,7 @@ public class Db
         return new ChangeStreamOptions
         {
           ResumeAfter = new BsonDocument(token),
+          FullDocument = ChangeStreamFullDocumentOption.WhenAvailable,
         };
       }
     }
@@ -31,10 +32,14 @@ public class Db
       {
         StartAtOperationTime = new BsonTimestamp(long.Parse(
           resumeData.ClusterTime)),
+        FullDocument = ChangeStreamFullDocumentOption.WhenAvailable,
       };
     }
 
-    return null;
+    return new ChangeStreamOptions
+    {
+      FullDocument = ChangeStreamFullDocumentOption.WhenAvailable,
+    };
   }
 
   public static ChangeRecord BuildChangeRecord(BsonDocument change)
@@ -59,12 +64,12 @@ public class Db
     switch (change.GetValue("operationType").ToString())
     {
       case "insert":
-        result.InsertedOrEdited = BuildDictFromBsonDoc(change["fullDocument"]
+        result.Document = BuildDictFromBsonDoc(change["fullDocument"]
           .AsBsonDocument);
         break;
       case "replace":
         result.ChangeType = ChangeRecordTypes.Replace;
-        result.InsertedOrEdited = BuildDictFromBsonDoc(change["fullDocument"]
+        result.Document = BuildDictFromBsonDoc(change["fullDocument"]
           .AsBsonDocument);
         break;
       case "delete":
@@ -72,10 +77,8 @@ public class Db
         break;
       case "update":
         result.ChangeType = ChangeRecordTypes.Updated;
-        result.InsertedOrEdited = BuildDictFromBsonDoc(
-          change["updateDescription"]["updatedFields"].AsBsonDocument);
-        result.Removed = change["updateDescription"]["removedFields"]
-          .AsBsonArray.Select(elem => elem.AsString).ToArray();
+        result.Document = BuildDictFromBsonDoc(change["fullDocument"]
+          .AsBsonDocument);
         break;
       default:
         break;

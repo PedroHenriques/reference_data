@@ -104,11 +104,7 @@ public struct ChangeRecord
   [JsonProperty("changeType")]
   public required ChangeRecordTypes ChangeType { get; set; }
 
-  [JsonPropertyName("insertedOrEdited")]
-  [JsonProperty("insertedOrEdited")]
-  public Dictionary<string, dynamic?>? InsertedOrEdited { get; set; }
-
-  [JsonPropertyName("removed")]
-  [JsonProperty("removed")]
-  public string[]? Removed { get; set; }
+  [JsonPropertyName("document")]
+  [JsonProperty("document")]
+  public Dictionary<string, dynamic?>? Document { get; set; }
 }
