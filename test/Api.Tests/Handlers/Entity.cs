@@ -78,8 +78,8 @@ public class EntityTests : IDisposable
   [Fact]
   public async void Select_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
-    await Entity.Select(this._dbClientMock.Object, 73, 9410);
-    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, null, false), Times.Once());
+    await Entity.Select(this._dbClientMock.Object);
+    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 1, 50, null, false), Times.Once());
   }
 
   [Fact]
@@ -89,6 +89,66 @@ public class EntityTests : IDisposable
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
       .Returns(Task.FromResult(expectedResult));
 
-    Assert.Equal(expectedResult, await Entity.Select(this._dbClientMock.Object, 73, 9410));
+    Assert.Equal(expectedResult, await Entity.Select(this._dbClientMock.Object));
+  }
+
+  [Fact]
+  public async void Select_IfAValueForThePageArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  {
+    int page = 456;
+
+    await Entity.Select(this._dbClientMock.Object, page);
+    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", page, 50, null, false), Times.Once());
+  }
+
+  [Fact]
+  public async void Select_IfAValueForTheSizeArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  {
+    int size = 987;
+
+    await Entity.Select(this._dbClientMock.Object, null, size);
+    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 1, size, null, false), Times.Once());
+  }
+
+  [Fact]
+  public async void Select_IfAValueForTheIdArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  {
+    var testId = ObjectId.GenerateNewId();
+    var expectedMatch = new BsonDocument{
+      { "_id", testId },
+    };
+
+    await Entity.Select(this._dbClientMock.Object, 73, 9410, testId.ToString());
+    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
+  }
+
+  [Fact]
+  public async void Select_IfAValueForTheMatchArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  {
+    var expectedMatch = new BsonDocument{
+      { "hello", "world" },
+      { "something", true },
+    };
+    await Entity.Select(this._dbClientMock.Object, 73, 9410, null, expectedMatch.ToString());
+    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
+  }
+
+  [Fact]
+  public async void Select_IfAValueForTheIdAndTheMatchArgumentsAreProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  {
+    var testId = ObjectId.GenerateNewId();
+    var testMatch = new BsonDocument{
+      { "hello", "new world" },
+      { "p1", 3243 },
+    };
+    var expectedMatch = new BsonDocument{
+      { "$and", new BsonArray {
+        new BsonDocument{ { "_id", testId } },
+        testMatch,
+      } },
+    };
+
+    await Entity.Select(this._dbClientMock.Object, 73, 9410, testId.ToString(), testMatch.ToString());
+    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
   }
 }

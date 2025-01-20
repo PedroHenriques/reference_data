@@ -1,3 +1,4 @@
+using MongoDB.Bson;
 using SharedLibs;
 using SharedLibs.Types.Db;
 using EntityModel = Api.Models.Entity;
@@ -31,10 +32,36 @@ public class Entity
   }
 
   public static async Task<FindResult<EntityModel>> Select(IDb dbClient,
-    int page, int size)
+    int? page = null, int? size = null, string? id = null, string? match = null)
   {
-    return await dbClient.Find<EntityModel>(_dbName, _dbCollName, page, size,
-      null, false);
+    BsonDocument? matchId = null;
+    if (id != null)
+    {
+      matchId = new BsonDocument{
+        { "_id", ObjectId.Parse(id) }
+      };
+    }
+
+    BsonDocument? matchFilter = null;
+    if (match != null)
+    {
+      matchFilter = BsonDocument.Parse(match);
+    }
+
+    BsonDocument? matchDoc;
+    if (matchId != null && matchFilter != null)
+    {
+      matchDoc = new BsonDocument{
+        { "$and", new BsonArray{ matchId, matchFilter } },
+      };
+    }
+    else
+    {
+      matchDoc = matchId ?? matchFilter;
+    }
+
+    return await dbClient.Find<EntityModel>(_dbName, _dbCollName, page ?? 1,
+      size ?? 50, matchDoc, false);
   }
 }
 
