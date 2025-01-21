@@ -76,6 +76,15 @@ public class Db
         result.ChangeType = ChangeRecordTypes.Delete;
         break;
       case "update":
+        BsonDocument? updatedFields = change["updateDescription"]
+          ["updatedFields"].AsBsonDocument;
+
+        if (updatedFields.Contains("deleted_at") &&
+          updatedFields["deleted_at"].IsBsonNull == false)
+        {
+          result.ChangeType = ChangeRecordTypes.Delete;
+          break;
+        }
         result.ChangeType = ChangeRecordTypes.Updated;
         result.Document = BuildDictFromBsonDoc(change["fullDocument"]
           .AsBsonDocument);
@@ -96,5 +105,10 @@ public class Db
       dict.Add(elem.Name, elem.Value.ToJson());
     }
     return dict;
+  }
+
+  private static bool UpdateIsADelete(BsonDocument updatedFields)
+  {
+    return updatedFields.Contains("deleted_at");
   }
 }

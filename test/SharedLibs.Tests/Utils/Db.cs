@@ -116,7 +116,7 @@ public class DbTests : IDisposable
   [Fact]
   public void BuildChangeRecord_IfTheChangeIsForAnUpdate_ItShouldReturnTheExpectedResult()
   {
-    string changeStr = "{ \"_id\" : { \"_data\" : \"8267867A2D000000012B042C0100296E5A1004136DA7DB84F74CBAAFFF0F382113F33A463C6F7065726174696F6E54797065003C7570646174650046646F63756D656E744B65790046645F696400646786797ED75765301BE8E23B000004\" }, \"operationType\" : \"update\", \"clusterTime\" : { \"$timestamp\" : { \"t\" : 1736866349, \"i\" : 1 } }, \"wallTime\" : { \"$date\" : \"2025-01-14T14:52:29.913Z\" }, \"ns\" : { \"db\" : \"RefData\", \"coll\" : \"Entities\" }, \"documentKey\" : { \"_id\" : { \"$oid\" : \"6786797ed75765301be8e23b\" } }, \"fullDocument\" : { \"_id\" : { \"$oid\" : \"6786797ed75765301be8e23b\" }, \"name\" : \"new name\", \"deleted_at\" : null }, \"updateDescription\" : { \"updatedFields\" : { \"name\" : \"new name\" }, \"removedFields\" : [\"description\"], \"truncatedArrays\" : [] } }";
+    string changeStr = "{ \"_id\" : { \"_data\" : \"8267867A2D000000012B042C0100296E5A1004136DA7DB84F74CBAAFFF0F382113F33A463C6F7065726174696F6E54797065003C7570646174650046646F63756D656E744B65790046645F696400646786797ED75765301BE8E23B000004\" }, \"operationType\" : \"update\", \"clusterTime\" : { \"$timestamp\" : { \"t\" : 1736866349, \"i\" : 1 } }, \"wallTime\" : { \"$date\" : \"2025-01-14T14:52:29.913Z\" }, \"ns\" : { \"db\" : \"RefData\", \"coll\" : \"Entities\" }, \"documentKey\" : { \"_id\" : { \"$oid\" : \"6786797ed75765301be8e23b\" } }, \"fullDocument\" : { \"_id\" : { \"$oid\" : \"6786797ed75765301be8e23b\" }, \"name\" : \"new name\", \"deleted_at\" : null }, \"updateDescription\" : { \"updatedFields\" : { \"name\" : \"new name\", \"deleted_at\" : null }, \"removedFields\" : [\"description\"], \"truncatedArrays\" : [] } }";
     Dictionary<string, dynamic?> expectedDocument = new Dictionary<string, dynamic?>
     {
       { "_id", "{ \"$oid\" : \"6786797ed75765301be8e23b\" }" },
@@ -128,6 +128,22 @@ public class DbTests : IDisposable
     Assert.Equal(ChangeRecordTypes.Updated, result.ChangeType);
     Assert.Equal("6786797ed75765301be8e23b", result.Id);
     Assert.Equal(expectedDocument, result.Document);
+  }
+
+  [Fact]
+  public void BuildChangeRecord_IfTheChangeIsForAnUpdate_IfTheDeleteAtFieldWasUpdatedToANonNullValue_ItShouldReturnTheExpectedResultAsADeleteChange()
+  {
+    string changeStr = "{ \"_id\" : { \"_data\" : \"8267867A2D000000012B042C0100296E5A1004136DA7DB84F74CBAAFFF0F382113F33A463C6F7065726174696F6E54797065003C7570646174650046646F63756D656E744B65790046645F696400646786797ED75765301BE8E23B000004\" }, \"operationType\" : \"update\", \"clusterTime\" : { \"$timestamp\" : { \"t\" : 1736866349, \"i\" : 1 } }, \"wallTime\" : { \"$date\" : \"2025-01-14T14:52:29.913Z\" }, \"ns\" : { \"db\" : \"RefData\", \"coll\" : \"Entities\" }, \"documentKey\" : { \"_id\" : { \"$oid\" : \"6786797ed75765301be8e23b\" } }, \"fullDocument\" : { \"_id\" : { \"$oid\" : \"6786797ed75765301be8e23b\" }, \"name\" : \"new name\", \"deleted_at\" : { \"$date\" : \"2025-01-21T18:30:15.622Z\" } }, \"updateDescription\" : { \"updatedFields\" : { \"name\" : \"new name\", \"deleted_at\" : { \"$date\" : \"2025-01-21T18:30:15.622Z\" } }, \"removedFields\" : [\"description\"], \"truncatedArrays\" : [] } }";
+
+    var result = Db.BuildChangeRecord(BsonDocument.Parse(changeStr));
+    Assert.Equal(
+      new ChangeRecord
+      {
+        ChangeType = ChangeRecordTypes.Delete,
+        Id = "6786797ed75765301be8e23b",
+      },
+      result
+    );
   }
 
   [Fact]
