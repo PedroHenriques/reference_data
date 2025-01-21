@@ -8,6 +8,7 @@ using SharedLibs.Types.Db;
 
 namespace Api.Tests.Handlers;
 
+[Trait("Type", "Unit")]
 public class EntityDataTests : IDisposable
 {
   private readonly Mock<IDb> _dbClientMock;

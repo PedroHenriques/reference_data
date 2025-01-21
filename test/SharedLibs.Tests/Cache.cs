@@ -3,6 +3,7 @@ using StackExchange.Redis;
 
 namespace SharedLibs.Tests;
 
+[Trait("Type", "Unit")]
 public class CacheTests : IDisposable
 {
   private readonly Mock<IConnectionMultiplexer> _redisClient;

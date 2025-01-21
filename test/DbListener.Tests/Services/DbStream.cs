@@ -8,6 +8,7 @@ using Xunit;
 
 namespace DbListener.Tests.Services;
 
+[Trait("Type", "Unit")]
 public class DbStreamTests : IDisposable
 {
   private readonly Mock<ICache> _cacheMock;

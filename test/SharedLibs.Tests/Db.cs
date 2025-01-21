@@ -10,6 +10,7 @@ public class Entity
   public required string Name { get; set; }
 }
 
+[Trait("Type", "Unit")]
 public class DbTests : IDisposable
 {
   private readonly Mock<IMongoClient> _dbClientMock;

@@ -6,6 +6,7 @@ using Microsoft.AspNetCore.Routing;
 
 namespace Api.Tests.Models;
 
+[Trait("Type", "Unit")]
 public class EntityTests : IDisposable
 {
   private readonly Mock<HttpContext> _contextMock;

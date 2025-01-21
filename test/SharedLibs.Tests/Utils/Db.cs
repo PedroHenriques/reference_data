@@ -4,6 +4,7 @@ using SharedLibs.Types.Db;
 
 namespace SharedLibs.Utils.Tests;
 
+[Trait("Type", "Unit")]
 public class DbTests : IDisposable
 {
   public DbTests() { }
