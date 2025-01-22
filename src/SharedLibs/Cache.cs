@@ -16,17 +16,17 @@ public interface IQueue
 public class Cache : ICache, IQueue
 {
   private readonly IConnectionMultiplexer _client;
+  private readonly IDatabase _db;
 
   public Cache(IConnectionMultiplexer client)
   {
     this._client = client;
+    this._db = this._client.GetDatabase(0);
   }
 
   public async Task<string?> Get(string key)
   {
-    IDatabase db = this._client.GetDatabase(0);
-
-    RedisValue result = await db.StringGetAsync(key);
+    RedisValue result = await this._db.StringGetAsync(key);
 
     if (result.HasValue == false || result.IsNullOrEmpty)
     {
@@ -38,9 +38,7 @@ public class Cache : ICache, IQueue
 
   public Task<bool> Set(string key, string value)
   {
-    IDatabase db = this._client.GetDatabase(0);
-
-    return db.StringSetAsync(key, value);
+    return this._db.StringSetAsync(key, value);
   }
 
   public Task<long> Enqueue(string queueName, string[] messages)
@@ -48,8 +46,6 @@ public class Cache : ICache, IQueue
     RedisValue[] values = messages.Select(message => (RedisValue)message)
       .ToArray();
 
-    IDatabase db = this._client.GetDatabase(0);
-
-    return db.ListLeftPushAsync(queueName, values, CommandFlags.None);
+    return this._db.ListLeftPushAsync(queueName, values, CommandFlags.None);
   }
 }
