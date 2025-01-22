@@ -5,6 +5,18 @@ using Newtonsoft.Json;
 
 namespace SharedLibs.Types.Db;
 
+public interface IDb
+{
+  public Task InsertOne<T>(string dbName, string collName, T document);
+  public Task ReplaceOne<T>(string dbName, string collName, T document,
+    string id);
+  public Task DeleteOne<T>(string dbName, string collName, string id);
+  public Task<FindResult<T>> Find<T>(string dbName, string collName, int page,
+    int size, BsonDocument? match, bool showDeleted);
+  public IAsyncEnumerable<WatchData> WatchDb(string dbName,
+    ResumeData? resumeData);
+}
+
 public struct AggregateResult<T>
 {
   [BsonElement("metadata")]
