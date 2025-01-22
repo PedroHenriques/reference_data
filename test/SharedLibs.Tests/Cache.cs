@@ -22,6 +22,8 @@ public class CacheTests : IDisposable
       .Returns(Task.FromResult<long>(0));
     this._redisDb.Setup(s => s.StringSetAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), null, It.IsAny<bool>(), It.IsAny<When>(), It.IsAny<CommandFlags>()))
       .Returns(Task.FromResult<bool>(true));
+    this._redisDb.Setup(s => s.ListMoveAsync(It.IsAny<RedisKey>(), It.IsAny<RedisKey>(), It.IsAny<ListSide>(), It.IsAny<ListSide>(), It.IsAny<CommandFlags>()))
+      .Returns(Task.FromResult<RedisValue>(new RedisValue("")));
   }
 
   public void Dispose()
@@ -118,5 +120,38 @@ public class CacheTests : IDisposable
     IQueue sut = new Cache(this._redisClient.Object);
 
     Assert.Equal(123456789, await sut.Enqueue("", new[] { "" }));
+  }
+
+  [Fact]
+  public async void Dequeue_ItShouldCallGetDatabaseFromTheProvidedRedisClientOnce()
+  {
+    IQueue sut = new Cache(this._redisClient.Object);
+
+    await sut.Dequeue("some queue name");
+    this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
+  }
+
+  [Fact]
+  public async void Dequeue_ItShouldCallListMoveAsyncOnTheRedisDatabaseOnce()
+  {
+    IQueue sut = new Cache(this._redisClient.Object);
+
+    var expectedSourceQName = "another test queue name";
+    var expectedTargetQName = "another test queue name_temp";
+    await sut.Dequeue(expectedSourceQName);
+    this._redisDb.Verify(m => m.ListMoveAsync(expectedSourceQName, expectedTargetQName, ListSide.Right, ListSide.Left, CommandFlags.None), Times.Once());
+  }
+
+  [Fact]
+  public async void Dequeue_ItShouldReturnTheStringValueReceivedFromCallingListMoveAsyncOnTheRedisDatabase()
+  {
+    string expectedResult = "some test json string";
+    this._redisDb.Setup(s => s.ListMoveAsync(It.IsAny<RedisKey>(), It.IsAny<RedisKey>(), It.IsAny<ListSide>(), It.IsAny<ListSide>(), It.IsAny<CommandFlags>()))
+      .Returns(Task.FromResult<RedisValue>(new RedisValue(expectedResult)));
+
+    IQueue sut = new Cache(this._redisClient.Object);
+
+    var result = await sut.Dequeue("");
+    Assert.Equal(expectedResult, result);
   }
 }

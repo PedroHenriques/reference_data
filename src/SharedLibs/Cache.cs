@@ -11,6 +11,7 @@ public interface ICache
 public interface IQueue
 {
   public Task<long> Enqueue(string queueName, string[] messages);
+  public Task<string> Dequeue(string queueName);
 }
 
 public class Cache : ICache, IQueue
@@ -47,5 +48,12 @@ public class Cache : ICache, IQueue
       .ToArray();
 
     return this._db.ListLeftPushAsync(queueName, values, CommandFlags.None);
+  }
+
+  public async Task<string> Dequeue(string queueName) {
+    var item = await this._db.ListMoveAsync(queueName, $"{queueName}_temp",
+      ListSide.Right, ListSide.Left);
+    
+    return item.ToString();
   }
 }
