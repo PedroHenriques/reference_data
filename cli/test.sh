@@ -4,12 +4,12 @@ set -e;
 WATCH=0;
 PROJ="";
 FILTERS="";
-USE_DOCKER=1;
+USE_DOCKER=0;
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
     -w|--watch) WATCH=1; shift 1;;
-    --no-docker) USE_DOCKER=0; shift 1;;
+    --docker) USE_DOCKER=1; shift 1;;
     --filter) FILTERS="--filter ${2}"; shift 2;;
     --unit) FILTERS="--filter Type=Unit"; shift 1;;
     --integration) FILTERS="--filter Type=Integration"; shift 1;;
