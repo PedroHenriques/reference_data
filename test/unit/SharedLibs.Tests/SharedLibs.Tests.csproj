@@ -12,6 +12,9 @@
   <ItemGroup>
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
+    <PackageReference Include="MongoDB.Driver" Version="3.1.0" />
+    <PackageReference Include="moq" Version="4.20.72" />
+    <PackageReference Include="NRedisStack" Version="0.13.1" />
     <PackageReference Include="xunit" Version="2.5.3" />
     <PackageReference Include="xunit.runner.visualstudio" Version="2.5.3" />
   </ItemGroup>
@@ -21,8 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\..\src\Notification\Notification.csproj" />
-    <ProjectReference Include="..\..\src\SharedLibs\SharedLibs.csproj" />
+    <ProjectReference Include="..\..\..\src\SharedLibs\SharedLibs.csproj" />
   </ItemGroup>
 
 </Project>

@@ -5,19 +5,19 @@ VisualStudioVersion = 17.0.31903.59
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api", "src\Api\Api.csproj", "{33DD3DEA-F79E-4D43-831B-85F2F2C63909}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api.Tests", "test\Api.Tests\Api.Tests.csproj", "{1D17F64C-0605-41AC-8D65-3B2E1401F6CF}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api.Tests", "test\unit\Api.Tests\Api.Tests.csproj", "{1D17F64C-0605-41AC-8D65-3B2E1401F6CF}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbListener", "src\DbListener\DbListener.csproj", "{EB6D7F72-AFFA-477C-98E3-EF2378309566}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbListener.Tests", "test\DbListener.Tests\DbListener.Tests.csproj", "{6AC5BCE2-982B-45DC-A245-4C6C5AF38BE2}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbListener.Tests", "test\unit\DbListener.Tests\DbListener.Tests.csproj", "{6AC5BCE2-982B-45DC-A245-4C6C5AF38BE2}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedLibs", "src\SharedLibs\SharedLibs.csproj", "{8FE4EDF9-896C-4E49-9739-152871D48FB4}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedLibs.Tests", "test\SharedLibs.Tests\SharedLibs.Tests.csproj", "{784ED8C6-215E-4204-9932-E8817011E713}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "SharedLibs.Tests", "test\unit\SharedLibs.Tests\SharedLibs.Tests.csproj", "{784ED8C6-215E-4204-9932-E8817011E713}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notification", "src\Notification\Notification.csproj", "{96553ED5-601A-40F0-8A80-282A11152422}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notification.Tests", "test\Notification.Tests\Notification.Tests.csproj", "{394F6B87-090C-4C79-826F-7BCA7E75F6FC}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notification.Tests", "test\unit\Notification.Tests\Notification.Tests.csproj", "{394F6B87-090C-4C79-826F-7BCA7E75F6FC}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
