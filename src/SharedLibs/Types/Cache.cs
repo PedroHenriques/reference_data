@@ -6,8 +6,6 @@ public interface ICache
   public Task<bool> Set(string key, string value);
 }
 
-// public 
-
 public interface IQueue
 {
   public Task<long> Enqueue(string queueName, string[] messages);
