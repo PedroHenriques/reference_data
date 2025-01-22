@@ -2,6 +2,7 @@ using EntityModel = Api.Models.Entity;
 using EntityHandler = Api.Handlers.Entity;
 using Microsoft.AspNetCore.Mvc;
 using SharedLibs;
+using SharedLibs.Types.Db;
 
 namespace Api.Routers;
 

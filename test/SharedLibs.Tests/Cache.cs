@@ -1,4 +1,5 @@
 using Moq;
+using SharedLibs.Types.Cache;
 using StackExchange.Redis;
 
 namespace SharedLibs.Tests;

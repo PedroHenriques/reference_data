@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using SharedLibs;
+using SharedLibs.Types.Db;
 
 namespace Api.Routers;
 

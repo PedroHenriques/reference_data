@@ -1,4 +1,5 @@
 ﻿using SharedLibs;
+using SharedLibs.Types.Cache;
 using StackExchange.Redis;
 
 string? redisConStr = Environment.GetEnvironmentVariable("REDIS_CON_STR");

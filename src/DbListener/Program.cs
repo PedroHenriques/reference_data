@@ -1,6 +1,8 @@
 ﻿using DbListener.Services;
 using MongoDB.Driver;
 using SharedLibs;
+using SharedLibs.Types.Cache;
+using SharedLibs.Types.Db;
 using StackExchange.Redis;
 
 string? mongoConStr = Environment.GetEnvironmentVariable("MONGO_CON_STR");
