@@ -1,6 +1,4 @@
 using Newtonsoft.Json;
-using SharedLibs;
-using SharedLibs.Types;
 using SharedLibs.Types.Cache;
 using SharedLibs.Types.Db;
 
@@ -20,12 +18,15 @@ public static class DbStream
 
     await foreach (WatchData change in db.WatchDb("RefData", resumeData))
     {
-      await queue.Enqueue("mongo_changes", new[] {
-        JsonConvert.SerializeObject(new ChangeQueueItem{
-          ChangeRecord = JsonConvert.SerializeObject(change.ChangeRecord),
-          Source = JsonConvert.SerializeObject(change.Source),
-        }),
-      });
+      if (change.ChangeRecord != null)
+      {
+        await queue.Enqueue("mongo_changes", new[] {
+          JsonConvert.SerializeObject(new ChangeQueueItem{
+            ChangeRecord = JsonConvert.SerializeObject(change.ChangeRecord),
+            Source = JsonConvert.SerializeObject(change.Source),
+          }),
+        });
+      }
 
       await cache.Set("change_resume_data",
         JsonConvert.SerializeObject(change.ResumeData));

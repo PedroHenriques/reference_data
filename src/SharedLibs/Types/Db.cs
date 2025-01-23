@@ -90,7 +90,7 @@ public struct WatchData
 
   public ChangeSource Source { get; set; }
 
-  public ChangeRecord ChangeRecord { get; set; }
+  public ChangeRecord? ChangeRecord { get; set; }
 }
 
 public record ChangeRecordTypes(int Id, string Name)

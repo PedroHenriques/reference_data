@@ -179,9 +179,19 @@ public class Db : IDb
 
     foreach (var change in cursor.ToEnumerable())
     {
+      ChangeRecord? changeRecord = null;
+      try
+      {
+        changeRecord = DbUtils.Db.BuildChangeRecord(change.BackingDocument);
+      }
+      catch (System.Exception)
+      {
+        // log it
+      }
+
       yield return new WatchData
       {
-        ChangeRecord = DbUtils.Db.BuildChangeRecord(change.BackingDocument),
+        ChangeRecord = changeRecord,
         ResumeData = new ResumeData
         {
           ResumeToken = change.ResumeToken.ToJson(),
