@@ -43,8 +43,8 @@ public class EntityData
   {
     this._app.MapPut(
       "/v1/data/{entityId}/{docId}",
-      async ([FromRoute] string entityId, [FromRoute] string docId,
-        [FromBody] dynamic body, IDb db) =>
+      async (IDb db, [FromRoute] string entityId, [FromRoute] string docId,
+        [FromBody] dynamic body) =>
       {
         var bodyObject = JsonConvert.DeserializeObject<ExpandoObject>(
           body.ToString(), new ExpandoObjectConverter());
@@ -61,7 +61,7 @@ public class EntityData
   {
     this._app.MapDelete(
       "/v1/data/{entityId}/{docId}",
-      async ([FromRoute] string entityId, [FromRoute] string docId, IDb db) =>
+      async (IDb db, [FromRoute] string entityId, [FromRoute] string docId) =>
       {
         await EntityDataHandler.Delete(db, entityId, docId);
         return Results.Ok();
@@ -73,8 +73,8 @@ public class EntityData
   {
     this._app.MapGet(
       "/v1/data/{entityId}",
-      async ([FromRoute] string entityId, [FromQuery] int page,
-        [FromQuery] int pageSize, [FromQuery] string? filter, IDb db) =>
+      async (IDb db, [FromRoute] string entityId, [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null, [FromQuery] string? filter = null) =>
       {
         var data = await EntityDataHandler.Select(db, entityId, null, null,
           page, pageSize, filter);
@@ -84,7 +84,7 @@ public class EntityData
 
     this._app.MapGet(
       "/v1/data/{entityId}/{docId}",
-      async ([FromRoute] string entityId, [FromRoute] string docId, IDb db) =>
+      async (IDb db, [FromRoute] string entityId, [FromRoute] string docId) =>
       {
         var data = await EntityDataHandler.Select(db, entityId, null, docId);
         return TypedResults.Ok(data);
@@ -93,8 +93,8 @@ public class EntityData
 
     this._app.MapGet(
       "/v1/data/name/{entityName}",
-      async ([FromRoute] string entityName, [FromQuery] int page,
-        [FromQuery] int pageSize, [FromQuery] string? filter, IDb db) =>
+      async (IDb db, [FromRoute] string entityName, [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null, [FromQuery] string? filter = null) =>
       {
         var data = await EntityDataHandler.Select(db, null, entityName, null,
           page, pageSize, filter);
@@ -104,7 +104,7 @@ public class EntityData
 
     this._app.MapGet(
       "/v1/data/name/{entityName}/{docId}",
-      async ([FromRoute] string entityName, [FromRoute] string docId, IDb db) =>
+      async (IDb db, [FromRoute] string entityName, [FromRoute] string docId) =>
       {
         var data = await EntityDataHandler.Select(db, null, entityName, docId);
         return TypedResults.Ok(data);
