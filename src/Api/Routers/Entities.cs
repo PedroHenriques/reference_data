@@ -37,7 +37,7 @@ public class Entities
   {
     this._app.MapPut(
       "/v1/entities/{id}",
-      async (EntityModel entity, IDb db) =>
+      async (IDb db, EntityModel entity) =>
       {
         await EntityHandler.Replace(db, entity);
         return TypedResults.Ok(entity);
@@ -61,8 +61,8 @@ public class Entities
   {
     this._app.MapGet(
       "/v1/entities/",
-      async (IDb db, [FromQuery] int page, [FromQuery] int pageSize,
-        [FromQuery] string? filter) =>
+      async (IDb db, [FromQuery] int? page = null,
+        [FromQuery] int? pageSize = null, [FromQuery] string? filter = null) =>
       {
         var data = await EntityHandler.Select(db, page, pageSize, null, filter);
         return TypedResults.Ok(data);
