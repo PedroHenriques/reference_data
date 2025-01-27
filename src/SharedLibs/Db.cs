@@ -22,6 +22,14 @@ public class Db : IDb
     await dbColl.InsertOneAsync(document);
   }
 
+  public async Task InsertMany<T>(string dbName, string collName, T[] documents)
+  {
+    IMongoDatabase db = this._client.GetDatabase(dbName);
+    IMongoCollection<T> dbColl = db.GetCollection<T>(collName);
+
+    await dbColl.InsertManyAsync(documents);
+  }
+
   public async Task ReplaceOne<T>(string dbName, string collName, T document,
     string id)
   {

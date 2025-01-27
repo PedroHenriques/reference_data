@@ -32,6 +32,8 @@ public class DbTests : IDisposable
       .Returns(this._dbCollectionMock.Object);
     this._dbCollectionMock.Setup(s => s.InsertOneAsync(It.IsAny<Entity>(), null, default))
       .Returns(Task.Delay(1));
+    this._dbCollectionMock.Setup(s => s.InsertManyAsync(It.IsAny<Entity[]>(), null, default))
+      .Returns(Task.Delay(1));
     this._dbCollectionMock.Setup(s => s.ReplaceOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<Entity>(), null as ReplaceOptions, default))
       .Returns(Task.FromResult(new ReplaceOneResult.Acknowledged(1, 1, null) as ReplaceOneResult));
     this._dbCollectionMock.Setup(s => s.UpdateOneAsync(It.IsAny<BsonDocumentFilterDefinition<Entity>>(), It.IsAny<BsonDocumentUpdateDefinition<Entity>>(), null, default))
@@ -77,6 +79,45 @@ public class DbTests : IDisposable
     Entity testDoc = new Entity { Name = "" };
     await sut.InsertOne<Entity>("", "", testDoc);
     this._dbCollectionMock.Verify(m => m.InsertOneAsync(testDoc, null, default), Times.Once());
+  }
+
+  [Fact]
+  public async void InsertMany_ItShouldCallGetDatabaseFromTheMongoClientOnceWithTheProvidedDbName()
+  {
+    IDb sut = new Db(this._dbClientMock.Object);
+
+    Entity[] data = new Entity[] {
+      new Entity { Name = "" },
+      new Entity { Name = "" },
+    };
+    await sut.InsertMany<Entity>("test db name", "", data);
+    this._dbClientMock.Verify(m => m.GetDatabase("test db name", null), Times.Once());
+  }
+
+  [Fact]
+  public async void InsertMany_ItShouldCallGetCollectionFromTheMongoDatabaseOnceWithTheProvidedCollectionName()
+  {
+    IDb sut = new Db(this._dbClientMock.Object);
+
+    Entity[] data = new Entity[] {
+      new Entity { Name = "" },
+      new Entity { Name = "" },
+    };
+    await sut.InsertMany<Entity>("", "test col name", data);
+    this._dbDatabaseMock.Verify(m => m.GetCollection<Entity>("test col name", null), Times.Once());
+  }
+
+  [Fact]
+  public async void InsertMany_ItShouldCallInsertManyAsyncFromTheMongoCollectionOnceWithTheProvidedDocuments()
+  {
+    IDb sut = new Db(this._dbClientMock.Object);
+
+    Entity[] data = new Entity[] {
+      new Entity { Name = "" },
+      new Entity { Name = "" },
+    };
+    await sut.InsertMany<Entity>("", "", data);
+    this._dbCollectionMock.Verify(m => m.InsertManyAsync(data, null, default), Times.Once());
   }
 
   [Fact]

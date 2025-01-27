@@ -8,6 +8,7 @@ namespace SharedLibs.Types.Db;
 public interface IDb
 {
   public Task InsertOne<T>(string dbName, string collName, T document);
+  public Task InsertMany<T>(string dbName, string collName, T[] documents);
   public Task ReplaceOne<T>(string dbName, string collName, T document,
     string id);
   public Task DeleteOne<T>(string dbName, string collName, string id);
