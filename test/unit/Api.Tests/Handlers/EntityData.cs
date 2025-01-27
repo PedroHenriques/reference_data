@@ -3,7 +3,6 @@ using EntityModel = Api.Models.Entity;
 using MongoDB.Bson;
 using Moq;
 using System.Dynamic;
-using SharedLibs;
 using SharedLibs.Types.Db;
 
 namespace Api.Tests.Handlers;
@@ -21,7 +20,7 @@ public class EntityDataTests : IDisposable
       .Returns(Task.FromResult(new FindResult<dynamic> { Data = Array.Empty<dynamic>() }));
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "" } } }));
-    this._dbClientMock.Setup(s => s.InsertOne<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>()))
+    this._dbClientMock.Setup(s => s.InsertMany<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object[]>()))
       .Returns(Task.Delay(1));
     this._dbClientMock.Setup(s => s.ReplaceOne<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object>(), It.IsAny<string>()))
       .Returns(Task.Delay(1));
@@ -38,8 +37,9 @@ public class EntityDataTests : IDisposable
   public async void Create_ItShouldCallFindOfTheDbServiceToCheckIfTheRequestedEntityExistsAndIsActive()
   {
     ObjectId testDocId = ObjectId.GenerateNewId();
+    object[] data = new[] { new ExpandoObject() };
 
-    await EntityData.Create(this._dbClientMock.Object, testDocId.ToString(), new ExpandoObject());
+    await EntityData.Create(this._dbClientMock.Object, testDocId.ToString(), data);
     this._dbClientMock.Verify(
       m => m.Find<EntityModel>(
         "RefData",
@@ -62,28 +62,41 @@ public class EntityDataTests : IDisposable
   }
 
   [Fact]
-  public async void Create_ItShouldCallInsertOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  public async void Create_ItShouldCallInsertManyFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "rng entity name" } } }));
 
-    ExpandoObject testDoc = new ExpandoObject();
+    object[] data = new[] { new ExpandoObject(), new ExpandoObject() };
     string testDocId = ObjectId.GenerateNewId().ToString();
 
-    await EntityData.Create(this._dbClientMock.Object, testDocId, testDoc);
-    this._dbClientMock.Verify(m => m.InsertOne<dynamic>("RefData", "rng entity name", testDoc), Times.Once());
+    await EntityData.Create(this._dbClientMock.Object, testDocId, data);
+    this._dbClientMock.Verify(m => m.InsertMany<dynamic>("RefData", "rng entity name", data), Times.Once());
   }
 
   [Fact]
   public async void Create_ItShouldReturnTheInsertedDocument()
   {
     string testDocId = ObjectId.GenerateNewId().ToString();
-    dynamic testDoc = new ExpandoObject { };
-    testDoc.prop1 = "prop1 value";
-    testDoc.prop2 = false;
+    dynamic testDoc1 = new ExpandoObject { };
+    testDoc1.prop1 = "prop1 value";
+    testDoc1.prop2 = false;
+    dynamic testDoc2 = new ExpandoObject { };
+    testDoc2.prop1 = "prop2 value";
+    testDoc2.prop2 = true;
+    object[] data = new[] { testDoc1, testDoc2 };
 
-    var res = await EntityData.Create(this._dbClientMock.Object, testDocId, testDoc);
-    Assert.Equal(testDoc, res);
+    var res = await EntityData.Create(this._dbClientMock.Object, testDocId, data);
+    Assert.Equal(data, res);
+  }
+
+  [Fact]
+  public async void Create_IfTheReceivedDataIsNotIterable_ItShouldThrowAnException()
+  {
+    string testDocId = ObjectId.GenerateNewId().ToString();
+
+    var e = await Assert.ThrowsAsync<Exception>(() => EntityData.Create(this._dbClientMock.Object, testDocId, new ExpandoObject()));
+    Assert.Equal("The body of the request must be an array of documents.", e.Message);
   }
 
   [Fact]
@@ -94,7 +107,8 @@ public class EntityDataTests : IDisposable
 
     try
     {
-      await EntityData.Create(this._dbClientMock.Object, "rng entity name", new ExpandoObject());
+      object[] data = new[] { new ExpandoObject(), new ExpandoObject() };
+      await EntityData.Create(this._dbClientMock.Object, "rng entity name", data);
       Assert.Fail();
     }
     catch (System.Exception)
@@ -110,8 +124,9 @@ public class EntityDataTests : IDisposable
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
 
     string testDocId = ObjectId.GenerateNewId().ToString();
+    object[] data = new[] { new ExpandoObject(), new ExpandoObject() };
 
-    Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Create(this._dbClientMock.Object, testDocId, new ExpandoObject()));
+    Exception e = await Assert.ThrowsAsync<Exception>(() => EntityData.Create(this._dbClientMock.Object, testDocId, data));
     Assert.Equal($"No valid entity with the ID '{testDocId}' exists.", e.Message);
   }
 

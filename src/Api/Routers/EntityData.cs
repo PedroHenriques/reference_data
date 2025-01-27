@@ -3,7 +3,6 @@ using EntityDataHandler = Api.Handlers.EntityData;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using SharedLibs;
 using SharedLibs.Types.Db;
 
 namespace Api.Routers;
@@ -28,15 +27,14 @@ public class EntityData
   {
     this._app.MapPost(
       "/v1/data/{entityId}/",
-      async ([FromRoute] string entityId, [FromBody] dynamic body, IDb db) =>
+      async (IDb db, [FromRoute] string entityId, [FromBody] dynamic body) =>
       {
-        var bodyObject = JsonConvert.DeserializeObject<ExpandoObject>(
+        var bodyObject = JsonConvert.DeserializeObject<ExpandoObject[]>(
           body.ToString(), new ExpandoObjectConverter());
 
-        var insertedDoc = await EntityDataHandler.Create(db, entityId,
-          bodyObject);
+        var result = await EntityDataHandler.Create(db, entityId, bodyObject);
 
-        return TypedResults.Ok(insertedDoc);
+        return TypedResults.Ok(result);
       }
     );
   }

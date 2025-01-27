@@ -1,7 +1,7 @@
 using EntityModel = Api.Models.Entity;
 using MongoDB.Bson;
-using SharedLibs;
 using SharedLibs.Types.Db;
+using System.Collections;
 
 namespace Api.Handlers;
 
@@ -12,16 +12,27 @@ public class EntityData
   public static async Task<dynamic> Create(IDb dbClient, string entityId,
     dynamic data)
   {
+    if (data.GetType().IsArray == false)
+    {
+      throw new Exception("The body of the request must be an array of documents.");
+    }
+
     var findResult = await FindEntity(dbClient, entityId, null);
-
     string entityName = findResult.Data[0].Name;
-    ObjectId id = ObjectId.GenerateNewId();
-    data._id = id;
 
-    await dbClient.InsertOne<dynamic>(_dbName, entityName, data);
+    for (int i = 0; i < data.Length; i++)
+    {
+      ObjectId id = ObjectId.GenerateNewId();
+      data[i]._id = id;
+    }
 
-    data.id = id.ToString();
-    ((IDictionary<String, Object>)data).Remove("_id");
+    await dbClient.InsertMany<dynamic>(_dbName, entityName, data);
+
+    for (int i = 0; i < data.Length; i++)
+    {
+      data[i].id = data[i]._id.ToString();
+      ((IDictionary<String, Object>)data[i]).Remove("_id");
+    }
     return data;
   }
 
