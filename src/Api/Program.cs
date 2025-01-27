@@ -6,6 +6,9 @@ using SharedLibs.Types.Db;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
 builder.Services.AddSingleton<IMongoClient>(sp =>
 {
   string? mongoConStr = Environment.GetEnvironmentVariable("MONGO_CON_STR");
@@ -25,6 +28,12 @@ builder.Services.AddSingleton<IDb, Db>();
 builder.Services.AddScoped<EntityModel>();
 
 WebApplication app = builder.Build();
+
+if (app.Environment.IsDevelopment())
+{
+  app.UseSwagger();
+  app.UseSwaggerUI();
+}
 
 Entities entitiesRouter = new Entities(app);
 EntityData entityDataRouter = new EntityData(app);
