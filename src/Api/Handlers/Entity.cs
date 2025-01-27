@@ -1,5 +1,4 @@
 using MongoDB.Bson;
-using SharedLibs;
 using SharedLibs.Types.Db;
 using EntityModel = Api.Models.Entity;
 
@@ -10,9 +9,9 @@ public class Entity
   private readonly static string _dbName = "RefData";
   private readonly static string _dbCollName = "Entities";
 
-  public static async Task Create(IDb dbClient, EntityModel entity)
+  public static async Task Create(IDb dbClient, EntityModel[] entities)
   {
-    await dbClient.InsertOne<EntityModel>(_dbName, _dbCollName, entity);
+    await dbClient.InsertMany<EntityModel>(_dbName, _dbCollName, entities);
   }
 
   public static async Task Replace(IDb dbClient, EntityModel entity)

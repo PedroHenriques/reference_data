@@ -1,7 +1,6 @@
 using EntityModel = Api.Models.Entity;
 using EntityHandler = Api.Handlers.Entity;
 using Microsoft.AspNetCore.Mvc;
-using SharedLibs;
 using SharedLibs.Types.Db;
 
 namespace Api.Routers;
@@ -26,10 +25,10 @@ public class Entities
   {
     this._app.MapPost(
       "/v1/entities/",
-      async (EntityModel entity, IDb db) =>
+      async (IDb db, [FromBody] EntityModel[] entities) =>
       {
-        await EntityHandler.Create(db, entity);
-        return TypedResults.Ok(entity);
+        await EntityHandler.Create(db, entities);
+        return TypedResults.Ok(entities);
       }
     );
   }
