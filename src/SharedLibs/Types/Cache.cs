@@ -10,7 +10,7 @@ public interface IQueue
 {
   public Task<long> Enqueue(string queueName, string[] messages);
   public Task<string> Dequeue(string queueName);
-  // public Task<bool> Ack(string queueName, string message);
+  public Task<bool> Ack(string queueName, string message);
 }
 
 public struct ChangeQueueItem

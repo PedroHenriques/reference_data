@@ -25,6 +25,8 @@ public class CacheTests : IDisposable
       .Returns(Task.FromResult<bool>(true));
     this._redisDb.Setup(s => s.ListMoveAsync(It.IsAny<RedisKey>(), It.IsAny<RedisKey>(), It.IsAny<ListSide>(), It.IsAny<ListSide>(), It.IsAny<CommandFlags>()))
       .Returns(Task.FromResult<RedisValue>(new RedisValue("")));
+    this._redisDb.Setup(s => s.ListRemoveAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<long>(), It.IsAny<CommandFlags>()))
+      .Returns(Task.FromResult<long>(1));
   }
 
   public void Dispose()
@@ -154,5 +156,42 @@ public class CacheTests : IDisposable
 
     var result = await sut.Dequeue("");
     Assert.Equal(expectedResult, result);
+  }
+
+  [Fact]
+  public async void Ack_ItShouldReturnTrue()
+  {
+    IQueue sut = new Cache(this._redisClient.Object);
+
+    Assert.True(await sut.Ack("", ""));
+  }
+
+  [Fact]
+  public async void Ack_ItShouldCallGetDatabaseFromTheProvidedRedisClientOnce()
+  {
+    IQueue sut = new Cache(this._redisClient.Object);
+
+    await sut.Ack("", "");
+    this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
+  }
+
+  [Fact]
+  public async void Ack_ItShouldCallListRemoveAsyncOnTheRedisDatabaseOnce()
+  {
+    IQueue sut = new Cache(this._redisClient.Object);
+
+    await sut.Ack("test q", "some value");
+    this._redisDb.Verify(m => m.ListRemoveAsync("test q_temp", "some value", 0, CommandFlags.None), Times.Once());
+  }
+
+  [Fact]
+  public async void Ack_IfNoItemsAreRemvedFromTheList_ItShouldReturnFalse()
+  {
+    this._redisDb.Setup(s => s.ListRemoveAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<long>(), It.IsAny<CommandFlags>()))
+      .Returns(Task.FromResult<long>(0));
+
+    IQueue sut = new Cache(this._redisClient.Object);
+
+    Assert.False(await sut.Ack("test q", "some value"));
   }
 }

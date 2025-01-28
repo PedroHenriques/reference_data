@@ -39,10 +39,16 @@ public class Cache : ICache, IQueue
     return this._db.ListLeftPushAsync(queueName, values, CommandFlags.None);
   }
 
-  public async Task<string> Dequeue(string queueName) {
+  public async Task<string> Dequeue(string queueName)
+  {
     var item = await this._db.ListMoveAsync(queueName, $"{queueName}_temp",
       ListSide.Right, ListSide.Left);
-    
+
     return item.ToString();
+  }
+
+  public async Task<bool> Ack(string queueName, string message)
+  {
+    return await this._db.ListRemoveAsync($"{queueName}_temp", message, 0) > 0;
   }
 }
