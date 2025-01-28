@@ -194,4 +194,41 @@ public class CacheTests : IDisposable
 
     Assert.False(await sut.Ack("test q", "some value"));
   }
+
+  [Fact]
+  public async void Nack_ItShouldReturnTrue()
+  {
+    IQueue sut = new Cache(this._redisClient.Object);
+
+    Assert.True(await sut.Nack("", ""));
+  }
+
+  [Fact]
+  public async void Nack_ItShouldCallGetDatabaseFromTheProvidedRedisClientOnce()
+  {
+    IQueue sut = new Cache(this._redisClient.Object);
+
+    await sut.Nack("", "");
+    this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
+  }
+
+  [Fact]
+  public async void Nack_ItShouldCallListRemoveAsyncOnTheRedisDatabaseOnce()
+  {
+    IQueue sut = new Cache(this._redisClient.Object);
+
+    await sut.Nack("test q", "some value");
+    this._redisDb.Verify(m => m.ListRemoveAsync("test q_temp", "some value", 0, CommandFlags.None), Times.Once());
+  }
+
+  [Fact]
+  public async void Nack_IfNoItemsAreRemvedFromTheList_ItShouldReturnFalse()
+  {
+    this._redisDb.Setup(s => s.ListRemoveAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<long>(), It.IsAny<CommandFlags>()))
+      .Returns(Task.FromResult<long>(0));
+
+    IQueue sut = new Cache(this._redisClient.Object);
+
+    Assert.False(await sut.Nack("test q", "some value"));
+  }
 }

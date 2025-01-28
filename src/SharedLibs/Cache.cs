@@ -51,4 +51,11 @@ public class Cache : ICache, IQueue
   {
     return await this._db.ListRemoveAsync($"{queueName}_temp", message, 0) > 0;
   }
+
+  public Task<bool> Nack(string queueName, string message)
+  {
+    // @TODO: Log it
+
+    return Ack(queueName, message);
+  }
 }
