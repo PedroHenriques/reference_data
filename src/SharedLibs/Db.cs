@@ -14,20 +14,20 @@ public class Db : IDb
     this._client = mongoClient;
   }
 
-  public async Task InsertOne<T>(string dbName, string collName, T document)
+  public Task InsertOne<T>(string dbName, string collName, T document)
   {
     IMongoDatabase db = this._client.GetDatabase(dbName);
     IMongoCollection<T> dbColl = db.GetCollection<T>(collName);
 
-    await dbColl.InsertOneAsync(document);
+    return dbColl.InsertOneAsync(document);
   }
 
-  public async Task InsertMany<T>(string dbName, string collName, T[] documents)
+  public Task InsertMany<T>(string dbName, string collName, T[] documents)
   {
     IMongoDatabase db = this._client.GetDatabase(dbName);
     IMongoCollection<T> dbColl = db.GetCollection<T>(collName);
 
-    await dbColl.InsertManyAsync(documents);
+    return dbColl.InsertManyAsync(documents);
   }
 
   public async Task ReplaceOne<T>(string dbName, string collName, T document,
