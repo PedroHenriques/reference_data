@@ -31,6 +31,11 @@ public class Cache : ICache, IQueue
     return this._db.StringSetAsync(key, value);
   }
 
+  public Task Remove(string key)
+  {
+    return this._db.StringGetDeleteAsync(key);
+  }
+
   public Task<long> Enqueue(string queueName, string[] messages)
   {
     RedisValue[] values = messages.Select(message => (RedisValue)message)

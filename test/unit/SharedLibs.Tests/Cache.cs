@@ -23,6 +23,8 @@ public class CacheTests : IDisposable
       .Returns(Task.FromResult<long>(0));
     this._redisDb.Setup(s => s.StringSetAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), null, It.IsAny<bool>(), It.IsAny<When>(), It.IsAny<CommandFlags>()))
       .Returns(Task.FromResult<bool>(true));
+    this._redisDb.Setup(s => s.StringGetDeleteAsync(It.IsAny<RedisKey>(), It.IsAny<CommandFlags>()))
+      .Returns(Task.FromResult(RedisValue.EmptyString));
     this._redisDb.Setup(s => s.ListMoveAsync(It.IsAny<RedisKey>(), It.IsAny<RedisKey>(), It.IsAny<ListSide>(), It.IsAny<ListSide>(), It.IsAny<CommandFlags>()))
       .Returns(Task.FromResult<RedisValue>(new RedisValue("")));
     this._redisDb.Setup(s => s.ListRemoveAsync(It.IsAny<RedisKey>(), It.IsAny<RedisValue>(), It.IsAny<long>(), It.IsAny<CommandFlags>()))
@@ -92,6 +94,24 @@ public class CacheTests : IDisposable
 
     await sut.Set("test key", "test value");
     this._redisDb.Verify(m => m.StringSetAsync("test key", "test value", null, false, When.Always, CommandFlags.None), Times.Once());
+  }
+
+  [Fact]
+  public async void Remove_ItShouldCallGetDatabaseFromTheProvidedRedisClientOnce()
+  {
+    ICache sut = new Cache(this._redisClient.Object);
+
+    await sut.Remove("");
+    this._redisClient.Verify(m => m.GetDatabase(0, null), Times.Once());
+  }
+
+  [Fact]
+  public async void Remove_ItShouldCallStringGetDeleteAsyncOnTheRedisDatabaseOnce()
+  {
+    ICache sut = new Cache(this._redisClient.Object);
+
+    await sut.Remove("test key");
+    this._redisDb.Verify(m => m.StringGetDeleteAsync("test key", CommandFlags.None), Times.Once());
   }
 
   [Fact]
