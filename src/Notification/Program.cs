@@ -1,4 +1,5 @@
-﻿using SharedLibs;
+﻿using Notification.Services;
+using SharedLibs;
 using SharedLibs.Types.Cache;
 using StackExchange.Redis;
 
@@ -34,3 +35,5 @@ if (redisClient == null)
 
 ICache cache = new Cache(redisClient);
 IQueue queue = new Cache(redisClientQueue);
+
+await Notify.Watch(queue, cache);
