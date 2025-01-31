@@ -199,6 +199,7 @@ public class Db : IDb
 
       yield return new WatchData
       {
+        ChangeTime = change.ClusterTime.ToUniversalTime(),
         ChangeRecord = changeRecord,
         ResumeData = new ResumeData
         {

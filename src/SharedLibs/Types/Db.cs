@@ -87,9 +87,11 @@ public struct ChangeSource
 
 public struct WatchData
 {
-  public ResumeData ResumeData { get; set; }
+  public required DateTime ChangeTime { get; set; }
 
-  public ChangeSource Source { get; set; }
+  public required ResumeData ResumeData { get; set; }
+
+  public required ChangeSource Source { get; set; }
 
   public ChangeRecord? ChangeRecord { get; set; }
 }

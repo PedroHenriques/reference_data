@@ -29,7 +29,7 @@ public class DbStreamTests : IDisposable
     this._queueMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>()))
       .Returns(Task.FromResult((long)1));
     this._dbSharedLibMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>()))
-      .Returns((new[] { new WatchData { } }).ToAsyncEnumerable());
+      .Returns((new[] { new WatchData { ChangeTime = DateTime.Now, ResumeData = new ResumeData { }, Source = new ChangeSource { } } }).ToAsyncEnumerable());
   }
 
   public void Dispose()
@@ -68,7 +68,10 @@ public class DbStreamTests : IDisposable
   public async void Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallEnqueueOnTheICacheInstanceTwice()
   {
     this._dbSharedLibMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>()))
-      .Returns((new[] { new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete } }, new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete } } }).ToAsyncEnumerable());
+      .Returns((new[] {
+        new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+        new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+      }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._dbSharedLibMock.Object);
     this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>()), Times.Exactly(2));
@@ -79,7 +82,10 @@ public class DbStreamTests : IDisposable
   {
     var expectedChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "test change record" };
     this._dbSharedLibMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>()))
-      .Returns((new[] { new WatchData { ChangeRecord = expectedChangeRecord, Source = new ChangeSource { DbName = "test db name", CollName = "test coll name" } }, new WatchData { ChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "not the correct one" } } }).ToAsyncEnumerable());
+      .Returns((new[] {
+        new WatchData { ChangeRecord = expectedChangeRecord, Source = new ChangeSource { DbName = "test db name", CollName = "test coll name" }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{} },
+        new WatchData { ChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "not the correct one" }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+      }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._dbSharedLibMock.Object);
     Assert.Equal(
@@ -98,7 +104,10 @@ public class DbStreamTests : IDisposable
   {
     var expectedChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "another test change record" };
     this._dbSharedLibMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>()))
-      .Returns((new[] { new WatchData { ChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "not the correct one" } }, new WatchData { ChangeRecord = expectedChangeRecord, Source = new ChangeSource { DbName = "another test db name", CollName = "another test coll name" } } }).ToAsyncEnumerable());
+      .Returns((new[] {
+        new WatchData { ChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "not the correct one" }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+        new WatchData { ChangeRecord = expectedChangeRecord, Source = new ChangeSource { DbName = "another test db name", CollName = "another test coll name" }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{} },
+      }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._dbSharedLibMock.Object);
     Assert.Equal(
@@ -116,7 +125,10 @@ public class DbStreamTests : IDisposable
   public async void Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallSetOnTheICacheInstanceTwice()
   {
     this._dbSharedLibMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>()))
-      .Returns((new[] { new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete } }, new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete } } }).ToAsyncEnumerable());
+      .Returns((new[] {
+        new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+        new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+      }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._dbSharedLibMock.Object);
     this._cacheMock.Verify(m => m.Set("change_resume_data", It.IsAny<string>()), Times.Exactly(2));
@@ -127,7 +139,10 @@ public class DbStreamTests : IDisposable
   {
     ResumeData expectedResumeData = new ResumeData { ResumeToken = "test resume token", ClusterTime = "test cluster time" };
     this._dbSharedLibMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>()))
-      .Returns((new[] { new WatchData { ResumeData = expectedResumeData, ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete } }, new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete } } }).ToAsyncEnumerable());
+      .Returns((new[] {
+        new WatchData { ResumeData = expectedResumeData, ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, Source = new ChangeSource {} },
+        new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+      }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._dbSharedLibMock.Object);
     Assert.Equal(
@@ -141,7 +156,10 @@ public class DbStreamTests : IDisposable
   {
     ResumeData expectedResumeData = new ResumeData { ResumeToken = "another test resume token", ClusterTime = "another test cluster time" };
     this._dbSharedLibMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>()))
-      .Returns((new[] { new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete } }, new WatchData { ResumeData = expectedResumeData, ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete } } }).ToAsyncEnumerable());
+      .Returns((new[] {
+        new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+        new WatchData { ResumeData = expectedResumeData, ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, Source = new ChangeSource {} },
+      }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._dbSharedLibMock.Object);
     Assert.Equal(
@@ -154,7 +172,9 @@ public class DbStreamTests : IDisposable
   public async void Watch_IfTheAnItemReceivedFromTheDbWatchHasANullChangeRecord_ItShouldNotCallEnqueueOnTheICacheInstance()
   {
     this._dbSharedLibMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>()))
-      .Returns((new[] { new WatchData { } }).ToAsyncEnumerable());
+      .Returns((new[] {
+        new WatchData { ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+      }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._dbSharedLibMock.Object);
     this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>()), Times.Never);
@@ -165,7 +185,9 @@ public class DbStreamTests : IDisposable
   {
     ResumeData expectedResumeData = new ResumeData { ResumeToken = "another test resume token", ClusterTime = "another test cluster time" };
     this._dbSharedLibMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>()))
-      .Returns((new[] { new WatchData { ResumeData = expectedResumeData } }).ToAsyncEnumerable());
+      .Returns((new[] {
+        new WatchData { ResumeData = expectedResumeData, ChangeTime = DateTime.Now, Source = new ChangeSource {} },
+      }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._dbSharedLibMock.Object);
     Assert.Equal(
