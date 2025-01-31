@@ -22,7 +22,7 @@ public class NotifyTests : IDisposable
     this._cacheMock.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<string>()))
       .Returns(Task.FromResult(true));
     this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(new ChangeQueueItem { })));
+      .Returns(Task.FromResult(JsonConvert.SerializeObject(new ChangeQueueItem { ChangeRecord = "", ChangeTime = DateTime.Now, Source = "" })));
     this._queueMock.Setup(s => s.Ack(It.IsAny<string>(), It.IsAny<string>()))
       .Returns(Task.FromResult(true));
   }
@@ -74,6 +74,7 @@ public class NotifyTests : IDisposable
     };
     var change = new ChangeQueueItem
     {
+      ChangeTime = DateTime.Now,
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
@@ -107,6 +108,7 @@ public class NotifyTests : IDisposable
     };
     var change = new ChangeQueueItem
     {
+      ChangeTime = DateTime.Now,
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
@@ -136,6 +138,7 @@ public class NotifyTests : IDisposable
     };
     var change = new ChangeQueueItem
     {
+      ChangeTime = DateTime.Now,
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
@@ -165,6 +168,7 @@ public class NotifyTests : IDisposable
     };
     var change = new ChangeQueueItem
     {
+      ChangeTime = DateTime.Now,
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };

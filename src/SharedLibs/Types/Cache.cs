@@ -16,7 +16,9 @@ public interface IQueue
 
 public struct ChangeQueueItem
 {
-  public string ChangeRecord { get; set; }
+  public required DateTime ChangeTime { get; set; }
 
-  public string Source { get; set; }
+  public required string ChangeRecord { get; set; }
+
+  public required string Source { get; set; }
 }

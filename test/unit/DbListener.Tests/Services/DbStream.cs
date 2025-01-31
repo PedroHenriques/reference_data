@@ -81,16 +81,18 @@ public class DbStreamTests : IDisposable
   public async void Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallEnqueueOnTheICacheInstanceWithTheExpectedFirstItem()
   {
     var expectedChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "test change record" };
+    var testTime = DateTime.Now;
     this._dbSharedLibMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>()))
       .Returns((new[] {
-        new WatchData { ChangeRecord = expectedChangeRecord, Source = new ChangeSource { DbName = "test db name", CollName = "test coll name" }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{} },
-        new WatchData { ChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "not the correct one" }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+        new WatchData { ChangeRecord = expectedChangeRecord, Source = new ChangeSource { DbName = "test db name", CollName = "test coll name" }, ChangeTime = testTime, ResumeData = new ResumeData{} },
+        new WatchData { ChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "not the correct one" }, ChangeTime = testTime, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
       }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._dbSharedLibMock.Object);
     Assert.Equal(
       new[] {
         JsonConvert.SerializeObject(new ChangeQueueItem{
+          ChangeTime = testTime,
           ChangeRecord = JsonConvert.SerializeObject(expectedChangeRecord),
           Source = JsonConvert.SerializeObject(new ChangeSource{ DbName = "test db name", CollName = "test coll name" }),
         }),
@@ -103,16 +105,18 @@ public class DbStreamTests : IDisposable
   public async void Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallEnqueueOnTheICacheInstanceWithTheExpectedSecondItem()
   {
     var expectedChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "another test change record" };
+    var testTime = DateTime.Now;
     this._dbSharedLibMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>()))
       .Returns((new[] {
-        new WatchData { ChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "not the correct one" }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
-        new WatchData { ChangeRecord = expectedChangeRecord, Source = new ChangeSource { DbName = "another test db name", CollName = "another test coll name" }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{} },
+        new WatchData { ChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "not the correct one" }, ChangeTime = testTime, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+        new WatchData { ChangeRecord = expectedChangeRecord, Source = new ChangeSource { DbName = "another test db name", CollName = "another test coll name" }, ChangeTime = testTime, ResumeData = new ResumeData{} },
       }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._dbSharedLibMock.Object);
     Assert.Equal(
       new[] {
         JsonConvert.SerializeObject(new ChangeQueueItem{
+          ChangeTime = testTime,
           ChangeRecord = JsonConvert.SerializeObject(expectedChangeRecord),
           Source = JsonConvert.SerializeObject(new ChangeSource{ DbName = "another test db name", CollName = "another test coll name" }),
         }),
