@@ -2,6 +2,7 @@ using System.Text.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
+using SharedLibs.Types.Entity;
 
 namespace Api.Models;
 
@@ -28,6 +29,11 @@ public class Entity
   [JsonProperty("deletedAt")]
   [BsonElement("deleted_at")]
   public DateTime? DeletedAt { get; set; }
+
+  [JsonPropertyName("notifConfigs")]
+  [JsonProperty("notifConfigs")]
+  [BsonElement("notif_configs")]
+  public NotifConfig[]? NotifConfigs { get; set; }
 
   public static async ValueTask<Entity?> BindAsync(HttpContext context)
   {
