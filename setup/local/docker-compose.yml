@@ -162,6 +162,18 @@ services:
       - "9000:8081"
     networks:
       - apiDb
+  
+  webhook_server:
+    build:
+      context: ../../
+      dockerfile: ./setup/local/webhook/Dockerfile
+    container_name: "webhook_server"
+    restart: on-failure
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=10000
+    ports:
+      - 10001:10000
 
 networks:
   api:
