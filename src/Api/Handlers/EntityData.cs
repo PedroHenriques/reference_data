@@ -1,7 +1,6 @@
 using EntityModel = Api.Models.Entity;
 using MongoDB.Bson;
 using SharedLibs.Types.Db;
-using System.Collections;
 
 namespace Api.Handlers;
 
@@ -22,8 +21,7 @@ public class EntityData
 
     for (int i = 0; i < data.Length; i++)
     {
-      ObjectId id = ObjectId.GenerateNewId();
-      data[i]._id = id;
+      data[i]._id = ObjectId.GenerateNewId();
     }
 
     await dbClient.InsertMany<dynamic>(_dbName, entityName, data);
