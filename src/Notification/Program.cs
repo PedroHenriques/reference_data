@@ -1,4 +1,6 @@
-﻿using Notification.Services;
+﻿using Notification.Dispatchers;
+using Notification.Services;
+using Notification.Types;
 using SharedLibs;
 using SharedLibs.Types.Cache;
 using StackExchange.Redis;
@@ -33,7 +35,10 @@ if (redisClient == null)
   throw new Exception("Redis Client, for the queue, returned NULL.");
 }
 
+HttpClient httpClient = new HttpClient();
+
 ICache cache = new Cache(redisClient);
 IQueue queue = new Cache(redisClientQueue);
+IDispatchers dispatchers = new Dispatchers(httpClient);
 
-await Notify.Watch(queue, cache);
+await Notify.Watch(queue, cache, dispatchers);

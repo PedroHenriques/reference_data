@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Notification.Types;
 using SharedLibs.Types.Cache;
 using SharedLibs.Types.Db;
 
@@ -8,7 +9,8 @@ public static class Notify
 {
   private static readonly string _queueName = "mongo_changes";
 
-  public static async Task ProcessMessage(IQueue queue, ICache cache)
+  public static async Task ProcessMessage(IQueue queue, ICache cache,
+    IDispatchers dispatchers)
   {
     string messageStr = await queue.Dequeue(_queueName);
     if (String.IsNullOrEmpty(messageStr))

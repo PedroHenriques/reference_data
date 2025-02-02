@@ -1,6 +1,7 @@
 using MongoDB.Bson;
 using Moq;
 using Newtonsoft.Json;
+using Notification.Types;
 using Notification.Utils;
 using SharedLibs.Types.Cache;
 using SharedLibs.Types.Db;
@@ -13,11 +14,13 @@ public class NotifyTests : IDisposable
 {
   private readonly Mock<ICache> _cacheMock;
   private readonly Mock<IQueue> _queueMock;
+  private readonly Mock<IDispatchers> _dispatchersMock;
 
   public NotifyTests()
   {
     this._cacheMock = new Mock<ICache>(MockBehavior.Strict);
     this._queueMock = new Mock<IQueue>(MockBehavior.Strict);
+    this._dispatchersMock = new Mock<IDispatchers>(MockBehavior.Strict);
 
     this._cacheMock.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<string>()))
       .Returns(Task.FromResult(true));
@@ -31,12 +34,13 @@ public class NotifyTests : IDisposable
   {
     this._cacheMock.Reset();
     this._queueMock.Reset();
+    this._dispatchersMock.Reset();
   }
 
   [Fact]
   public async void ProcessMessage_ItShouldCallDequeueOnTheProvidedIQueueInstanceOnce()
   {
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object);
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object);
     this._queueMock.Verify(m => m.Dequeue("mongo_changes"), Times.Once());
   }
 
@@ -46,7 +50,7 @@ public class NotifyTests : IDisposable
     this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
       .Returns(Task.FromResult(""));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object);
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object);
     this._cacheMock.Verify(m => m.Set(It.IsAny<string>(), It.IsAny<string>()), Times.Never());
     this._cacheMock.Verify(m => m.Get(It.IsAny<string>()), Times.Never());
   }
@@ -81,7 +85,7 @@ public class NotifyTests : IDisposable
     this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
       .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object);
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object);
     this._cacheMock.Verify(m => m.Set("entity:test entity name|notif configs", notifConfigsStr), Times.Once());
   }
 
@@ -116,7 +120,7 @@ public class NotifyTests : IDisposable
     this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
       .Returns(Task.FromResult(changeStr));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object);
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object);
     this._queueMock.Verify(m => m.Ack("mongo_changes", changeStr), Times.Once());
   }
 
@@ -145,7 +149,7 @@ public class NotifyTests : IDisposable
     this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
       .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object);
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object);
     this._cacheMock.Verify(m => m.Set("entity:test entity name|notif configs", ""), Times.Once());
   }
 
@@ -175,7 +179,7 @@ public class NotifyTests : IDisposable
     this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
       .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object);
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object);
     this._cacheMock.Verify(m => m.Set("entity:test entity name|notif configs", ""), Times.Once());
   }
 }
