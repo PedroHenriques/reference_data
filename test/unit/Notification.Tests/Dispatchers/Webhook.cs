@@ -1,7 +1,8 @@
 using System.Net;
-using MongoDB.Bson;
+using System.Net.Http.Headers;
 using Moq;
 using Moq.Protected;
+using Newtonsoft.Json;
 using Notification.Dispatchers;
 using SharedLibs.Types.Notification;
 
@@ -84,8 +85,29 @@ public class WebhookTests : IDisposable
     await sut.Dispatch(data, "http://a.com");
 
     Assert.Equal(
-      await new StringContent(data.ToJson()).ReadAsStringAsync(),
+      await new StringContent(JsonConvert.SerializeObject(data)).ReadAsStringAsync(),
       await (this._clientMock.Invocations[0].Arguments[0] as dynamic).Content.ReadAsStringAsync()
+    );
+  }
+
+  [Fact]
+  public async void Dispatch_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedContentTypeHeader()
+  {
+    var sut = new Webhook(new HttpClient(this._clientMock.Object));
+
+    NotifData data = new NotifData
+    {
+      ChangeTime = DateTime.Now,
+      EventTime = DateTime.Now,
+      ChangeType = "test change type",
+      Entity = "test entity name",
+      Id = "test id",
+    };
+    await sut.Dispatch(data, "http://a.com");
+
+    Assert.Equal(
+      new MediaTypeHeaderValue("application/json", "utf-8"),
+      (this._clientMock.Invocations[0].Arguments[0] as dynamic).Content.Headers.ContentType
     );
   }
 

@@ -1,4 +1,5 @@
-using MongoDB.Bson;
+using System.Net.Http.Headers;
+using Newtonsoft.Json;
 using Notification.Types;
 using SharedLibs.Types.Notification;
 
@@ -15,8 +16,10 @@ public class Webhook : IDispatcher
 
   public async Task<bool> Dispatch(NotifData data, string destination)
   {
-    var res = await this._client.PostAsync(destination,
-      new StringContent(data.ToJson()));
+    HttpContent content = new StringContent(JsonConvert.SerializeObject(data));
+    content.Headers.ContentType = new MediaTypeHeaderValue("application/json", "utf-8");
+
+    var res = await this._client.PostAsync(destination, content);
 
     return res.IsSuccessStatusCode;
   }
