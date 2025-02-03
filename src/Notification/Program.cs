@@ -35,10 +35,16 @@ if (redisClient == null)
   throw new Exception("Redis Client, for the queue, returned NULL.");
 }
 
-HttpClient httpClient = new HttpClient();
-
 ICache cache = new Cache(redisClient);
 IQueue queue = new Cache(redisClientQueue);
-IDispatchers dispatchers = new Dispatchers(httpClient);
+IDispatchers dispatchers = new Dispatchers(new HttpClient());
 
-await Notify.Watch(queue, cache, dispatchers);
+string? apiBaseUrlStr = Environment.GetEnvironmentVariable("API_BASE_URL");
+if (apiBaseUrlStr == null)
+{
+  throw new Exception("Could not get the 'API_BASE_URL' environment variable");
+}
+HttpClient httpClient = new HttpClient();
+httpClient.BaseAddress = new Uri(apiBaseUrlStr);
+
+await Notify.Watch(queue, cache, dispatchers, httpClient);

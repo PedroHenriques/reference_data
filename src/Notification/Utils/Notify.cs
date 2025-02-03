@@ -2,6 +2,8 @@ using Newtonsoft.Json;
 using Notification.Types;
 using SharedLibs.Types.Cache;
 using SharedLibs.Types.Db;
+using SharedLibs.Types.Entity;
+using SharedLibs.Types.Notification;
 
 namespace Notification.Utils;
 
@@ -10,7 +12,7 @@ public static class Notify
   private static readonly string _queueName = "mongo_changes";
 
   public static async Task ProcessMessage(IQueue queue, ICache cache,
-    IDispatchers dispatchers)
+    IDispatchers dispatchers, HttpClient httpClient)
   {
     string messageStr = await queue.Dequeue(_queueName);
     if (String.IsNullOrEmpty(messageStr))
@@ -34,12 +36,18 @@ public static class Notify
       {
         await HandleEntitiesMessage(cache, changeRecord);
       }
+      else
+      {
+        await HandleDataMessage(cache, changeSource.CollName, message.ChangeTime,
+          changeRecord, dispatchers, httpClient);
+      }
 
       await queue.Ack(_queueName, messageStr);
     }
-    catch
+    catch (Exception e)
     {
       // @TODO: call nack()
+      Console.WriteLine(e.Message);
     }
   }
 
@@ -51,21 +59,106 @@ public static class Notify
       return;
     }
     if (
-      changeRecord.Document.ContainsKey("notif_configs") == false ||
-      changeRecord.Document["notif_configs"] == "null"
+      changeRecord.Document.ContainsKey("notifConfigs") == false ||
+      changeRecord.Document["notifConfigs"] == "null"
     )
     {
-      changeRecord.Document["notif_configs"] = "";
+      changeRecord.Document["notifConfigs"] = "";
     }
 
     var result = await cache.Set(
       $"entity:{changeRecord.Document["name"]}|notif configs",
-      changeRecord.Document["notif_configs"]
+      changeRecord.Document["notifConfigs"]
     );
 
     if (result == false)
     {
       // @TODO: Log it
     }
+  }
+
+  private static async Task HandleDataMessage(ICache cache, string entityName,
+    DateTime changeTime, ChangeRecord changeRecord, IDispatchers dispatchers,
+    HttpClient httpClient)
+  {
+    List<Task> tasks = new List<Task>();
+
+    var configsStr = await cache.Get($"entity:\"{entityName}\"|notif configs");
+    if (configsStr == null)
+    {
+      var getEntityRes = await GetEntityInformation(httpClient, cache, entityName);
+      tasks.Add(getEntityRes.CacheNotifConfigs);
+      configsStr = getEntityRes.NotifConfigsStr;
+    }
+
+    var notifConfigs = JsonConvert.DeserializeObject<NotifConfig[]>(configsStr);
+    if (notifConfigs == null)
+    {
+      return;
+    }
+
+    foreach (var notif in notifConfigs)
+    {
+      try
+      {
+        var dispatcher = dispatchers.GetDispatcher(notif.Protocol);
+        if (dispatcher == null)
+        {
+          continue;
+        }
+
+        tasks.Add(dispatcher.Dispatch(
+          new NotifData
+          {
+            EventTime = DateTime.Now,
+            ChangeTime = changeTime,
+            ChangeType = changeRecord.ChangeType.Name,
+            Entity = entityName,
+            Id = changeRecord.Id,
+            Document = changeRecord.Document,
+          },
+          notif.TargetURL
+        ));
+      }
+      catch
+      {
+        // @TODO: Log it
+      }
+    }
+
+    await Task.WhenAll(tasks.ToArray());
+  }
+
+  private static async Task<GetEntityInfoRes> GetEntityInformation(
+    HttpClient httpClient, ICache cache, string entityName)
+  {
+    var response = await httpClient.GetAsync(
+      "/v1/entities/?filter={\"name\":\"" + entityName + "\"}");
+    var resDataStr = await response.Content.ReadAsStringAsync();
+    var resData = JsonConvert.DeserializeObject<FindResult<dynamic>>(resDataStr);
+
+    string notifConfigsStr = "";
+    var document = new Dictionary<string, dynamic?> {
+      { "name", $"\"{entityName}\"" },
+    };
+    if (resData.Metadata.TotalCount > 0)
+    {
+      notifConfigsStr = JsonConvert.SerializeObject(resData.Data[0].notifConfigs);
+      document.Add("notifConfigs", notifConfigsStr);
+    }
+
+    return new GetEntityInfoRes
+    {
+      NotifConfigsStr = notifConfigsStr,
+      CacheNotifConfigs = HandleEntitiesMessage(
+        cache,
+        new ChangeRecord
+        {
+          Id = "",
+          ChangeType = ChangeRecordTypes.Insert,
+          Document = document,
+        }
+      ),
+    };
   }
 }
