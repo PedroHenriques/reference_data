@@ -46,7 +46,7 @@ services:
         condition: service_healthy
     environment:
       - DOTNET_ENVIRONMENT=Development
-      - MONGO_CON_STR=mongodb://admin:pw@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
+      - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
       - REDIS_CON_STR=dblistener_db:6379
     networks:
       - dblistener
@@ -74,7 +74,7 @@ services:
       dblistener_db:
         condition: service_healthy
     ports:
-      - "9001:5540"
+      - ${REDIS_GUI_PORT:-9001}:5540
     networks:
       - dblistenerDb
       - notificationDb
@@ -91,9 +91,9 @@ services:
     environment:
       - DOTNET_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=10000
-      - MONGO_CON_STR=mongodb://admin:pw@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
+      - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
     ports:
-      - 10000:10000
+      - ${API_PORT:-10000}:10000
     networks:
       - api
 
@@ -119,8 +119,8 @@ services:
     container_name: "api_db"
     restart: on-failure
     environment:
-      - MONGO_INITDB_ROOT_USERNAME=admin
-      - MONGO_INITDB_ROOT_PASSWORD=pw
+      - MONGO_INITDB_ROOT_USERNAME=${API_DB_ADMIN_USER:-admin}
+      - MONGO_INITDB_ROOT_PASSWORD=${API_DB_ADMIN_PW:-pw}
       - MONGO_INITDB_DATABASE=RefData
     networks:
       - api
@@ -135,7 +135,7 @@ services:
       api_db:
         condition: service_healthy
     command: >
-      mongosh --username admin --password pw --host api_db:27017 --eval ' rs.initiate( {
+      mongosh --username ${API_DB_ADMIN_USER:-admin} --password ${API_DB_ADMIN_PW:-pw} --host api_db:27017 --eval ' rs.initiate( {
          _id : "rs0",
          members: [
             { _id: 0, host: "api_db:27017" }
@@ -152,16 +152,16 @@ services:
       - ME_CONFIG_MONGODB_PORT=27017
       - ME_CONFIG_MONGODB_ENABLE_ADMIN=true
       - ME_CONFIG_MONGODB_AUTH_DATABASE=admin
-      - ME_CONFIG_MONGODB_AUTH_USERNAME=admin
-      - ME_CONFIG_MONGODB_AUTH_PASSWORD=pw
+      - ME_CONFIG_MONGODB_AUTH_USERNAME=${API_DB_ADMIN_USER:-admin}
+      - ME_CONFIG_MONGODB_AUTH_PASSWORD=${API_DB_ADMIN_PW:-pw}
       - ME_CONFIG_BASICAUTH_USERNAME=appUser
       - ME_CONFIG_BASICAUTH_PASSWORD=appPw
-      - ME_CONFIG_MONGODB_URL=mongodb://admin:pw@api_db:27017/?replicaSet=rs0
+      - ME_CONFIG_MONGODB_URL=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/?replicaSet=rs0
     depends_on:
       api_db:
         condition: service_healthy
     ports:
-      - "9000:8081"
+      - ${MONGO_GUI_PORT:-9000}:8081
     networks:
       - apiDb
   
@@ -175,7 +175,7 @@ services:
       - DOTNET_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=10000
     ports:
-      - 10001:10000
+      - ${WEBHOOK_API_PORT:-10001}:10000
     networks:
       - notification
 
