@@ -106,9 +106,4 @@ public class Db
     }
     return dict;
   }
-
-  private static bool UpdateIsADelete(BsonDocument updatedFields)
-  {
-    return updatedFields.Contains("deleted_at");
-  }
 }

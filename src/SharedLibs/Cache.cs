@@ -18,7 +18,7 @@ public class Cache : ICache, IQueue
   {
     RedisValue result = await this._db.StringGetAsync(key);
 
-    if (result.HasValue == false || result.IsNullOrEmpty)
+    if (result.HasValue == false || result.IsNull)
     {
       return null;
     }

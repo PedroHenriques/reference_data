@@ -27,12 +27,12 @@ public class Entity
 
   [JsonPropertyName("deletedAt")]
   [JsonProperty("deletedAt")]
-  [BsonElement("deleted_at")]
+  [BsonElement("deletedAt")]
   public DateTime? DeletedAt { get; set; }
 
   [JsonPropertyName("notifConfigs")]
   [JsonProperty("notifConfigs")]
-  [BsonElement("notif_configs")]
+  [BsonElement("notifConfigs")]
   public NotifConfig[]? NotifConfigs { get; set; }
 
   public static async ValueTask<Entity?> BindAsync(HttpContext context)

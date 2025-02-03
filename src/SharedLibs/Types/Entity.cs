@@ -13,6 +13,6 @@ public struct NotifConfig
 
   [JsonPropertyName("targetUrl")]
   [JsonProperty("targetUrl")]
-  [BsonElement("target_url")]
+  [BsonElement("targetUrl")]
   public required string TargetURL { get; set; }
 }
