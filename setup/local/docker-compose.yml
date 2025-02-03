@@ -14,10 +14,12 @@ services:
       - DOTNET_ENVIRONMENT=Development
       - REDIS_CON_STR=notification_db:6379
       - REDIS_CON_STR_QUEUE=dblistener_db:6379
+      - API_BASE_URL=http://api:10000
     networks:
       - notification
       - notificationDb
       - dblistenerDb
+      - api
 
   notification_db:
     image: redis:7-alpine
@@ -174,6 +176,8 @@ services:
       - ASPNETCORE_HTTP_PORTS=10000
     ports:
       - 10001:10000
+    networks:
+      - notification
 
 networks:
   api:
