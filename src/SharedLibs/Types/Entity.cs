@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
 
-namespace SharedLibs.Types.Entity;
+namespace SharedLibs.Types;
 
 public struct NotifConfig
 {

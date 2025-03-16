@@ -1,6 +1,6 @@
 using MongoDB.Bson;
 using MongoDB.Driver;
-using SharedLibs.Types.Db;
+using SharedLibs.Types;
 
 namespace SharedLibs.Utils.Tests;
 

@@ -3,7 +3,7 @@ using EntityModel = Api.Models.Entity;
 using MongoDB.Bson;
 using Moq;
 using System.Dynamic;
-using SharedLibs.Types.Db;
+using SharedLibs.Types;
 
 namespace Api.Tests.Handlers;
 

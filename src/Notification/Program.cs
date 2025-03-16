@@ -1,8 +1,8 @@
-﻿using Notification.Dispatchers;
+using Notification.Dispatchers;
 using Notification.Services;
 using Notification.Types;
 using SharedLibs;
-using SharedLibs.Types.Cache;
+using SharedLibs.Types;
 using StackExchange.Redis;
 
 string? redisConStr = Environment.GetEnvironmentVariable("REDIS_CON_STR");

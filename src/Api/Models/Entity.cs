@@ -2,7 +2,7 @@ using System.Text.Json.Serialization;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
 using Newtonsoft.Json;
-using SharedLibs.Types.Entity;
+using SharedLibs.Types;
 
 namespace Api.Models;
 

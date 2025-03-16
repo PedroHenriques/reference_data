@@ -1,5 +1,5 @@
 using NotifyUtils = Notification.Utils.Notify;
-using SharedLibs.Types.Cache;
+using SharedLibs.Types;
 using Notification.Types;
 
 namespace Notification.Services;

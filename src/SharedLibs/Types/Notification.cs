@@ -1,9 +1,9 @@
 using System.Text.Json.Serialization;
 using Newtonsoft.Json;
 
-namespace SharedLibs.Types.Notification;
+namespace SharedLibs.Types;
 
-public struct NotifData
+public class NotifData
 {
   [JsonPropertyName("eventTime")]
   [JsonProperty("eventTime")]

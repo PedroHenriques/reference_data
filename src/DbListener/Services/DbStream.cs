@@ -1,6 +1,5 @@
 using Newtonsoft.Json;
-using SharedLibs.Types.Cache;
-using SharedLibs.Types.Db;
+using SharedLibs.Types;
 
 namespace DbListener.Services;
 

@@ -1,9 +1,6 @@
 using Newtonsoft.Json;
 using Notification.Types;
-using SharedLibs.Types.Cache;
-using SharedLibs.Types.Db;
-using SharedLibs.Types.Entity;
-using SharedLibs.Types.Notification;
+using SharedLibs.Types;
 
 namespace Notification.Utils;
 

@@ -1,4 +1,4 @@
-namespace SharedLibs.Types.Cache;
+namespace SharedLibs.Types;
 
 public interface ICache
 {

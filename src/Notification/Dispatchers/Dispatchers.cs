@@ -1,4 +1,5 @@
 using Notification.Types;
+using SharedLibs.Types;
 
 namespace Notification.Dispatchers;
 

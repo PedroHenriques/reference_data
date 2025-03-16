@@ -1,7 +1,7 @@
 using System.Net.Http.Headers;
 using Newtonsoft.Json;
 using Notification.Types;
-using SharedLibs.Types.Notification;
+using SharedLibs.Types;
 
 namespace Notification.Dispatchers;
 

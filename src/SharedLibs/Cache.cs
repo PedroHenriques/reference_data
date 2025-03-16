@@ -1,4 +1,4 @@
-using SharedLibs.Types.Cache;
+using SharedLibs.Types;
 using StackExchange.Redis;
 
 namespace SharedLibs;

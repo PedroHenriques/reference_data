@@ -4,7 +4,7 @@ using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
 using Notification.Dispatchers;
-using SharedLibs.Types.Notification;
+using SharedLibs.Types;
 
 namespace Notification.Tests.Dispatchers;
 

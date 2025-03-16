@@ -1,4 +1,4 @@
-using SharedLibs.Types.Notification;
+using SharedLibs.Types;
 
 namespace Notification.Types;
 

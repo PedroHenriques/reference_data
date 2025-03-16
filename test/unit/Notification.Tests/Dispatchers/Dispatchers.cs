@@ -1,5 +1,6 @@
 using Moq;
 using Notification.Dispatchers;
+using SharedLibs.Types;
 using SutNS = Notification.Dispatchers;
 
 namespace Notification.Tests.Dispatchers;

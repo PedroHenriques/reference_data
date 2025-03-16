@@ -4,10 +4,7 @@ using Moq.Protected;
 using Newtonsoft.Json;
 using Notification.Types;
 using Notification.Utils;
-using SharedLibs.Types.Cache;
-using SharedLibs.Types.Db;
-using SharedLibs.Types.Entity;
-using SharedLibs.Types.Notification;
+using SharedLibs.Types;
 
 namespace Notification.Tests.Utils;
 

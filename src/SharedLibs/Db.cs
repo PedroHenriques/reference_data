@@ -1,4 +1,4 @@
-using SharedLibs.Types.Db;
+using SharedLibs.Types;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using DbUtils = SharedLibs.Utils;

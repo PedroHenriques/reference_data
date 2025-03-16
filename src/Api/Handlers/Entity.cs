@@ -1,5 +1,5 @@
 using MongoDB.Bson;
-using SharedLibs.Types.Db;
+using SharedLibs.Types;
 using EntityModel = Api.Models.Entity;
 
 namespace Api.Handlers;

@@ -3,7 +3,7 @@ using EntityDataHandler = Api.Handlers.EntityData;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using SharedLibs.Types.Db;
+using SharedLibs.Types;
 
 namespace Api.Routers;
 
