@@ -44,10 +44,10 @@ public class NotifyTests : IDisposable
       .Returns(this._kafkaDispatcherMock.Object)
       .Returns(this._webhookDispatcherMock.Object);
 
-    this._webhookDispatcherMock.Setup(s => s.Dispatch(It.IsAny<NotifData>(), It.IsAny<string>()))
+    this._webhookDispatcherMock.Setup(s => s.Dispatch(It.IsAny<NotifData>(), It.IsAny<string>(), It.IsAny<Action<bool>>()))
       .Returns(Task.FromResult(true));
 
-    this._kafkaDispatcherMock.Setup(s => s.Dispatch(It.IsAny<NotifData>(), It.IsAny<string>()))
+    this._kafkaDispatcherMock.Setup(s => s.Dispatch(It.IsAny<NotifData>(), It.IsAny<string>(), It.IsAny<Action<bool>>()))
       .Returns(Task.FromResult(true));
   }
 
@@ -381,7 +381,7 @@ public class NotifyTests : IDisposable
       Id = changeRecord.Id,
     };
     await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
-    this._kafkaDispatcherMock.Verify(m => m.Dispatch(It.IsAny<NotifData>(), "some kafka url"), Times.Once());
+    this._kafkaDispatcherMock.Verify(m => m.Dispatch(It.IsAny<NotifData>(), "some kafka url", It.IsAny<Action<bool>>()), Times.Once());
   }
 
   [Fact]
@@ -436,7 +436,7 @@ public class NotifyTests : IDisposable
     actualData.EventTime = expectedData.EventTime;
     expectedData.Document = null;
     actualData.Document = null;
-    Assert.Equal(expectedData, actualData);
+    Assert.Equal(JsonConvert.SerializeObject(expectedData), JsonConvert.SerializeObject(actualData));
   }
 
   [Fact]
@@ -478,7 +478,7 @@ public class NotifyTests : IDisposable
       Id = changeRecord.Id,
     };
     await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
-    this._webhookDispatcherMock.Verify(m => m.Dispatch(It.IsAny<NotifData>(), "some webhook url"), Times.Once());
+    this._webhookDispatcherMock.Verify(m => m.Dispatch(It.IsAny<NotifData>(), "some webhook url", It.IsAny<Action<bool>>()), Times.Once());
   }
 
   [Fact]
@@ -532,11 +532,56 @@ public class NotifyTests : IDisposable
     actualData.EventTime = expectedData.EventTime;
     expectedData.Document = null;
     actualData.Document = null;
-    Assert.Equal(expectedData, actualData);
+    Assert.Equal(JsonConvert.SerializeObject(expectedData), JsonConvert.SerializeObject(actualData));
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas0NotifDestinations_ItShouldNotCallGetDispatcherOnTheProvidedIDispatchers()
+  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallAckOnTheIQueueInstanceOnceWithTheExpectedData()
+  {
+    var notifConfigs = new NotifConfig[] {
+      new NotifConfig { Protocol = "kafka", TargetURL = "some kafka url" },
+      new NotifConfig { Protocol = "webhook", TargetURL = "some webhook url" },
+    };
+    var notifConfigsStr = JsonConvert.SerializeObject(notifConfigs);
+    var source = new ChangeSource
+    {
+      DbName = "some test db name",
+      CollName = "Not Entities",
+    };
+    var changeRecord = new ChangeRecord
+    {
+      Id = "test doc id",
+      ChangeType = ChangeRecordTypes.Insert,
+      Document = new Dictionary<string, dynamic?> {
+        { "some", "data"},
+      },
+    };
+    var change = new ChangeQueueItem
+    {
+      ChangeTime = DateTime.Now,
+      Source = JsonConvert.SerializeObject(source),
+      ChangeRecord = JsonConvert.SerializeObject(changeRecord),
+    };
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
+      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._cacheMock.Setup(s => s.Get(It.IsAny<string>()))
+      .Returns(Task.FromResult<string?>(notifConfigsStr));
+
+    NotifData expectedData = new NotifData
+    {
+      EventTime = DateTime.Now,
+      ChangeTime = change.ChangeTime,
+      ChangeType = changeRecord.ChangeType.Name,
+      Entity = source.CollName,
+      Id = changeRecord.Id,
+      Document = changeRecord.Document,
+    };
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    this._queueMock.Setup(s => s.Ack("mongo_changes", JsonConvert.SerializeObject(change)));
+  }
+
+  [Fact]
+  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHasZeroNotifDestinations_ItShouldNotCallGetDispatcherOnTheProvidedIDispatchers()
   {
     var source = new ChangeSource
     {

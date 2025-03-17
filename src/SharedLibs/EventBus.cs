@@ -15,7 +15,7 @@ where TValue : class
 
   public void Publish(
     string topicName, Message<TKey, TValue> message,
-    Action<DeliveryReport<TKey, TValue>> handler
+    Action<DeliveryResult<TKey, TValue>> handler
   )
   {
     if (this._inputs.Producer == null)
@@ -23,6 +23,12 @@ where TValue : class
       throw new Exception("An instance of IProducer was not provided in the inputs.");
     }
 
-    this._inputs.Producer.Produce(topicName, message, handler);
+    this._inputs.Producer.ProduceAsync(topicName, message)
+      .ContinueWith((result) =>
+      {
+        handler(result.Result);
+      });
+
+    this._inputs.Producer.Flush();
   }
 }

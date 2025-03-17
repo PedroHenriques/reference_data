@@ -12,10 +12,12 @@ namespace Notification.Tests.Dispatchers;
 public class WebhookTests : IDisposable
 {
   private readonly Mock<HttpMessageHandler> _clientMock;
+  private readonly Mock<Action<bool>> _callbackMock;
 
   public WebhookTests()
   {
     this._clientMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
+    this._callbackMock = new Mock<Action<bool>>(MockBehavior.Strict);
 
     this._clientMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
       .Returns(Task.FromResult(new HttpResponseMessage { StatusCode = HttpStatusCode.OK }));
@@ -25,6 +27,7 @@ public class WebhookTests : IDisposable
   public void Dispose()
   {
     this._clientMock.Reset();
+    this._callbackMock.Reset();
   }
 
   [Fact]
@@ -40,7 +43,7 @@ public class WebhookTests : IDisposable
       Entity = "",
       Id = "",
     };
-    await sut.Dispatch(data, "http://a.com");
+    await sut.Dispatch(data, "http://a.com", this._callbackMock.Object);
 
     Assert.Equal(
       HttpMethod.Post,
@@ -61,7 +64,7 @@ public class WebhookTests : IDisposable
       Entity = "",
       Id = "",
     };
-    await sut.Dispatch(data, "http://ww.my-test.url.com");
+    await sut.Dispatch(data, "http://ww.my-test.url.com", this._callbackMock.Object);
 
     Assert.Equal(
       new Uri("http://ww.my-test.url.com"),
@@ -82,7 +85,7 @@ public class WebhookTests : IDisposable
       Entity = "test entity name",
       Id = "test id",
     };
-    await sut.Dispatch(data, "http://a.com");
+    await sut.Dispatch(data, "http://a.com", this._callbackMock.Object);
 
     Assert.Equal(
       await new StringContent(JsonConvert.SerializeObject(data)).ReadAsStringAsync(),
@@ -103,7 +106,7 @@ public class WebhookTests : IDisposable
       Entity = "test entity name",
       Id = "test id",
     };
-    await sut.Dispatch(data, "http://a.com");
+    await sut.Dispatch(data, "http://a.com", this._callbackMock.Object);
 
     Assert.Equal(
       new MediaTypeHeaderValue("application/json", "utf-8"),
@@ -112,7 +115,7 @@ public class WebhookTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldReturnTrue()
+  public async void Dispatch_ItShouldCallTheProvidedCallbackOnceWithTrue()
   {
     var sut = new Webhook(new HttpClient(this._clientMock.Object));
 
@@ -125,11 +128,13 @@ public class WebhookTests : IDisposable
       Id = "test id",
     };
 
-    Assert.True(await sut.Dispatch(data, "http://a.com"));
+    await sut.Dispatch(data, "http://a.com", this._callbackMock.Object);
+    await Task.Delay(5);
+    this._callbackMock.Verify(m => m(true), Times.Once());
   }
 
   [Fact]
-  public async void Dispatch_IfThePostCallReturnsAFailureStatusCode_ItShouldReturnFalse()
+  public async void Dispatch_IfThePostCallReturnsAFailureStatusCode_ItShouldCallTheProvidedCallbackOnceWithFalse()
   {
     this._clientMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
       .Returns(Task.FromResult(new HttpResponseMessage { StatusCode = HttpStatusCode.NotFound }));
@@ -145,6 +150,8 @@ public class WebhookTests : IDisposable
       Id = "test id",
     };
 
-    Assert.False(await sut.Dispatch(data, "http://a.com"));
+    await sut.Dispatch(data, "http://a.com", this._callbackMock.Object);
+    await Task.Delay(5);
+    this._callbackMock.Verify(m => m(false), Times.Once());
   }
 }

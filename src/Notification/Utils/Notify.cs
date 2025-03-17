@@ -35,8 +35,11 @@ public static class Notify
       }
       else
       {
-        await HandleDataMessage(cache, changeSource.CollName, message.ChangeTime,
-          changeRecord, dispatchers, httpClient);
+        await HandleDataMessage(
+          cache, changeSource.CollName, message.ChangeTime,
+          changeRecord, dispatchers, httpClient,
+          DispatcherHandler(queue, messageStr)
+        );
       }
 
       await queue.Ack(_queueName, messageStr);
@@ -46,6 +49,18 @@ public static class Notify
       // @TODO: call nack()
       Console.WriteLine(e.Message);
     }
+  }
+
+  private static Action<bool> DispatcherHandler(IQueue queue, string messageStr)
+  {
+    return (bool success) =>
+    {
+      if (success == false)
+      {
+        // @TODO: call nack()
+        Console.WriteLine($"Dispatcher signaled a failure in dispatching the message: '{messageStr}'");
+      }
+    };
   }
 
   private static async Task HandleEntitiesMessage(ICache cache,
@@ -76,7 +91,7 @@ public static class Notify
 
   private static async Task HandleDataMessage(ICache cache, string entityName,
     DateTime changeTime, ChangeRecord changeRecord, IDispatchers dispatchers,
-    HttpClient httpClient)
+    HttpClient httpClient, Action<bool> callback)
   {
     List<Task> tasks = new List<Task>();
 
@@ -104,7 +119,7 @@ public static class Notify
           continue;
         }
 
-        tasks.Add(dispatcher.Dispatch(
+        var _ = dispatcher.Dispatch(
           new NotifData
           {
             EventTime = DateTime.Now,
@@ -114,16 +129,15 @@ public static class Notify
             Id = changeRecord.Id,
             Document = changeRecord.Document,
           },
-          notif.TargetURL
-        ));
+          notif.TargetURL,
+          callback
+        );
       }
       catch
       {
         // @TODO: Log it
       }
     }
-
-    await Task.WhenAll(tasks.ToArray());
   }
 
   private static async Task<GetEntityInfoRes> GetEntityInformation(

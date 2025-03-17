@@ -1,0 +1,31 @@
+{
+  "title": "RefData",
+	"type": "object",
+	"additionalProperties": false,
+	"properties": {
+		"eventTime": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"changeTime": {
+			"type": "string",
+			"format": "date-time"
+		},
+		"id": {
+			"type": "string"
+		},
+		"changeType": {
+			"type": "string"
+		},
+		"entity": {
+			"type": "string"
+		},
+		"document": {
+			"type": [
+				"null",
+				"object"
+			],
+			"additionalProperties": {}
+		}
+	}
+}

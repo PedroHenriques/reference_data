@@ -14,13 +14,17 @@ public class Webhook : IDispatcher
     this._client = client;
   }
 
-  public async Task<bool> Dispatch(NotifData data, string destination)
+  public Task Dispatch(NotifData data, string destination, Action<bool> callback)
   {
     HttpContent content = new StringContent(JsonConvert.SerializeObject(data));
     content.Headers.ContentType = new MediaTypeHeaderValue("application/json", "utf-8");
 
-    var res = await this._client.PostAsync(destination, content);
+    this._client.PostAsync(destination, content)
+      .ContinueWith((result) =>
+      {
+        callback(result.Result.IsSuccessStatusCode);
+      });
 
-    return res.IsSuccessStatusCode;
+    return Task.CompletedTask;
   }
 }

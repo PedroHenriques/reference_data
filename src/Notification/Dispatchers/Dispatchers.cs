@@ -7,11 +7,14 @@ public class Dispatchers : IDispatchers
 {
   private readonly Dictionary<string, IDispatcher> _dispatchers;
 
-  public Dispatchers(HttpClient httpClient)
+  public Dispatchers(
+    HttpClient httpClient, IEventBus<string, NotifData> eventBus
+  )
   {
     this._dispatchers = new Dictionary<string, IDispatcher>
     {
       { "webhook", new Webhook(httpClient) },
+      { "event", new Kafka(eventBus) },
     };
   }
 

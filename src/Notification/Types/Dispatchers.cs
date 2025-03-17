@@ -9,5 +9,5 @@ public interface IDispatchers
 
 public interface IDispatcher
 {
-  public Task<bool> Dispatch(NotifData data, string destination);
+  public Task Dispatch(NotifData data, string destination, Action<bool> callback);
 }

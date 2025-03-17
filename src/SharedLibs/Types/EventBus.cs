@@ -16,6 +16,6 @@ public interface IEventBus<TKey, TValue>
 {
   public void Publish(
     string topicName, Message<TKey, TValue> message,
-    Action<DeliveryReport<TKey, TValue>> handler
+    Action<DeliveryResult<TKey, TValue>> handler
   );
 }

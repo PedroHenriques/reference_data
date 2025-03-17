@@ -10,16 +10,18 @@ public class EventBusTests : IDisposable
 {
   private readonly Mock<ISchemaRegistryClient> _schemaRegistryMock;
   private readonly Mock<IProducer<string, string>> _producerMock;
-  private readonly Mock<Action<DeliveryReport<string, string>>> _handlerDelegateMock;
+  private readonly Mock<Action<DeliveryResult<string, string>>> _handlerDelegateMock;
   private EventBusInputs<string, string> _eventBusInputs;
 
   public EventBusTests()
   {
     this._schemaRegistryMock = new Mock<ISchemaRegistryClient>(MockBehavior.Strict);
     this._producerMock = new Mock<IProducer<string, string>>(MockBehavior.Strict);
-    this._handlerDelegateMock = new Mock<Action<DeliveryReport<string, string>>>(MockBehavior.Strict);
+    this._handlerDelegateMock = new Mock<Action<DeliveryResult<string, string>>>(MockBehavior.Strict);
 
-    this._producerMock.Setup(s => s.Produce(It.IsAny<string>(), It.IsAny<Message<string, string>>(), It.IsAny<Action<DeliveryReport<string, string>>>()));
+    this._producerMock.Setup(s => s.ProduceAsync(It.IsAny<string>(), It.IsAny<Message<string, string>>(), It.IsAny<CancellationToken>()))
+      .Returns(Task.FromResult(new DeliveryResult<string, string> { }));
+    this._producerMock.Setup(s => s.Flush(It.IsAny<CancellationToken>()));
 
     this._eventBusInputs = new EventBusInputs<string, string>
     {
@@ -37,7 +39,7 @@ public class EventBusTests : IDisposable
   }
 
   [Fact]
-  public void Publish_ItShouldCallProduceFromTheProducerInstanceOnceWithTheExpectedArguments()
+  public void Publish_ItShouldCallProduceAsyncFromTheProducerInstanceOnceWithTheExpectedArguments()
   {
     this._eventBusInputs.Producer = this._producerMock.Object;
     var sut = new EventBus<string, string>(this._eventBusInputs);
@@ -49,7 +51,43 @@ public class EventBusTests : IDisposable
     };
     sut.Publish("test topic name", testMessage, this._handlerDelegateMock.Object);
 
-    this._producerMock.Verify(m => m.Produce("test topic name", testMessage, this._handlerDelegateMock.Object), Times.Once());
+    this._producerMock.Verify(m => m.ProduceAsync("test topic name", testMessage, default), Times.Once());
+  }
+
+  [Fact]
+  public void Publish_ItShouldCallFlushFromTheProducerInstanceOnceWithTheExpectedArguments()
+  {
+    this._eventBusInputs.Producer = this._producerMock.Object;
+    var sut = new EventBus<string, string>(this._eventBusInputs);
+
+    var testMessage = new Message<string, string>
+    {
+      Key = "test msg key",
+      Value = "test msg value"
+    };
+    sut.Publish("test topic name", testMessage, this._handlerDelegateMock.Object);
+
+    this._producerMock.Verify(m => m.Flush((CancellationToken)default), Times.Once());
+  }
+
+  [Fact]
+  public async void Publish_ItShouldCallTheHandlerReceivedAsInputOnceWithTheExpectedArguments()
+  {
+    var deliveryRes = new DeliveryResult<string, string> { };
+    this._producerMock.Setup(s => s.ProduceAsync(It.IsAny<string>(), It.IsAny<Message<string, string>>(), It.IsAny<CancellationToken>()))
+      .Returns(Task.FromResult(deliveryRes));
+    this._eventBusInputs.Producer = this._producerMock.Object;
+    var sut = new EventBus<string, string>(this._eventBusInputs);
+
+    var testMessage = new Message<string, string>
+    {
+      Key = "test msg key",
+      Value = "test msg value"
+    };
+    sut.Publish("test topic name", testMessage, this._handlerDelegateMock.Object);
+    await Task.Delay(5);
+
+    this._handlerDelegateMock.Verify(m => m(deliveryRes), Times.Once());
   }
 
   [Fact]
