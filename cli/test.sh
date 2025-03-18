@@ -7,8 +7,7 @@ FILTERS="";
 USE_DOCKER=0;
 RUNNING_IN_PIPELINE=0;
 RUN_LOCAL_ENV=0;
-
-exit 0;
+TEST_TYPE="";
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -16,14 +15,31 @@ while [ "$#" -gt 0 ]; do
     --docker) USE_DOCKER=1; shift 1;;
     --cicd) RUNNING_IN_PIPELINE=1; USE_DOCKER=1; shift 1;;
     --filter) FILTERS="--filter ${2}"; shift 2;;
-    --unit) FILTERS="--filter Type=Unit"; shift 1;;
-    --integration) FILTERS="--filter Type=Integration"; RUN_LOCAL_ENV=1; shift 1;;
-    --e2e) FILTERS="--filter Type=E2E"; RUN_LOCAL_ENV=1; shift 1;;
+    --unit) FILTERS="--filter Type=Unit"; TEST_TYPE="unit"; shift 1;;
+    --integration) FILTERS="--filter Type=Integration"; TEST_TYPE="integration"; RUN_LOCAL_ENV=1; shift 1;;
+    --e2e) FILTERS="--filter Type=E2E"; TEST_TYPE="e2e"; RUN_LOCAL_ENV=1; shift 1;;
 
     -*) echo "unknown option: $1" >&2; exit 1;;
     *) PROJ=$1; shift 1;;
   esac
 done
+
+if [ $TEST_TYPE = "unit" ]; then
+  if [ ! -d "./test/unit/" ]; then
+    echo "No './test/unit/' directory found. Assuming no unit tests exist.";
+    exit 0;
+  fi
+elif [ $TEST_TYPE = "integration" ]; then
+  if [ ! -d "./test/integration/" ]; then
+    echo "No './test/integration/' directory found. Assuming no integration tests exist.";
+    exit 0;
+  fi
+elif [ $TEST_TYPE = "e2e" ]; then
+  if [ ! -d "./test/e2e/" ]; then
+    echo "No './test/e2e/' directory found. Assuming no e2e tests exist.";
+    exit 0;
+  fi
+fi
 
 CMD="dotnet test ${FILTERS} ${PROJ}";
 
