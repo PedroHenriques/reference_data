@@ -2,4 +2,4 @@
 set -e;
 
 docker compose -f setup/local/docker-compose.yml -p myapp down;
-docker system prune --volumes;
+docker system prune -f --volumes;
