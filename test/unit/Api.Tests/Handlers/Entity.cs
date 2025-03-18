@@ -13,6 +13,10 @@ public class EntityTests : IDisposable
 
   public EntityTests()
   {
+    Environment.SetEnvironmentVariable("MONGO_CON_STR", "test db con str");
+    Environment.SetEnvironmentVariable("MONGO_DB_NAME", "RefData");
+    Environment.SetEnvironmentVariable("MONGO_COL_NAME", "Entities");
+
     this._dbClientMock = new Mock<IDb>(MockBehavior.Strict);
 
     this._dbClientMock.Setup(s => s.InsertMany<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel[]>()))
@@ -27,6 +31,10 @@ public class EntityTests : IDisposable
 
   public void Dispose()
   {
+    Environment.SetEnvironmentVariable("MONGO_CON_STR", null);
+    Environment.SetEnvironmentVariable("MONGO_DB_NAME", null);
+    Environment.SetEnvironmentVariable("MONGO_COL_NAME", null);
+
     this._dbClientMock.Reset();
   }
 

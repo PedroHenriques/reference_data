@@ -15,6 +15,12 @@ public class DbStreamTests : IDisposable
 
   public DbStreamTests()
   {
+    Environment.SetEnvironmentVariable("REDIS_CON_STR", "test redis con str");
+    Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGE_DATA_KEY", "change_resume_data");
+    Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", "mongo_changes");
+    Environment.SetEnvironmentVariable("MONGO_CON_STR", "test mongo con str");
+    Environment.SetEnvironmentVariable("MONGO_DB_NAME", "RefData");
+
     this._cacheMock = new Mock<ICache>(MockBehavior.Strict);
     this._queueMock = new Mock<IQueue>(MockBehavior.Strict);
     this._dbSharedLibMock = new Mock<IDb>(MockBehavior.Strict);
@@ -31,6 +37,12 @@ public class DbStreamTests : IDisposable
 
   public void Dispose()
   {
+    Environment.SetEnvironmentVariable("REDIS_CON_STR", null);
+    Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGE_DATA_KEY", null);
+    Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", null);
+    Environment.SetEnvironmentVariable("MONGO_CON_STR", null);
+    Environment.SetEnvironmentVariable("MONGO_DB_NAME", null);
+
     this._cacheMock.Reset();
     this._queueMock.Reset();
     this._dbSharedLibMock.Reset();

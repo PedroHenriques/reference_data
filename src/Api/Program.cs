@@ -3,6 +3,7 @@ using MongoDB.Driver;
 using Api.Routers;
 using SharedLibs;
 using SharedLibs.Types;
+using DbConfigs = Api.Configs.Db;
 
 WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
 
@@ -11,13 +12,7 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddSingleton<IMongoClient>(sp =>
 {
-  string? mongoConStr = Environment.GetEnvironmentVariable("MONGO_CON_STR");
-  if (mongoConStr == null)
-  {
-    throw new Exception("Could not get the 'MONGO_CON_STR' environment variable");
-  }
-
-  MongoClient? mongoClient = new MongoClient(mongoConStr);
+  MongoClient? mongoClient = new MongoClient(DbConfigs.MongoConStr);
   if (mongoClient == null)
   {
     throw new Exception("Mongo Client returned NULL.");

@@ -1,4 +1,5 @@
 using Newtonsoft.Json;
+using Notification.Configs;
 using Notification.Types;
 using SharedLibs.Types;
 
@@ -6,12 +7,10 @@ namespace Notification.Utils;
 
 public static class Notify
 {
-  private static readonly string _queueName = "mongo_changes";
-
   public static async Task ProcessMessage(IQueue queue, ICache cache,
     IDispatchers dispatchers, HttpClient httpClient)
   {
-    string messageStr = await queue.Dequeue(_queueName);
+    string messageStr = await queue.Dequeue(Cache.ChangesQueueKey);
     if (String.IsNullOrEmpty(messageStr))
     {
       return;
@@ -29,7 +28,7 @@ public static class Notify
       var changeRecord = JsonConvert.DeserializeObject<ChangeRecord>(
         message.ChangeRecord);
 
-      if (changeSource.CollName == "Entities")
+      if (changeSource.CollName == Db.ColName)
       {
         await HandleEntitiesMessage(cache, changeRecord);
       }
@@ -42,7 +41,7 @@ public static class Notify
         );
       }
 
-      await queue.Ack(_queueName, messageStr);
+      await queue.Ack(Cache.ChangesQueueKey, messageStr);
     }
     catch (Exception e)
     {

@@ -1,17 +1,15 @@
 using MongoDB.Bson;
 using SharedLibs.Types;
 using EntityModel = Api.Models.Entity;
+using Api.Configs;
 
 namespace Api.Handlers;
 
 public class Entity
 {
-  private readonly static string _dbName = "RefData";
-  private readonly static string _dbCollName = "Entities";
-
   public static async Task Create(IDb dbClient, EntityModel[] entities)
   {
-    await dbClient.InsertMany<EntityModel>(_dbName, _dbCollName, entities);
+    await dbClient.InsertMany<EntityModel>(Db.DbName, Db.ColName, entities);
   }
 
   public static async Task Replace(IDb dbClient, EntityModel entity)
@@ -21,13 +19,13 @@ public class Entity
       throw new Exception("Couldn't determine the Entity's ID.");
     }
 
-    await dbClient.ReplaceOne<EntityModel>(_dbName, _dbCollName, entity,
+    await dbClient.ReplaceOne<EntityModel>(Db.DbName, Db.ColName, entity,
       entity.Id);
   }
 
   public static async Task Delete(IDb dbClient, string id)
   {
-    await dbClient.DeleteOne<EntityModel>(_dbName, _dbCollName, id);
+    await dbClient.DeleteOne<EntityModel>(Db.DbName, Db.ColName, id);
   }
 
   public static async Task<FindResult<EntityModel>> Select(IDb dbClient,
@@ -59,7 +57,7 @@ public class Entity
       matchDoc = matchId ?? matchFilter;
     }
 
-    return await dbClient.Find<EntityModel>(_dbName, _dbCollName, page ?? 1,
+    return await dbClient.Find<EntityModel>(Db.DbName, Db.ColName, page ?? 1,
       size ?? 50, matchDoc, false);
   }
 }

@@ -17,8 +17,10 @@ services:
       - API_BASE_URL=http://api:10000
       - KAFKA_BOOTSTRAP_SERVERS=broker:29092
       - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
-      - KAFKA_SCHEMA_SUBJECT=refdata
-      - KAFKA_SCHEMA_VERSION=1
+      - KAFKA_SCHEMA_SUBJECT=${KAFKA_SCHEMA_SUBJECT:-refdata}
+      - KAFKA_SCHEMA_VERSION=${KAFKA_SCHEMA_VERSION:-1}
+      - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}
+      - MONGO_COL_NAME=${MONGO_COL_NAME:-Entities}
     networks:
       - notification
       - notificationDb
@@ -53,6 +55,9 @@ services:
       - DOTNET_ENVIRONMENT=Development
       - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
       - REDIS_CON_STR=dblistener_db:6379
+      - MONGO_DB_NAME=${MONGO_DB_NAME:-RefData}
+      - DBLISTENER_CACHE_CHANGE_DATA_KEY=${DBLISTENER_CACHE_CHANGE_DATA_KEY:-change_resume_data}
+      - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}
     networks:
       - dblistener
       - dblistenerDb
@@ -97,6 +102,8 @@ services:
       - DOTNET_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=10000
       - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
+      - MONGO_DB_NAME=${MONGO_DB_NAME:-RefData}
+      - MONGO_COL_NAME=${MONGO_COL_NAME:-Entities}
     ports:
       - ${API_PORT:-10000}:10000
     networks:
@@ -126,7 +133,7 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${API_DB_ADMIN_USER:-admin}
       - MONGO_INITDB_ROOT_PASSWORD=${API_DB_ADMIN_PW:-pw}
-      - MONGO_INITDB_DATABASE=RefData
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE:-RefData}
     networks:
       - api
       - apiDb
@@ -228,7 +235,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     ports:
-      - 9002:8080
+      - ${KAFKA_GUI_PORT:-9002}:8080
     depends_on:
       - broker
       - schema-registry

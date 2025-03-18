@@ -1,13 +1,12 @@
 using EntityModel = Api.Models.Entity;
 using MongoDB.Bson;
 using SharedLibs.Types;
+using Api.Configs;
 
 namespace Api.Handlers;
 
 public class EntityData
 {
-  private readonly static string _dbName = "RefData";
-
   public static async Task<dynamic> Create(IDb dbClient, string entityId,
     dynamic data)
   {
@@ -24,7 +23,7 @@ public class EntityData
       data[i]._id = ObjectId.GenerateNewId();
     }
 
-    await dbClient.InsertMany<dynamic>(_dbName, entityName, data);
+    await dbClient.InsertMany<dynamic>(Db.DbName, entityName, data);
 
     for (int i = 0; i < data.Length; i++)
     {
@@ -40,7 +39,7 @@ public class EntityData
     var findResult = await FindEntity(dbClient, entityId, null);
 
     string entityName = findResult.Data[0].Name;
-    await dbClient.ReplaceOne<dynamic>(_dbName, entityName, data, docId);
+    await dbClient.ReplaceOne<dynamic>(Db.DbName, entityName, data, docId);
 
     data.id = docId;
     return data;
@@ -51,7 +50,7 @@ public class EntityData
     var findResult = await FindEntity(dbClient, entityId, null);
 
     string entityName = findResult.Data[0].Name;
-    await dbClient.DeleteOne<EntityModel>(_dbName, entityName, docId);
+    await dbClient.DeleteOne<EntityModel>(Db.DbName, entityName, docId);
   }
 
   public static async Task<FindResult<dynamic>> Select(IDb dbClient,
@@ -91,8 +90,8 @@ public class EntityData
       matchDoc = matchDocId ?? matchFilter;
     }
 
-    var result = await dbClient.Find<dynamic>(_dbName, findResult.Data[0].Name,
-      page ?? 1, size ?? 50, matchDoc, false);
+    var result = await dbClient.Find<dynamic>(Db.DbName, findResult.Data[0].Name,
+      page ?? 1, size ?? Db.QueryPageSize, matchDoc, false);
 
     foreach (var item in result.Data)
     {
@@ -128,7 +127,7 @@ public class EntityData
         }
       }
     };
-    var findResult = await dbClient.Find<EntityModel>(_dbName, "Entities", 1, 1,
+    var findResult = await dbClient.Find<EntityModel>(Db.DbName, Db.ColName, 1, 1,
       match, false);
 
     if (findResult.Metadata.TotalCount == 0)

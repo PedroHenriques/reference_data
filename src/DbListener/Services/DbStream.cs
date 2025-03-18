@@ -1,3 +1,4 @@
+using DbListener.Configs;
 using Newtonsoft.Json;
 using SharedLibs.Types;
 
@@ -7,7 +8,7 @@ public static class DbStream
 {
   public static async Task Watch(ICache cache, IQueue queue, IDb db)
   {
-    string? resume = await cache.Get("change_resume_data");
+    string? resume = await cache.Get(Cache.ChangeResumeDataKey);
 
     ResumeData? resumeData = null;
     if (resume != null)
@@ -15,11 +16,11 @@ public static class DbStream
       resumeData = JsonConvert.DeserializeObject<ResumeData>(resume);
     }
 
-    await foreach (WatchData change in db.WatchDb("RefData", resumeData))
+    await foreach (WatchData change in db.WatchDb(Db.DbName, resumeData))
     {
       if (change.ChangeRecord != null)
       {
-        await queue.Enqueue("mongo_changes", new[] {
+        await queue.Enqueue(Cache.ChangesQueueKey, new[] {
           JsonConvert.SerializeObject(new ChangeQueueItem{
             ChangeTime = change.ChangeTime,
             ChangeRecord = JsonConvert.SerializeObject(change.ChangeRecord),
@@ -28,7 +29,7 @@ public static class DbStream
         });
       }
 
-      await cache.Set("change_resume_data",
+      await cache.Set(Cache.ChangeResumeDataKey,
         JsonConvert.SerializeObject(change.ResumeData));
     }
   }

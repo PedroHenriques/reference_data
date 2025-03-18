@@ -20,6 +20,11 @@ public class NotifyTests : IDisposable
 
   public NotifyTests()
   {
+    Environment.SetEnvironmentVariable("REDIS_CON_STR", "test redis con str");
+    Environment.SetEnvironmentVariable("REDIS_CON_STR_QUEUE", "test redis con str queue");
+    Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", "mongo_changes");
+    Environment.SetEnvironmentVariable("MONGO_COL_NAME", "Entities");
+
     this._cacheMock = new Mock<ICache>(MockBehavior.Strict);
     this._queueMock = new Mock<IQueue>(MockBehavior.Strict);
     this._httpClientMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
@@ -53,6 +58,11 @@ public class NotifyTests : IDisposable
 
   public void Dispose()
   {
+    Environment.SetEnvironmentVariable("REDIS_CON_STR", null);
+    Environment.SetEnvironmentVariable("REDIS_CON_STR_QUEUE", null);
+    Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", null);
+    Environment.SetEnvironmentVariable("MONGO_COL_NAME", null);
+
     this._cacheMock.Reset();
     this._queueMock.Reset();
     this._httpClientMock.Reset();

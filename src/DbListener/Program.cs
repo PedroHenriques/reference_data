@@ -1,29 +1,20 @@
-﻿using DbListener.Services;
+﻿using DbConfigs = DbListener.Configs.Db;
+using CacheConfigs = DbListener.Configs.Cache;
+using DbListener.Services;
 using MongoDB.Driver;
 using SharedLibs;
 using SharedLibs.Types;
 using StackExchange.Redis;
 
-string? mongoConStr = Environment.GetEnvironmentVariable("MONGO_CON_STR");
-if (mongoConStr == null)
-{
-  throw new Exception("Could not get the 'MONGO_CON_STR' environment variable");
-}
-
-IMongoClient? mongoClient = new MongoClient(mongoConStr);
+IMongoClient? mongoClient = new MongoClient(DbConfigs.MongoConStr);
 if (mongoClient == null)
 {
   throw new Exception("Mongo Client returned NULL.");
 }
 
-string? redisConStr = Environment.GetEnvironmentVariable("REDIS_CON_STR");
-if (redisConStr == null)
-{
-  throw new Exception("Could not get the 'REDIS_CON_STR' environment variable");
-}
 ConfigurationOptions redisConOpts = new ConfigurationOptions
 {
-  EndPoints = { redisConStr },
+  EndPoints = { CacheConfigs.RedisConStr },
 };
 IConnectionMultiplexer? redisClient = ConnectionMultiplexer.Connect(redisConOpts);
 if (redisClient == null)

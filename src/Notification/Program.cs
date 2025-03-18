@@ -8,15 +8,13 @@ using SharedLibs;
 using SharedLibs.Types;
 using EventBusUtil = SharedLibs.Utils.EventBus<string, SharedLibs.Types.NotifData>;
 using StackExchange.Redis;
+using CacheConfigs = Notification.Configs.Cache;
+using KafkaConfigs = Notification.Configs.Kafka;
+using GeneralConfigs = Notification.Configs.General;
 
-string? redisConStr = Environment.GetEnvironmentVariable("REDIS_CON_STR");
-if (redisConStr == null)
-{
-  throw new Exception("Could not get the 'REDIS_CON_STR' environment variable");
-}
 ConfigurationOptions redisConOpts = new ConfigurationOptions
 {
-  EndPoints = { redisConStr },
+  EndPoints = { CacheConfigs.RedisConStr },
 };
 IConnectionMultiplexer? redisClient = ConnectionMultiplexer.Connect(redisConOpts);
 if (redisClient == null)
@@ -24,14 +22,9 @@ if (redisClient == null)
   throw new Exception("Redis Client returned NULL.");
 }
 
-redisConStr = Environment.GetEnvironmentVariable("REDIS_CON_STR_QUEUE");
-if (redisConStr == null)
-{
-  throw new Exception("Could not get the 'REDIS_CON_STR_QUEUE' environment variable");
-}
 redisConOpts = new ConfigurationOptions
 {
-  EndPoints = { redisConStr },
+  EndPoints = { CacheConfigs.RedisConStrQueue },
 };
 IConnectionMultiplexer? redisClientQueue = ConnectionMultiplexer.Connect(redisConOpts);
 if (redisClient == null)
@@ -39,34 +32,14 @@ if (redisClient == null)
   throw new Exception("Redis Client, for the queue, returned NULL.");
 }
 
-var kafkaSchemaRegistryUrl = Environment.GetEnvironmentVariable("KAFKA_SCHEMA_REGISTRY_URL");
-if (kafkaSchemaRegistryUrl == null)
-{
-  throw new Exception("Could not get the 'KAFKA_SCHEMA_REGISTRY_URL' environment variable");
-}
-var kafkaSchemaSubject = Environment.GetEnvironmentVariable("KAFKA_SCHEMA_SUBJECT");
-if (kafkaSchemaSubject == null)
-{
-  throw new Exception("Could not get the 'KAFKA_SCHEMA_SUBJECT' environment variable");
-}
-var kafkaSchemaVersion = Environment.GetEnvironmentVariable("KAFKA_SCHEMA_VERSION");
-if (kafkaSchemaVersion == null)
-{
-  throw new Exception("Could not get the 'KAFKA_SCHEMA_VERSION' environment variable");
-}
-var schemaRegistryConfig = new SchemaRegistryConfig { Url = kafkaSchemaRegistryUrl };
+var schemaRegistryConfig = new SchemaRegistryConfig { Url = KafkaConfigs.SchemaRegistryUrl };
 ISchemaRegistryClient schemaRegistry = new CachedSchemaRegistryClient(schemaRegistryConfig);
 
-var kafkaBootstrapServers = Environment.GetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS");
-if (kafkaBootstrapServers == null)
-{
-  throw new Exception("Could not get the 'KAFKA_BOOTSTRAP_SERVERS' environment variable");
-}
 var kafkaProducer = new ProducerBuilder<string, NotifData>(
-  new ProducerConfig { BootstrapServers = kafkaBootstrapServers, Acks = Acks.All }
+  new ProducerConfig { BootstrapServers = KafkaConfigs.BootstrapServers, Acks = Acks.All }
 );
 var eventBusInputs = EventBusUtil.PrepareInputs(
-  schemaRegistry, kafkaSchemaSubject, Int32.Parse(kafkaSchemaVersion),
+  schemaRegistry, KafkaConfigs.SchemaSubject, Int32.Parse(KafkaConfigs.SchemaVersion),
   new JsonSerializer<NotifData>(schemaRegistry), kafkaProducer
 );
 
@@ -75,12 +48,7 @@ IQueue queue = new Cache(redisClientQueue);
 var eventBus = new EventBus<string, NotifData>(eventBusInputs);
 IDispatchers dispatchers = new Dispatchers(new HttpClient(), eventBus);
 
-string? apiBaseUrlStr = Environment.GetEnvironmentVariable("API_BASE_URL");
-if (apiBaseUrlStr == null)
-{
-  throw new Exception("Could not get the 'API_BASE_URL' environment variable");
-}
 HttpClient httpClient = new HttpClient();
-httpClient.BaseAddress = new Uri(apiBaseUrlStr);
+httpClient.BaseAddress = new Uri(GeneralConfigs.ApiBaseUrl);
 
 await Notify.Watch(queue, cache, dispatchers, httpClient);
