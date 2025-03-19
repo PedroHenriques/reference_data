@@ -4,11 +4,11 @@ using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
 using SharedLibs.Types;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Api.Routers;
 
-// Not unit testable due to WebApplication not exposing an interface and
-// the invoked methods being extension methods.
+[ExcludeFromCodeCoverage(Justification = "Not unit testable due to WebApplication not exposing an interface and the invoked methods being extension methods.")]
 public class EntityData
 {
   private readonly WebApplication _app;

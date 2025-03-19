@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Notification.Configs;
 
+[ExcludeFromCodeCoverage(Justification = "Not unit testable due to being a config static class.")]
 public static class Cache
 {
   public static string RedisConStr = Environment.GetEnvironmentVariable("REDIS_CON_STR")

@@ -2,6 +2,7 @@ using SharedLibs.Types;
 using MongoDB.Bson;
 using MongoDB.Driver;
 using DbUtils = SharedLibs.Utils;
+using System.Diagnostics.CodeAnalysis;
 
 namespace SharedLibs;
 
@@ -170,8 +171,7 @@ public class Db : IDb
     };
   }
 
-  // Not unit testable due to WatchAsync() being an extension method of the
-  // MongoDb SDK.
+  [ExcludeFromCodeCoverage(Justification = "Not unit testable due to WatchAsync() being an extension method of the MongoDb SDK.")]
   public async IAsyncEnumerable<WatchData> WatchDb(string dbName,
     ResumeData? resumeData = null)
   {

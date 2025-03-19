@@ -2,11 +2,11 @@ using EntityModel = Api.Models.Entity;
 using EntityHandler = Api.Handlers.Entity;
 using Microsoft.AspNetCore.Mvc;
 using SharedLibs.Types;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Api.Routers;
 
-// Not unit testable due to WebApplication not exposing an interface and
-// the invoked methods being extension methods.
+[ExcludeFromCodeCoverage(Justification = "Not unit testable due to WebApplication not exposing an interface and the invoked methods being extension methods.")]
 public class Entities
 {
   private readonly WebApplication _app;

@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace Notification.Configs;
 
+[ExcludeFromCodeCoverage(Justification = "Not unit testable due to being a config static class.")]
 public static class Kafka
 {
   public static string SchemaRegistryUrl = Environment.GetEnvironmentVariable("KAFKA_SCHEMA_REGISTRY_URL")

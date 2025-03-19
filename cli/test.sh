@@ -8,6 +8,7 @@ USE_DOCKER=0;
 RUNNING_IN_PIPELINE=0;
 RUN_LOCAL_ENV=0;
 TEST_TYPE="";
+COVERAGE="";
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -18,6 +19,7 @@ while [ "$#" -gt 0 ]; do
     --unit) FILTERS="--filter Type=Unit"; TEST_TYPE="unit"; shift 1;;
     --integration) FILTERS="--filter Type=Integration"; TEST_TYPE="integration"; RUN_LOCAL_ENV=1; shift 1;;
     --e2e) FILTERS="--filter Type=E2E"; TEST_TYPE="e2e"; RUN_LOCAL_ENV=1; shift 1;;
+    --coverage) COVERAGE="--collect:\"XPlat Code Coverage\""; FILTERS="--filter Type=Unit"; TEST_TYPE="unit"; shift 1;;
 
     -*) echo "unknown option: $1" >&2; exit 1;;
     *) PROJ=$1; shift 1;;
@@ -41,7 +43,11 @@ elif [ $TEST_TYPE = "e2e" ]; then
   fi
 fi
 
-CMD="dotnet test ${FILTERS} ${PROJ}";
+if [ $RUN_LOCAL_ENV -eq 1 ]; then
+  sh ./cli/start.sh;
+fi
+
+CMD="dotnet test ${FILTERS} ${COVERAGE} ${PROJ}";
 
 if [ $WATCH -eq 1 ]; then
   if [ -z "$PROJ" ]; then
@@ -57,7 +63,7 @@ if [ $USE_DOCKER -eq 1 ]; then
     INTERACTIVE_FLAGS="-i";
   fi
 
-  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "$CMD";
+  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
 else
-  $CMD;
+  eval "${CMD}";
 fi
