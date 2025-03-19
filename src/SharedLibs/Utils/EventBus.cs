@@ -1,3 +1,4 @@
+using System.Diagnostics.CodeAnalysis;
 using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Confluent.SchemaRegistry.Serdes;
@@ -5,8 +6,7 @@ using SharedLibs.Types;
 
 namespace SharedLibs.Utils;
 
-// Not unit testable due to the use of ProducerBuilder is on non-overwritable
-// methods
+[ExcludeFromCodeCoverage(Justification = "Not unit testable due to the use of ProducerBuilder, from the Confluent SDK, is on non-overwritable methods.")]
 public static class EventBus<TKey, TValue>
 where TValue : class
 {

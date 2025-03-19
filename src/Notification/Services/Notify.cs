@@ -1,12 +1,13 @@
 using NotifyUtils = Notification.Utils.Notify;
 using SharedLibs.Types;
 using Notification.Types;
+using System.Diagnostics.CodeAnalysis;
 
 namespace Notification.Services;
 
 public static class Notify
 {
-  // Not unit testable due to endless loop
+  [ExcludeFromCodeCoverage(Justification = "Not unit testable due to having an endless loop.")]
   public static async Task Watch(IQueue queue, ICache cache,
     IDispatchers dispatchers, HttpClient httpClient)
   {

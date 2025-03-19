@@ -124,9 +124,24 @@ Where:
 - `--e2e` Run only end to end tests
 - `--docker` Run the tests in a Docker container
 - `--filter` Run only the tests that match the provided [xunit filter](https://learn.microsoft.com/en-us/dotnet/core/testing/selective-unit-tests?pivots=xunit)
+- `--coverage` Run the unit tests with coverage report using the [coverlet collector](https://github.com/coverlet-coverage/coverlet)
 
 **projects:**<br>
 Whitespace separated list of test `.csproj` to run.
+
+### Generating test coverage reports
+To generate unit test coverage reports, including an HTML report, from the root of the project run the command
+```sh
+sh cli/coverage.sh [flags]
+```
+Where:
+
+**flags:**
+- `--docker` Build the coverage report in a Docker container
+
+Each test project's coverage report will be located inside a directory named `TestResults`, inside each test project's directory.
+
+The HTML coverage report is located inside the directory `./coverageReport`, which contains an `index.html` file.
 
 ## CI/CD lifecycle
 This project uses the reusable pipeline templates for Docker build artifacts located at `https://github.com/PedroHenriques/ci_cd_workflow_templates` and follows the work flow below.

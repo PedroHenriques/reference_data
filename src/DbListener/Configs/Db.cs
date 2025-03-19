@@ -1,5 +1,8 @@
+using System.Diagnostics.CodeAnalysis;
+
 namespace DbListener.Configs;
 
+[ExcludeFromCodeCoverage(Justification = "Not unit testable due to being a config static class.")]
 public static class Db
 {
   public static string MongoConStr = Environment.GetEnvironmentVariable("MONGO_CON_STR")
