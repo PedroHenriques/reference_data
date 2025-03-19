@@ -26,22 +26,26 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-if [ $TEST_TYPE = "unit" ]; then
-  if [ ! -d "./test/unit/" ]; then
-    echo "No './test/unit/' directory found. Assuming no unit tests exist.";
-    exit 0;
-  fi
-elif [ $TEST_TYPE = "integration" ]; then
-  if [ ! -d "./test/integration/" ]; then
-    echo "No './test/integration/' directory found. Assuming no integration tests exist.";
-    exit 0;
-  fi
-elif [ $TEST_TYPE = "e2e" ]; then
-  if [ ! -d "./test/e2e/" ]; then
-    echo "No './test/e2e/' directory found. Assuming no e2e tests exist.";
-    exit 0;
-  fi
-fi
+case "${TEST_TYPE}" in
+  "unit")
+    if [ ! -d "./test/unit/" ]; then
+      echo "No './test/unit/' directory found. Assuming no unit tests exist.";
+      exit 0;
+    fi
+    ;;
+  "integration")
+    if [ ! -d "./test/integration/" ]; then
+      echo "No './test/integration/' directory found. Assuming no integration tests exist.";
+      exit 0;
+    fi
+    ;;
+  "e2e")
+    if [ ! -d "./test/e2e/" ]; then
+      echo "No './test/e2e/' directory found. Assuming no e2e tests exist.";
+      exit 0;
+    fi
+    ;;
+esac
 
 if [ $RUN_LOCAL_ENV -eq 1 ]; then
   sh ./cli/start.sh;
