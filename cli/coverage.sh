@@ -27,7 +27,7 @@ find . -type d -name "TestResults" -exec rm -rf {} +;
 
 sh ./cli/test.sh --coverage $DOCKER_FLAG $CICD_FLAG;
 
-CMD="dotnet reportgenerator -reports:\"./test/**/coverage.cobertura.xml\" -targetdir:\"coverageReport\" -reporttypes:Html";
+CMD="dotnet tool restore; dotnet reportgenerator -reports:\"./test/**/coverage.cobertura.xml\" -targetdir:\"coverageReport\" -reporttypes:Html;";
 
 if [ $USE_DOCKER -eq 1 ]; then
   INTERACTIVE_FLAGS="-it";
@@ -35,7 +35,7 @@ if [ $USE_DOCKER -eq 1 ]; then
     INTERACTIVE_FLAGS="-i";
   fi
 
-  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "dotnet tool restore; ${CMD};";
+  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
 else
   eval "${CMD}";
 fi
