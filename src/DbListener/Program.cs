@@ -1,35 +1,27 @@
 ﻿using DbConfigs = DbListener.Configs.Db;
 using CacheConfigs = DbListener.Configs.Cache;
 using DbListener.Services;
-using MongoDB.Driver;
-using SharedLibs;
-using SharedLibs.Types;
 using StackExchange.Redis;
 using System.Diagnostics.CodeAnalysis;
+using Toolkit.Types;
+using Toolkit;
+using MongodbUtils = Toolkit.Utils.Mongodb;
+using RedisUtils = Toolkit.Utils.Redis;
 
 [ExcludeFromCodeCoverage(Justification = "Not unit testable due to instantiating classes for service setup.")]
 internal class Program
 {
   private static async Task Main(string[] args)
   {
-    IMongoClient? mongoClient = new MongoClient(DbConfigs.MongoConStr);
-    if (mongoClient == null)
-    {
-      throw new Exception("Mongo Client returned NULL.");
-    }
+    var mongodbInputs = MongodbUtils.PrepareInputs(DbConfigs.MongoConStr);
+    IMongodb db = new Mongodb(mongodbInputs);
 
     ConfigurationOptions redisConOpts = new ConfigurationOptions
     {
       EndPoints = { CacheConfigs.RedisConStr },
     };
-    IConnectionMultiplexer? redisClient = ConnectionMultiplexer.Connect(redisConOpts);
-    if (redisClient == null)
-    {
-      throw new Exception("Redis Client returned NULL.");
-    }
-
-    IDb db = new Db(mongoClient);
-    ICache cache = new Cache(redisClient);
+    var redisInputs = RedisUtils.PrepareInputs(redisConOpts);
+    ICache cache = new Redis(redisInputs);
     IQueue queue = (IQueue)cache;
 
     await DbStream.Watch(cache, queue, db);

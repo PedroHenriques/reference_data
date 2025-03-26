@@ -1,21 +1,22 @@
 using Confluent.Kafka;
 using Notification.Types;
 using SharedLibs.Types;
+using Toolkit.Types;
 
 namespace Notification.Dispatchers;
 
 public class Kafka : IDispatcher
 {
-  private readonly IEventBus<string, NotifData> _eventBus;
+  private readonly IKafka<string, NotifData> _kafka;
 
-  public Kafka(IEventBus<string, NotifData> eventBus)
+  public Kafka(IKafka<string, NotifData> eventBus)
   {
-    this._eventBus = eventBus;
+    this._kafka = eventBus;
   }
 
   public Task Dispatch(NotifData data, string destination, Action<bool> callback)
   {
-    this._eventBus.Publish(
+    this._kafka.Publish(
       destination,
       new Message<string, NotifData>
       {

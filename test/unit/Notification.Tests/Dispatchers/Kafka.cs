@@ -2,34 +2,35 @@ using Confluent.Kafka;
 using Moq;
 using Notification.Dispatchers;
 using SharedLibs.Types;
+using Toolkit.Types;
 
 namespace Notification.Tests.Dispatchers;
 
 [Trait("Type", "Unit")]
 public class KafkaTests : IDisposable
 {
-  private readonly Mock<IEventBus<string, NotifData>> _eventBusMock;
+  private readonly Mock<IKafka<string, NotifData>> _kafkaMock;
   private readonly Mock<Action<bool>> _callbackMock;
 
   public KafkaTests()
   {
-    this._eventBusMock = new Mock<IEventBus<string, NotifData>>(MockBehavior.Strict);
+    this._kafkaMock = new Mock<IKafka<string, NotifData>>(MockBehavior.Strict);
     this._callbackMock = new Mock<Action<bool>>(MockBehavior.Strict);
 
-    this._eventBusMock.Setup(s => s.Publish(It.IsAny<string>(), It.IsAny<Message<string, NotifData>>(), It.IsAny<Action<DeliveryResult<string, NotifData>>>()));
+    this._kafkaMock.Setup(s => s.Publish(It.IsAny<string>(), It.IsAny<Message<string, NotifData>>(), It.IsAny<Action<DeliveryResult<string, NotifData>>>()));
     this._callbackMock.Setup(s => s(It.IsAny<bool>()));
   }
 
   public void Dispose()
   {
-    this._eventBusMock.Reset();
+    this._kafkaMock.Reset();
     this._callbackMock.Reset();
   }
 
   [Fact]
   public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstanceOnceWithTheExpectedArguments()
   {
-    var sut = new Kafka(this._eventBusMock.Object);
+    var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData
     {
       ChangeTime = DateTime.Now,
@@ -47,13 +48,13 @@ public class KafkaTests : IDisposable
 
     await sut.Dispatch(data, "test destination", this._callbackMock.Object);
 
-    this._eventBusMock.Verify(m => m.Publish("test destination", It.IsAny<Message<string, NotifData>>(), It.IsAny<Action<DeliveryResult<string, NotifData>>>()), Times.Once());
+    this._kafkaMock.Verify(m => m.Publish("test destination", It.IsAny<Message<string, NotifData>>(), It.IsAny<Action<DeliveryResult<string, NotifData>>>()), Times.Once());
   }
 
   [Fact]
   public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstanceOnceWithTheExpectedMessageKey()
   {
-    var sut = new Kafka(this._eventBusMock.Object);
+    var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData
     {
       ChangeTime = DateTime.Now,
@@ -67,14 +68,14 @@ public class KafkaTests : IDisposable
 
     Assert.Equal(
       data.Id,
-      (this._eventBusMock.Invocations[0].Arguments[1] as Message<string, NotifData>).Key
+      (this._kafkaMock.Invocations[0].Arguments[1] as Message<string, NotifData>).Key
     );
   }
 
   [Fact]
   public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstanceOnceWithTheExpectedMessageValue()
   {
-    var sut = new Kafka(this._eventBusMock.Object);
+    var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData
     {
       ChangeTime = DateTime.Now,
@@ -88,14 +89,14 @@ public class KafkaTests : IDisposable
 
     Assert.Equal(
       data,
-      (this._eventBusMock.Invocations[0].Arguments[1] as Message<string, NotifData>).Value
+      (this._kafkaMock.Invocations[0].Arguments[1] as Message<string, NotifData>).Value
     );
   }
 
   [Fact]
   public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_ItShouldCallTheCallbackOnceWithTrue()
   {
-    var sut = new Kafka(this._eventBusMock.Object);
+    var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData
     {
       ChangeTime = DateTime.Now,
@@ -106,7 +107,7 @@ public class KafkaTests : IDisposable
     };
 
     await sut.Dispatch(data, "test destination", this._callbackMock.Object);
-    var callback = this._eventBusMock.Invocations[0].Arguments[2] as Action<DeliveryResult<string, NotifData>>;
+    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<string, NotifData>>;
 
     DeliveryResult<string, NotifData> dispatchRes = new DeliveryResult<string, NotifData> { Status = PersistenceStatus.Persisted };
     callback(dispatchRes);
@@ -116,7 +117,7 @@ public class KafkaTests : IDisposable
   [Fact]
   public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_IfThePublishResultHasAStatusOfNotPersisted_ItShouldCallTheCallbackOnceWithFalse()
   {
-    var sut = new Kafka(this._eventBusMock.Object);
+    var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData
     {
       ChangeTime = DateTime.Now,
@@ -127,7 +128,7 @@ public class KafkaTests : IDisposable
     };
 
     await sut.Dispatch(data, "test destination", this._callbackMock.Object);
-    var callback = this._eventBusMock.Invocations[0].Arguments[2] as Action<DeliveryResult<string, NotifData>>;
+    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<string, NotifData>>;
 
     DeliveryResult<string, NotifData> dispatchRes = new DeliveryResult<string, NotifData> { Status = PersistenceStatus.NotPersisted };
     callback(dispatchRes);
@@ -137,7 +138,7 @@ public class KafkaTests : IDisposable
   [Fact]
   public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_IfThePublishResultHasAStatusOfPossiblyPersisted_ItShouldCallTheCallbackOnceWithTrue()
   {
-    var sut = new Kafka(this._eventBusMock.Object);
+    var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData
     {
       ChangeTime = DateTime.Now,
@@ -148,7 +149,7 @@ public class KafkaTests : IDisposable
     };
 
     await sut.Dispatch(data, "test destination", this._callbackMock.Object);
-    var callback = this._eventBusMock.Invocations[0].Arguments[2] as Action<DeliveryResult<string, NotifData>>;
+    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<string, NotifData>>;
 
     DeliveryResult<string, NotifData> dispatchRes = new DeliveryResult<string, NotifData> { Status = PersistenceStatus.PossiblyPersisted };
     callback(dispatchRes);

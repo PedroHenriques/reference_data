@@ -1,8 +1,8 @@
 using EntityModel = Api.Models.Entity;
 using EntityHandler = Api.Handlers.Entity;
 using Microsoft.AspNetCore.Mvc;
-using SharedLibs.Types;
 using System.Diagnostics.CodeAnalysis;
+using Toolkit.Types;
 
 namespace Api.Routers;
 
@@ -25,7 +25,7 @@ public class Entities
   {
     this._app.MapPost(
       "/v1/entities/",
-      async (IDb db, [FromBody] EntityModel[] entities) =>
+      async (IMongodb db, [FromBody] EntityModel[] entities) =>
       {
         await EntityHandler.Create(db, entities);
         return TypedResults.Ok(entities);
@@ -37,7 +37,7 @@ public class Entities
   {
     this._app.MapPut(
       "/v1/entities/{id}",
-      async (IDb db, EntityModel entity) =>
+      async (IMongodb db, EntityModel entity) =>
       {
         await EntityHandler.Replace(db, entity);
         return TypedResults.Ok(entity);
@@ -49,7 +49,7 @@ public class Entities
   {
     this._app.MapDelete(
       "/v1/entities/{id}",
-      async (IDb db, [FromRoute] string id) =>
+      async (IMongodb db, [FromRoute] string id) =>
       {
         await EntityHandler.Delete(db, id);
         return Results.Ok();
@@ -61,7 +61,7 @@ public class Entities
   {
     this._app.MapGet(
       "/v1/entities/",
-      async (IDb db, [FromQuery] int? page = null,
+      async (IMongodb db, [FromQuery] int? page = null,
         [FromQuery] int? pageSize = null, [FromQuery] string? filter = null) =>
       {
         var data = await EntityHandler.Select(db, page, pageSize, null, filter);
@@ -71,7 +71,7 @@ public class Entities
 
     this._app.MapGet(
       "/v1/entities/{id}",
-      async (IDb db, [FromRoute] string id) =>
+      async (IMongodb db, [FromRoute] string id) =>
       {
         var data = await EntityHandler.Select(db, null, null, id);
         return TypedResults.Ok(data);

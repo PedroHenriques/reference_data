@@ -2,14 +2,14 @@ using EntityModel = Api.Models.Entity;
 using Moq;
 using Api.Handlers;
 using MongoDB.Bson;
-using SharedLibs.Types;
+using Toolkit.Types;
 
 namespace Api.Tests.Handlers;
 
 [Trait("Type", "Unit")]
 public class EntityTests : IDisposable
 {
-  private readonly Mock<IDb> _dbClientMock;
+  private readonly Mock<IMongodb> _mongodbMock;
 
   public EntityTests()
   {
@@ -17,15 +17,15 @@ public class EntityTests : IDisposable
     Environment.SetEnvironmentVariable("MONGO_DB_NAME", "RefData");
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", "Entities");
 
-    this._dbClientMock = new Mock<IDb>(MockBehavior.Strict);
+    this._mongodbMock = new Mock<IMongodb>(MockBehavior.Strict);
 
-    this._dbClientMock.Setup(s => s.InsertMany<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel[]>()))
+    this._mongodbMock.Setup(s => s.InsertMany<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel[]>()))
       .Returns(Task.Delay(1));
-    this._dbClientMock.Setup(s => s.ReplaceOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel>(), It.IsAny<string>()))
+    this._mongodbMock.Setup(s => s.ReplaceOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel>(), It.IsAny<string>()))
       .Returns(Task.Delay(1));
-    this._dbClientMock.Setup(s => s.DeleteOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
+    this._mongodbMock.Setup(s => s.DeleteOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
       .Returns(Task.Delay(1));
-    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { }));
   }
 
@@ -35,7 +35,7 @@ public class EntityTests : IDisposable
     Environment.SetEnvironmentVariable("MONGO_DB_NAME", null);
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", null);
 
-    this._dbClientMock.Reset();
+    this._mongodbMock.Reset();
   }
 
   [Fact]
@@ -46,8 +46,8 @@ public class EntityTests : IDisposable
       new EntityModel { Name = "" },
     };
 
-    await Entity.Create(this._dbClientMock.Object, testEntities);
-    this._dbClientMock.Verify(m => m.InsertMany<EntityModel>("RefData", "Entities", testEntities), Times.Once());
+    await Entity.Create(this._mongodbMock.Object, testEntities);
+    this._mongodbMock.Verify(m => m.InsertMany<EntityModel>("RefData", "Entities", testEntities), Times.Once());
   }
 
   [Fact]
@@ -55,8 +55,8 @@ public class EntityTests : IDisposable
   {
     EntityModel testEntity = new EntityModel { Id = "test id", Name = "" };
 
-    await Entity.Replace(this._dbClientMock.Object, testEntity);
-    this._dbClientMock.Verify(m => m.ReplaceOne<EntityModel>("RefData", "Entities", testEntity, "test id"), Times.Once());
+    await Entity.Replace(this._mongodbMock.Object, testEntity);
+    this._mongodbMock.Verify(m => m.ReplaceOne<EntityModel>("RefData", "Entities", testEntity, "test id"), Times.Once());
   }
 
   [Fact]
@@ -64,7 +64,7 @@ public class EntityTests : IDisposable
   {
     EntityModel testEntity = new EntityModel { Name = "" };
 
-    Exception e = await Assert.ThrowsAsync<Exception>(() => Entity.Replace(this._dbClientMock.Object, testEntity));
+    Exception e = await Assert.ThrowsAsync<Exception>(() => Entity.Replace(this._mongodbMock.Object, testEntity));
     Assert.Equal("Couldn't determine the Entity's ID.", e.Message);
   }
 
@@ -73,8 +73,8 @@ public class EntityTests : IDisposable
   {
     EntityModel testEntity = new EntityModel { Name = "" };
 
-    await Assert.ThrowsAsync<Exception>(() => Entity.Replace(this._dbClientMock.Object, testEntity));
-    this._dbClientMock.Verify(m => m.ReplaceOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel>(), It.IsAny<string>()), Times.Never());
+    await Assert.ThrowsAsync<Exception>(() => Entity.Replace(this._mongodbMock.Object, testEntity));
+    this._mongodbMock.Verify(m => m.ReplaceOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<EntityModel>(), It.IsAny<string>()), Times.Never());
   }
 
   [Fact]
@@ -82,25 +82,25 @@ public class EntityTests : IDisposable
   {
     string testId = "rng test id";
 
-    await Entity.Delete(this._dbClientMock.Object, testId);
-    this._dbClientMock.Verify(m => m.DeleteOne<EntityModel>("RefData", "Entities", testId), Times.Once());
+    await Entity.Delete(this._mongodbMock.Object, testId);
+    this._mongodbMock.Verify(m => m.DeleteOne<EntityModel>("RefData", "Entities", testId), Times.Once());
   }
 
   [Fact]
   public async void Select_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
-    await Entity.Select(this._dbClientMock.Object);
-    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 1, 50, null, false), Times.Once());
+    await Entity.Select(this._mongodbMock.Object);
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 1, 50, null, false), Times.Once());
   }
 
   [Fact]
   public async void Select_ItShouldReturnTheResultOfCallingFindFromTheProvidedDbClient()
   {
     var expectedResult = new FindResult<EntityModel> { };
-    this._dbClientMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
       .Returns(Task.FromResult(expectedResult));
 
-    Assert.Equal(expectedResult, await Entity.Select(this._dbClientMock.Object));
+    Assert.Equal(expectedResult, await Entity.Select(this._mongodbMock.Object));
   }
 
   [Fact]
@@ -108,8 +108,8 @@ public class EntityTests : IDisposable
   {
     int page = 456;
 
-    await Entity.Select(this._dbClientMock.Object, page);
-    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", page, 50, null, false), Times.Once());
+    await Entity.Select(this._mongodbMock.Object, page);
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", page, 50, null, false), Times.Once());
   }
 
   [Fact]
@@ -117,8 +117,8 @@ public class EntityTests : IDisposable
   {
     int size = 987;
 
-    await Entity.Select(this._dbClientMock.Object, null, size);
-    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 1, size, null, false), Times.Once());
+    await Entity.Select(this._mongodbMock.Object, null, size);
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 1, size, null, false), Times.Once());
   }
 
   [Fact]
@@ -129,8 +129,8 @@ public class EntityTests : IDisposable
       { "_id", testId },
     };
 
-    await Entity.Select(this._dbClientMock.Object, 73, 9410, testId.ToString());
-    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
+    await Entity.Select(this._mongodbMock.Object, 73, 9410, testId.ToString());
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
   }
 
   [Fact]
@@ -140,8 +140,8 @@ public class EntityTests : IDisposable
       { "hello", "world" },
       { "something", true },
     };
-    await Entity.Select(this._dbClientMock.Object, 73, 9410, null, expectedMatch.ToString());
-    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
+    await Entity.Select(this._mongodbMock.Object, 73, 9410, null, expectedMatch.ToString());
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
   }
 
   [Fact]
@@ -159,7 +159,7 @@ public class EntityTests : IDisposable
       } },
     };
 
-    await Entity.Select(this._dbClientMock.Object, 73, 9410, testId.ToString(), testMatch.ToString());
-    this._dbClientMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
+    await Entity.Select(this._mongodbMock.Object, 73, 9410, testId.ToString(), testMatch.ToString());
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
   }
 }

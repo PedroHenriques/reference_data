@@ -1,13 +1,13 @@
 using EntityModel = Api.Models.Entity;
 using MongoDB.Bson;
-using SharedLibs.Types;
 using Api.Configs;
+using Toolkit.Types;
 
 namespace Api.Handlers;
 
 public class EntityData
 {
-  public static async Task<dynamic> Create(IDb dbClient, string entityId,
+  public static async Task<dynamic> Create(IMongodb dbClient, string entityId,
     dynamic data)
   {
     if (data.GetType().IsArray == false)
@@ -33,7 +33,7 @@ public class EntityData
     return data;
   }
 
-  public static async Task<dynamic> Replace(IDb dbClient, string entityId,
+  public static async Task<dynamic> Replace(IMongodb dbClient, string entityId,
     string docId, dynamic data)
   {
     var findResult = await FindEntity(dbClient, entityId, null);
@@ -45,7 +45,7 @@ public class EntityData
     return data;
   }
 
-  public static async Task Delete(IDb dbClient, string entityId, string docId)
+  public static async Task Delete(IMongodb dbClient, string entityId, string docId)
   {
     var findResult = await FindEntity(dbClient, entityId, null);
 
@@ -53,7 +53,7 @@ public class EntityData
     await dbClient.DeleteOne<EntityModel>(Db.DbName, entityName, docId);
   }
 
-  public static async Task<FindResult<dynamic>> Select(IDb dbClient,
+  public static async Task<FindResult<dynamic>> Select(IMongodb dbClient,
     string? entityId = null, string? entityName = null, string? docId = null,
     int? page = null, int? size = null, string? match = null)
   {
@@ -102,7 +102,7 @@ public class EntityData
     return result;
   }
 
-  private static async Task<FindResult<EntityModel>> FindEntity(IDb dbClient,
+  private static async Task<FindResult<EntityModel>> FindEntity(IMongodb dbClient,
     string? entityId, string? entityName)
   {
     BsonDocument? findMatch;

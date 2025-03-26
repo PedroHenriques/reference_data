@@ -2,6 +2,7 @@ using Newtonsoft.Json;
 using Notification.Configs;
 using Notification.Types;
 using SharedLibs.Types;
+using Toolkit.Types;
 
 namespace Notification.Utils;
 
@@ -94,7 +95,7 @@ public static class Notify
   {
     List<Task> tasks = new List<Task>();
 
-    var configsStr = await cache.Get($"entity:\"{entityName}\"|notif configs");
+    var configsStr = await cache.GetString($"entity:\"{entityName}\"|notif configs");
     if (configsStr == null)
     {
       var getEntityRes = await GetEntityInformation(httpClient, cache, entityName);

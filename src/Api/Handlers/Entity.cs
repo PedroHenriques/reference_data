@@ -1,18 +1,18 @@
 using MongoDB.Bson;
-using SharedLibs.Types;
 using EntityModel = Api.Models.Entity;
 using Api.Configs;
+using Toolkit.Types;
 
 namespace Api.Handlers;
 
 public class Entity
 {
-  public static async Task Create(IDb dbClient, EntityModel[] entities)
+  public static async Task Create(IMongodb dbClient, EntityModel[] entities)
   {
     await dbClient.InsertMany<EntityModel>(Db.DbName, Db.ColName, entities);
   }
 
-  public static async Task Replace(IDb dbClient, EntityModel entity)
+  public static async Task Replace(IMongodb dbClient, EntityModel entity)
   {
     if (entity.Id == null)
     {
@@ -23,12 +23,12 @@ public class Entity
       entity.Id);
   }
 
-  public static async Task Delete(IDb dbClient, string id)
+  public static async Task Delete(IMongodb dbClient, string id)
   {
     await dbClient.DeleteOne<EntityModel>(Db.DbName, Db.ColName, id);
   }
 
-  public static async Task<FindResult<EntityModel>> Select(IDb dbClient,
+  public static async Task<FindResult<EntityModel>> Select(IMongodb dbClient,
     int? page = null, int? size = null, string? id = null, string? match = null)
   {
     BsonDocument? matchId = null;

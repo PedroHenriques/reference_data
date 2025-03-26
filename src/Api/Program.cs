@@ -1,10 +1,10 @@
 using EntityModel = Api.Models.Entity;
-using MongoDB.Driver;
 using Api.Routers;
-using SharedLibs;
-using SharedLibs.Types;
 using DbConfigs = Api.Configs.Db;
 using System.Diagnostics.CodeAnalysis;
+using Toolkit;
+using Toolkit.Types;
+using MongodbUtils = Toolkit.Utils.Mongodb;
 
 [ExcludeFromCodeCoverage(Justification = "Not unit testable due to instantiating classes for service setup.")]
 internal class Program
@@ -16,16 +16,11 @@ internal class Program
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
 
-    builder.Services.AddSingleton<IMongoClient>(sp =>
+    builder.Services.AddSingleton<IMongodb>(sp =>
     {
-      MongoClient? mongoClient = new MongoClient(DbConfigs.MongoConStr);
-      if (mongoClient == null)
-      {
-        throw new Exception("Mongo Client returned NULL.");
-      }
-      return mongoClient;
+      var inputs = MongodbUtils.PrepareInputs(DbConfigs.MongoConStr);
+      return new Mongodb(inputs);
     });
-    builder.Services.AddSingleton<IDb, Db>();
     builder.Services.AddScoped<EntityModel>();
 
     WebApplication app = builder.Build();

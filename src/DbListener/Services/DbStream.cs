@@ -1,14 +1,15 @@
 using DbListener.Configs;
 using Newtonsoft.Json;
 using SharedLibs.Types;
+using Toolkit.Types;
 
 namespace DbListener.Services;
 
 public static class DbStream
 {
-  public static async Task Watch(ICache cache, IQueue queue, IDb db)
+  public static async Task Watch(ICache cache, IQueue queue, IMongodb db)
   {
-    string? resume = await cache.Get(Cache.ChangeResumeDataKey);
+    string? resume = await cache.GetString(Cache.ChangeResumeDataKey);
 
     ResumeData? resumeData = null;
     if (resume != null)

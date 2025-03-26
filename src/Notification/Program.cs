@@ -1,17 +1,18 @@
 ﻿using Confluent.Kafka;
 using Confluent.SchemaRegistry;
-using Confluent.SchemaRegistry.Serdes;
 using Notification.Dispatchers;
 using Notification.Services;
 using Notification.Types;
-using SharedLibs;
-using SharedLibs.Types;
-using EventBusUtil = SharedLibs.Utils.EventBus<string, SharedLibs.Types.NotifData>;
 using StackExchange.Redis;
 using CacheConfigs = Notification.Configs.Cache;
 using KafkaConfigs = Notification.Configs.Kafka;
 using GeneralConfigs = Notification.Configs.General;
 using System.Diagnostics.CodeAnalysis;
+using Toolkit.Types;
+using Toolkit;
+using RedisUtils = Toolkit.Utils.Redis;
+using KafkaUtils = Toolkit.Utils.Kafka<string, SharedLibs.Types.NotifData>;
+using SharedLibs.Types;
 
 [ExcludeFromCodeCoverage(Justification = "Not unit testable due to instantiating classes for service setup.")]
 internal class Program
@@ -22,37 +23,31 @@ internal class Program
     {
       EndPoints = { CacheConfigs.RedisConStr },
     };
-    IConnectionMultiplexer? redisClient = ConnectionMultiplexer.Connect(redisConOpts);
-    if (redisClient == null)
-    {
-      throw new Exception("Redis Client returned NULL.");
-    }
 
-    redisConOpts = new ConfigurationOptions
+    ConfigurationOptions redisQueueConOpts = new ConfigurationOptions
     {
       EndPoints = { CacheConfigs.RedisConStrQueue },
     };
-    IConnectionMultiplexer? redisClientQueue = ConnectionMultiplexer.Connect(redisConOpts);
-    if (redisClient == null)
-    {
-      throw new Exception("Redis Client, for the queue, returned NULL.");
-    }
 
     var schemaRegistryConfig = new SchemaRegistryConfig { Url = KafkaConfigs.SchemaRegistryUrl };
-    ISchemaRegistryClient schemaRegistry = new CachedSchemaRegistryClient(schemaRegistryConfig);
+    var kafkaProducerConfig = new ProducerConfig
+    {
+      BootstrapServers = KafkaConfigs.BootstrapServers,
+      Acks = Acks.All
+    };
 
-    var kafkaProducer = new ProducerBuilder<string, NotifData>(
-      new ProducerConfig { BootstrapServers = KafkaConfigs.BootstrapServers, Acks = Acks.All }
-    );
-    var eventBusInputs = EventBusUtil.PrepareInputs(
-      schemaRegistry, KafkaConfigs.SchemaSubject, int.Parse(KafkaConfigs.SchemaVersion),
-      new JsonSerializer<NotifData>(schemaRegistry), kafkaProducer
-    );
+    var cacheInputs = RedisUtils.PrepareInputs(redisConOpts);
+    var queueInputs = RedisUtils.PrepareInputs(redisQueueConOpts);
+    ICache cache = new Redis(cacheInputs);
+    IQueue queue = new Redis(queueInputs);
 
-    ICache cache = new Cache(redisClient);
-    IQueue queue = new Cache(redisClientQueue);
-    var eventBus = new EventBus<string, NotifData>(eventBusInputs);
-    IDispatchers dispatchers = new Dispatchers(new HttpClient(), eventBus);
+    var kafkaInputs = KafkaUtils.PrepareInputs(
+      schemaRegistryConfig, KafkaConfigs.SchemaSubject,
+      int.Parse(KafkaConfigs.SchemaVersion), kafkaProducerConfig
+    );
+    IKafka<string, NotifData> kafka = new Kafka<string, NotifData>(kafkaInputs);
+
+    IDispatchers dispatchers = new Dispatchers(new HttpClient(), kafka);
 
     HttpClient httpClient = new HttpClient();
     httpClient.BaseAddress = new Uri(GeneralConfigs.ApiBaseUrl);

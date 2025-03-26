@@ -1,7 +1,7 @@
 using NotifyUtils = Notification.Utils.Notify;
-using SharedLibs.Types;
 using Notification.Types;
 using System.Diagnostics.CodeAnalysis;
+using Toolkit.Types;
 
 namespace Notification.Services;
 

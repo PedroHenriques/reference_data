@@ -3,8 +3,8 @@ using EntityDataHandler = Api.Handlers.EntityData;
 using Microsoft.AspNetCore.Mvc;
 using Newtonsoft.Json;
 using Newtonsoft.Json.Converters;
-using SharedLibs.Types;
 using System.Diagnostics.CodeAnalysis;
+using Toolkit.Types;
 
 namespace Api.Routers;
 
@@ -27,7 +27,7 @@ public class EntityData
   {
     this._app.MapPost(
       "/v1/data/{entityId}/",
-      async (IDb db, [FromRoute] string entityId, [FromBody] dynamic body) =>
+      async (IMongodb db, [FromRoute] string entityId, [FromBody] dynamic body) =>
       {
         var bodyObject = JsonConvert.DeserializeObject<ExpandoObject[]>(
           body.ToString(), new ExpandoObjectConverter());
@@ -43,7 +43,7 @@ public class EntityData
   {
     this._app.MapPut(
       "/v1/data/{entityId}/{docId}",
-      async (IDb db, [FromRoute] string entityId, [FromRoute] string docId,
+      async (IMongodb db, [FromRoute] string entityId, [FromRoute] string docId,
         [FromBody] dynamic body) =>
       {
         var bodyObject = JsonConvert.DeserializeObject<ExpandoObject>(
@@ -61,7 +61,7 @@ public class EntityData
   {
     this._app.MapDelete(
       "/v1/data/{entityId}/{docId}",
-      async (IDb db, [FromRoute] string entityId, [FromRoute] string docId) =>
+      async (IMongodb db, [FromRoute] string entityId, [FromRoute] string docId) =>
       {
         await EntityDataHandler.Delete(db, entityId, docId);
         return Results.Ok();
@@ -73,7 +73,7 @@ public class EntityData
   {
     this._app.MapGet(
       "/v1/data/{entityId}",
-      async (IDb db, [FromRoute] string entityId, [FromQuery] int? page = null,
+      async (IMongodb db, [FromRoute] string entityId, [FromQuery] int? page = null,
         [FromQuery] int? pageSize = null, [FromQuery] string? filter = null) =>
       {
         var data = await EntityDataHandler.Select(db, entityId, null, null,
@@ -84,7 +84,7 @@ public class EntityData
 
     this._app.MapGet(
       "/v1/data/{entityId}/{docId}",
-      async (IDb db, [FromRoute] string entityId, [FromRoute] string docId) =>
+      async (IMongodb db, [FromRoute] string entityId, [FromRoute] string docId) =>
       {
         var data = await EntityDataHandler.Select(db, entityId, null, docId);
         return TypedResults.Ok(data);
@@ -93,7 +93,7 @@ public class EntityData
 
     this._app.MapGet(
       "/v1/data/name/{entityName}",
-      async (IDb db, [FromRoute] string entityName, [FromQuery] int? page = null,
+      async (IMongodb db, [FromRoute] string entityName, [FromQuery] int? page = null,
         [FromQuery] int? pageSize = null, [FromQuery] string? filter = null) =>
       {
         var data = await EntityDataHandler.Select(db, null, entityName, null,
@@ -104,7 +104,7 @@ public class EntityData
 
     this._app.MapGet(
       "/v1/data/name/{entityName}/{docId}",
-      async (IDb db, [FromRoute] string entityName, [FromRoute] string docId) =>
+      async (IMongodb db, [FromRoute] string entityName, [FromRoute] string docId) =>
       {
         var data = await EntityDataHandler.Select(db, null, entityName, docId);
         return TypedResults.Ok(data);
