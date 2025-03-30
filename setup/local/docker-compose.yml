@@ -99,11 +99,16 @@ services:
       api_db:
         condition: service_healthy
     environment:
+      - DEPLOYMENT_ENV=dev
       - DOTNET_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=10000
       - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
       - MONGO_DB_NAME=${MONGO_DB_NAME:-RefData}
       - MONGO_COL_NAME=${MONGO_COL_NAME:-Entities}
+      - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
+      - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
+      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
+      - LD_KILL_SWITCH_KEY=ref-data-api-serve-requests
     ports:
       - ${API_PORT:-10000}:10000
     networks:

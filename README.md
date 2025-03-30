@@ -38,6 +38,12 @@ This repository contains a local development environment, fully containerised, t
 **NOTE:** Use of a unix command line environment is recommended.
 
 ### Run the local environment
+**Required setup:**
+The local environment requires the following environment variables to be configured ([more information](#configure-the-local-environment)):
+- LD_ENV_SDK_KEY
+- LD_CONTEXT_API_KEY
+- LD_CONTEXT_NAME
+
 To run the local environment follow these steps:
 
 1. From the root of the project run the command
