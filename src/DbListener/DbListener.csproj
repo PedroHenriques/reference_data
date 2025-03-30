@@ -9,7 +9,6 @@
 
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
-    <PackageReference Include="NRedisStack" Version="0.13.1" />
     <PackageReference Include="PJHToolkit" Version="1.0.0" />
   </ItemGroup>
 

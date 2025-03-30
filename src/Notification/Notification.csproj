@@ -8,9 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Confluent.Kafka" Version="2.8.0" />
-    <PackageReference Include="Confluent.SchemaRegistry.Serdes.Json" Version="2.8.0" />
-    <PackageReference Include="NRedisStack" Version="0.13.1" />
     <PackageReference Include="PJHToolkit" Version="1.0.0" />
   </ItemGroup>
 
