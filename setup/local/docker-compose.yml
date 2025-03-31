@@ -52,12 +52,17 @@ services:
       api_db:
         condition: service_healthy
     environment:
+      - DEPLOYMENT_ENV=dev
       - DOTNET_ENVIRONMENT=Development
       - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
       - REDIS_CON_STR=dblistener_db:6379
       - MONGO_DB_NAME=${MONGO_DB_NAME:-RefData}
       - DBLISTENER_CACHE_CHANGE_DATA_KEY=${DBLISTENER_CACHE_CHANGE_DATA_KEY:-change_resume_data}
       - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}
+      - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
+      - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
+      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
+      - LD_DBLISTENER_ACTIVE_KEY=ref-data-db-listener-sub-stream
     networks:
       - dblistener
       - dblistenerDb
