@@ -108,7 +108,7 @@ services:
       - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
       - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
       - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
-      - LD_KILL_SWITCH_KEY=ref-data-api-serve-requests
+      - LD_API_ACTIVE_KEY=ref-data-api-serve-requests
     ports:
       - ${API_PORT:-10000}:10000
     networks:
