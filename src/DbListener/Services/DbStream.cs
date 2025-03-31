@@ -7,7 +7,41 @@ namespace DbListener.Services;
 
 public static class DbStream
 {
-  public static async Task Watch(ICache cache, IQueue queue, IMongodb db)
+  public static Task Watch(
+    ICache cache, IQueue queue, IMongodb db, IFeatureFlags ff
+  )
+  {
+    CancellationTokenSource? cts = null;
+    bool listenerActive = ff.GetBoolFlagValue(FeatureFlags.ListenerKeyActive);
+    if (listenerActive)
+    {
+      cts = new CancellationTokenSource();
+      WatchDb(cache, queue, db, cts.Token);
+    }
+
+    ff.SubscribeToValueChanges(
+      FeatureFlags.ListenerKeyActive,
+      ev =>
+      {
+        if (ev.NewValue.AsBool)
+        {
+          cts = new CancellationTokenSource();
+          WatchDb(cache, queue, db, cts.Token);
+        }
+        else
+        {
+          if (cts == null) { return; }
+          cts.Cancel();
+        }
+      }
+    );
+
+    return Task.CompletedTask;
+  }
+
+  private static async void WatchDb(
+    ICache cache, IQueue queue, IMongodb db, CancellationToken token
+  )
   {
     string? resume = await cache.GetString(Cache.ChangeResumeDataKey);
 
@@ -17,7 +51,7 @@ public static class DbStream
       resumeData = JsonConvert.DeserializeObject<ResumeData>(resume);
     }
 
-    await foreach (WatchData change in db.WatchDb(Db.DbName, resumeData))
+    await foreach (WatchData change in db.WatchDb(Db.DbName, resumeData, token))
     {
       if (change.ChangeRecord != null)
       {
