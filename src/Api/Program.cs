@@ -10,6 +10,7 @@ using FFConfigs = SharedLibs.Configs.FeatureFlags;
 using FFService = Api.Services.FeatureFlags;
 using FFApiConfigs = Api.Configs.FeatureFlags;
 using GeneralConfigs = SharedLibs.Configs.General;
+using Api.Middleware;
 
 [ExcludeFromCodeCoverage(Justification = "Not unit testable due to instantiating classes for service setup.")]
 internal class Program
@@ -44,6 +45,8 @@ internal class Program
 
     WebApplication app = builder.Build();
 
+    app.UseMiddleware<CheckApiActiveMiddleware>();
+
     if (app.Environment.IsDevelopment())
     {
       app.UseSwagger();
@@ -52,7 +55,7 @@ internal class Program
 
     new FFService(
       app.Services.GetService<IFeatureFlags>(),
-      [FFApiConfigs.MasterKillSwitch]
+      [FFApiConfigs.ApiKeyActive]
     );
 
     Entities entitiesRouter = new Entities(app);
