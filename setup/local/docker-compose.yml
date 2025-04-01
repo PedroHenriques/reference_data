@@ -11,6 +11,7 @@ services:
       dblistener_db:
         condition: service_healthy
     environment:
+      - DEPLOYMENT_ENV=dev
       - DOTNET_ENVIRONMENT=Development
       - REDIS_CON_STR=notification_db:6379
       - REDIS_CON_STR_QUEUE=dblistener_db:6379
@@ -21,6 +22,10 @@ services:
       - KAFKA_SCHEMA_VERSION=${KAFKA_SCHEMA_VERSION:-1}
       - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}
       - MONGO_COL_NAME=${MONGO_COL_NAME:-Entities}
+      - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
+      - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
+      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
+      - LD_DISPATCHER_ACTIVE_KEY=ref-data-notification-send-notifications
     networks:
       - notification
       - notificationDb
