@@ -1,10 +1,10 @@
-using Api.Services;
+using SharedLibs.Services;
 using LaunchDarkly.Sdk;
 using LaunchDarkly.Sdk.Server.Interfaces;
 using Moq;
 using Toolkit.Types;
 
-namespace Api.Tests.Services;
+namespace SharedLibs.Tests.Services;
 
 [Trait("Type", "Unit")]
 public class FeatureFlagsTests : IDisposable

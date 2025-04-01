@@ -1,6 +1,6 @@
 using Toolkit.Types;
 
-namespace Api.Services;
+namespace SharedLibs.Services;
 
 public class FeatureFlags
 {

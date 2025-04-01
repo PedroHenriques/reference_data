@@ -7,7 +7,7 @@ using Toolkit.Types;
 using MongodbUtils = Toolkit.Utils.Mongodb;
 using FFUtils = Toolkit.Utils.FeatureFlags;
 using FFConfigs = SharedLibs.Configs.FeatureFlags;
-using FFService = Api.Services.FeatureFlags;
+using FFService = SharedLibs.Services.FeatureFlags;
 using FFApiConfigs = Api.Configs.FeatureFlags;
 using GeneralConfigs = SharedLibs.Configs.General;
 using Api.Middleware;
