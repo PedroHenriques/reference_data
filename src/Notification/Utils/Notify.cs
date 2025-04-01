@@ -1,6 +1,7 @@
 using Newtonsoft.Json;
 using Notification.Configs;
 using Notification.Types;
+using ffService = SharedLibs.Services.FeatureFlags;
 using SharedLibs.Types;
 using Toolkit.Types;
 
@@ -11,6 +12,11 @@ public static class Notify
   public static async Task ProcessMessage(IQueue queue, ICache cache,
     IDispatchers dispatchers, HttpClient httpClient)
   {
+    if (ffService.FlagValues[FeatureFlags.DispatcherKeyActive] == false)
+    {
+      return;
+    }
+
     string messageStr = await queue.Dequeue(Cache.ChangesQueueKey);
     if (String.IsNullOrEmpty(messageStr))
     {

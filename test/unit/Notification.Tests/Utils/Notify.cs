@@ -4,6 +4,7 @@ using Moq.Protected;
 using Newtonsoft.Json;
 using Notification.Types;
 using Notification.Utils;
+using SharedLibs.Services;
 using SharedLibs.Types;
 using Toolkit.Types;
 
@@ -25,7 +26,9 @@ public class NotifyTests : IDisposable
     Environment.SetEnvironmentVariable("REDIS_CON_STR_QUEUE", "test redis con str queue");
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", "mongo_changes");
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", "Entities");
+    Environment.SetEnvironmentVariable("LD_DISPATCHER_ACTIVE_KEY", "test ff key");
 
+    FeatureFlags.FlagValues = new Dictionary<string, bool> { { "test ff key", true } };
     this._cacheMock = new Mock<ICache>(MockBehavior.Strict);
     this._queueMock = new Mock<IQueue>(MockBehavior.Strict);
     this._httpClientMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
@@ -63,6 +66,7 @@ public class NotifyTests : IDisposable
     Environment.SetEnvironmentVariable("REDIS_CON_STR_QUEUE", null);
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", null);
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", null);
+    Environment.SetEnvironmentVariable("LD_DISPATCHER_ACTIVE_KEY", null);
 
     this._cacheMock.Reset();
     this._queueMock.Reset();
@@ -77,6 +81,24 @@ public class NotifyTests : IDisposable
   {
     await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
     this._queueMock.Verify(m => m.Dequeue("mongo_changes"), Times.Once());
+  }
+
+  [Fact]
+  public async void ProcessMessage_IfTheFeatureFlagForTheDispatchersBeingActiveIsFalse_ItShouldNotCallDequeueOnTheProvidedIQueueInstance()
+  {
+    FeatureFlags.FlagValues["test ff key"] = false;
+
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    this._queueMock.Verify(m => m.Dequeue("mongo_changes"), Times.Never());
+  }
+
+  [Fact]
+  public async void ProcessMessage_IfTheFeatureFlagForTheDispatchersBeingActiveIsFalse_ItShouldNotCallGetDispatcherOnTheProvidedIDispatchers()
+  {
+    FeatureFlags.FlagValues["test ff key"] = false;
+
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    this._dispatchersMock.Verify(m => m.GetDispatcher(It.IsAny<string>()), Times.Never());
   }
 
   [Fact]
