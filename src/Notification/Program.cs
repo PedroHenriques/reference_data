@@ -22,7 +22,7 @@ using SharedLibs.Types;
 [ExcludeFromCodeCoverage(Justification = "Not unit testable due to instantiating classes for service setup.")]
 internal class Program
 {
-  private static async Task Main(string[] args)
+  private static Task Main(string[] args)
   {
     ConfigurationOptions redisConOpts = new ConfigurationOptions
     {
@@ -74,6 +74,12 @@ internal class Program
     HttpClient httpClient = new HttpClient();
     httpClient.BaseAddress = new Uri(GeneralConfigs.ApiBaseUrl);
 
-    await Notify.Watch(queue, cache, dispatchers, httpClient);
+    for (int i = 0; i < GeneralConfigs.NumberProcesses; i++)
+    {
+      _ = Notify.Watch(queue, cache, dispatchers, httpClient);
+    }
+
+    Thread.Sleep(Timeout.Infinite);
+    return Task.CompletedTask;
   }
 }

@@ -13,6 +13,7 @@ services:
     environment:
       - DEPLOYMENT_ENV=dev
       - DOTNET_ENVIRONMENT=Development
+      - NUM_PROCESSES=2
       - REDIS_CON_STR=notification_db:6379
       - REDIS_CON_STR_QUEUE=dblistener_db:6379
       - API_BASE_URL=http://api:10000
