@@ -26,7 +26,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void BindAsync_ItShouldReadTheRequestBodyOnce()
+  public async Task BindAsync_ItShouldReadTheRequestBodyOnce()
   {
     Entity? sutResult = await Entity.BindAsync(this._contextMock.Object);
 
@@ -34,7 +34,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void BindAsync_ItShouldReadTheRequestMethodOnce()
+  public async Task BindAsync_ItShouldReadTheRequestMethodOnce()
   {
     Entity? sutResult = await Entity.BindAsync(this._contextMock.Object);
 
@@ -42,7 +42,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void BindAsync_ItShouldReturnAnInstanceOfTheModelEntity()
+  public async Task BindAsync_ItShouldReturnAnInstanceOfTheModelEntity()
   {
     Entity? sutResult = await Entity.BindAsync(this._contextMock.Object);
 
@@ -50,7 +50,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void BindAsync_ItShouldReturnAnInstanceOfTheModelEntityWithTheExpectedName()
+  public async Task BindAsync_ItShouldReturnAnInstanceOfTheModelEntityWithTheExpectedName()
   {
     Entity? sutResult = await Entity.BindAsync(this._contextMock.Object);
 
@@ -58,7 +58,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void BindAsync_ItShouldReturnAnInstanceOfTheModelEntityWithTheExpectedDescription()
+  public async Task BindAsync_ItShouldReturnAnInstanceOfTheModelEntityWithTheExpectedDescription()
   {
     Entity? sutResult = await Entity.BindAsync(this._contextMock.Object);
 
@@ -66,7 +66,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void BindAsync_ItShouldReturnAnInstanceOfTheModelEntityWithTheExpectedId()
+  public async Task BindAsync_ItShouldReturnAnInstanceOfTheModelEntityWithTheExpectedId()
   {
     Entity? sutResult = await Entity.BindAsync(this._contextMock.Object);
 
@@ -74,7 +74,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void BindAsync_IfTheRequestBodyDoesNotHaveAValueForTheNameProperty_ItShouldThrowAnExceptionWithTheExpectedMessage()
+  public async Task BindAsync_IfTheRequestBodyDoesNotHaveAValueForTheNameProperty_ItShouldThrowAnExceptionWithTheExpectedMessage()
   {
     this._contextMock.Setup(s => s.Request.Body)
       .Returns(new MemoryStream(Encoding.UTF8.GetBytes("{\"description\": \"some test desc\"}")));
@@ -84,7 +84,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void BindAsync_IfTheRequestBodyIsEmpty_ItShouldThrowAnExceptionWithTheExpectedMessage()
+  public async Task BindAsync_IfTheRequestBodyIsEmpty_ItShouldThrowAnExceptionWithTheExpectedMessage()
   {
     this._contextMock.Setup(s => s.Request.Body)
       .Returns(new MemoryStream(Encoding.UTF8.GetBytes("")));
@@ -94,7 +94,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void BindAsync_IfTheRequestMethodIsPut_ItShouldSetTheIdProvidedInTheRouteOnTheReturnedEntity()
+  public async Task BindAsync_IfTheRequestMethodIsPut_ItShouldSetTheIdProvidedInTheRouteOnTheReturnedEntity()
   {
     this._contextMock.Setup(s => s.Request.Method).Returns(System.Net.WebRequestMethods.Http.Put);
     this._contextMock.Setup(s => s.Request.RouteValues).Returns(new RouteValueDictionary { { "id", "test Id" } });
@@ -105,7 +105,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void BindAsync_IfTheRequestMethodIsPutAndTheRouteParamIdIsNull_ItShouldThrowAKeyNotFoundException()
+  public async Task BindAsync_IfTheRequestMethodIsPutAndTheRouteParamIdIsNull_ItShouldThrowAKeyNotFoundException()
   {
     this._contextMock.Setup(s => s.Request.Method).Returns(System.Net.WebRequestMethods.Http.Put);
     this._contextMock.Setup(s => s.Request.RouteValues).Returns(new RouteValueDictionary { });

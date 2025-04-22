@@ -39,7 +39,7 @@ public class CheckApiActiveTests : IDisposable
   }
 
   [Fact]
-  public async void InvokeAsync_ItShouldCallTheProvidedRequestDelegateOnceWithTheHttpContextAsArgument()
+  public async Task InvokeAsync_ItShouldCallTheProvidedRequestDelegateOnceWithTheHttpContextAsArgument()
   {
     var sut = new CheckApiActiveMiddleware(this._reqDelegateMock.Object);
 
@@ -49,7 +49,7 @@ public class CheckApiActiveTests : IDisposable
   }
 
   [Fact]
-  public async void InvokeAsync_ItShouldNotSetTheResponseStatusCode()
+  public async Task InvokeAsync_ItShouldNotSetTheResponseStatusCode()
   {
     var sut = new CheckApiActiveMiddleware(this._reqDelegateMock.Object);
 
@@ -59,7 +59,7 @@ public class CheckApiActiveTests : IDisposable
   }
 
   [Fact]
-  public async void InvokeAsync_IfTheFeatureFlagForTheApiBeingActiveIsFalse_ItShouldNotCallTheProvidedRequestDelegate()
+  public async Task InvokeAsync_IfTheFeatureFlagForTheApiBeingActiveIsFalse_ItShouldNotCallTheProvidedRequestDelegate()
   {
     FeatureFlags.FlagValues["test flag key"] = false;
     var sut = new CheckApiActiveMiddleware(this._reqDelegateMock.Object);
@@ -70,7 +70,7 @@ public class CheckApiActiveTests : IDisposable
   }
 
   [Fact]
-  public async void InvokeAsync_IfTheFeatureFlagForTheApiBeingActiveIsFalse_ItShouldSetTheResponseStatusCodeTo503()
+  public async Task InvokeAsync_IfTheFeatureFlagForTheApiBeingActiveIsFalse_ItShouldSetTheResponseStatusCodeTo503()
   {
     FeatureFlags.FlagValues["test flag key"] = false;
     var sut = new CheckApiActiveMiddleware(this._reqDelegateMock.Object);

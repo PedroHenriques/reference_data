@@ -39,7 +39,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void Create_ItShouldCallInsertManyFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  public async Task Create_ItShouldCallInsertManyFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     EntityModel[] testEntities = new EntityModel[] {
       new EntityModel { Name = "" },
@@ -51,7 +51,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void Replace_ItShouldCallReplaceOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  public async Task Replace_ItShouldCallReplaceOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     EntityModel testEntity = new EntityModel { Id = "test id", Name = "" };
 
@@ -60,7 +60,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void Replace_IfTheProvidedEntityDoesNotHaveAnId_ItShouldThrowAnException()
+  public async Task Replace_IfTheProvidedEntityDoesNotHaveAnId_ItShouldThrowAnException()
   {
     EntityModel testEntity = new EntityModel { Name = "" };
 
@@ -69,7 +69,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void Replace_IfTheProvidedEntityDoesNotHaveAnId_ItShouldNotCallReplaceOneFromTheProvidedDbClient()
+  public async Task Replace_IfTheProvidedEntityDoesNotHaveAnId_ItShouldNotCallReplaceOneFromTheProvidedDbClient()
   {
     EntityModel testEntity = new EntityModel { Name = "" };
 
@@ -78,7 +78,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void Delete_ItShouldCallDeleteOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  public async Task Delete_ItShouldCallDeleteOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     string testId = "rng test id";
 
@@ -87,14 +87,14 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void Select_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  public async Task Select_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     await Entity.Select(this._mongodbMock.Object);
     this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 1, 50, null, false), Times.Once());
   }
 
   [Fact]
-  public async void Select_ItShouldReturnTheResultOfCallingFindFromTheProvidedDbClient()
+  public async Task Select_ItShouldReturnTheResultOfCallingFindFromTheProvidedDbClient()
   {
     var expectedResult = new FindResult<EntityModel> { };
     this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
@@ -104,7 +104,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void Select_IfAValueForThePageArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  public async Task Select_IfAValueForThePageArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     int page = 456;
 
@@ -113,7 +113,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void Select_IfAValueForTheSizeArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  public async Task Select_IfAValueForTheSizeArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     int size = 987;
 
@@ -122,7 +122,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void Select_IfAValueForTheIdArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  public async Task Select_IfAValueForTheIdArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     var testId = ObjectId.GenerateNewId();
     var expectedMatch = new BsonDocument{
@@ -134,7 +134,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void Select_IfAValueForTheMatchArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  public async Task Select_IfAValueForTheMatchArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     var expectedMatch = new BsonDocument{
       { "hello", "world" },
@@ -145,7 +145,7 @@ public class EntityTests : IDisposable
   }
 
   [Fact]
-  public async void Select_IfAValueForTheIdAndTheMatchArgumentsAreProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
+  public async Task Select_IfAValueForTheIdAndTheMatchArgumentsAreProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     var testId = ObjectId.GenerateNewId();
     var testMatch = new BsonDocument{
