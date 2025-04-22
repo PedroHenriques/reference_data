@@ -28,7 +28,7 @@ public class KafkaTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstanceOnceWithTheExpectedArguments()
+  public async Task Dispatch_ItShouldCallPublishFromTheIEventBusInstanceOnceWithTheExpectedArguments()
   {
     var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData
@@ -52,7 +52,7 @@ public class KafkaTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstanceOnceWithTheExpectedMessageKey()
+  public async Task Dispatch_ItShouldCallPublishFromTheIEventBusInstanceOnceWithTheExpectedMessageKey()
   {
     var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData
@@ -73,7 +73,7 @@ public class KafkaTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstanceOnceWithTheExpectedMessageValue()
+  public async Task Dispatch_ItShouldCallPublishFromTheIEventBusInstanceOnceWithTheExpectedMessageValue()
   {
     var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData
@@ -94,7 +94,7 @@ public class KafkaTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_ItShouldCallTheCallbackOnceWithTrue()
+  public async Task Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_ItShouldCallTheCallbackOnceWithTrue()
   {
     var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData
@@ -115,7 +115,7 @@ public class KafkaTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_IfThePublishResultHasAStatusOfNotPersisted_ItShouldCallTheCallbackOnceWithFalse()
+  public async Task Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_IfThePublishResultHasAStatusOfNotPersisted_ItShouldCallTheCallbackOnceWithFalse()
   {
     var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData
@@ -136,7 +136,7 @@ public class KafkaTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_IfThePublishResultHasAStatusOfPossiblyPersisted_ItShouldCallTheCallbackOnceWithTrue()
+  public async Task Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_IfThePublishResultHasAStatusOfPossiblyPersisted_ItShouldCallTheCallbackOnceWithTrue()
   {
     var sut = new Kafka(this._kafkaMock.Object);
     NotifData data = new NotifData

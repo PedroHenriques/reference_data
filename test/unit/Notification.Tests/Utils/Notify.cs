@@ -93,14 +93,14 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_ItShouldCallDequeueOnTheProvidedIQueueInstanceOnce()
+  public async Task ProcessMessage_ItShouldCallDequeueOnTheProvidedIQueueInstanceOnce()
   {
     await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
     this._queueMock.Verify(m => m.Dequeue("mongo_changes"), Times.Once());
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheFeatureFlagForTheDispatchersBeingActiveIsFalse_ItShouldNotCallDequeueOnTheProvidedIQueueInstance()
+  public async Task ProcessMessage_IfTheFeatureFlagForTheDispatchersBeingActiveIsFalse_ItShouldNotCallDequeueOnTheProvidedIQueueInstance()
   {
     this._ldClientMock.Setup(m => m.BoolVariation("test ff key", this._testLdContext, It.IsAny<bool>()))
       .Returns(false);
@@ -111,7 +111,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheFeatureFlagForTheDispatchersBeingActiveIsFalse_ItShouldNotCallGetDispatcherOnTheProvidedIDispatchers()
+  public async Task ProcessMessage_IfTheFeatureFlagForTheDispatchersBeingActiveIsFalse_ItShouldNotCallGetDispatcherOnTheProvidedIDispatchers()
   {
     this._ldClientMock.Setup(m => m.BoolVariation("test ff key", this._testLdContext, It.IsAny<bool>()))
       .Returns(false);
@@ -122,7 +122,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfThereAreNoMessagesInTheQueue_ItShouldNotCallTheICacheInstance()
+  public async Task ProcessMessage_IfThereAreNoMessagesInTheQueue_ItShouldNotCallTheICacheInstance()
   {
     this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
       .Returns(Task.FromResult(""));
@@ -133,7 +133,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsEntities_ItShouldCallSetOnTheProvidedICacheInstanceOnceWithTheExpectedData()
+  public async Task ProcessMessage_IfTheSourceCollNameIsEntities_ItShouldCallSetOnTheProvidedICacheInstanceOnceWithTheExpectedData()
   {
     var notifConfigs = new NotifConfig[] {
       new NotifConfig { Protocol = "kafka", TargetURL = "some url" },
@@ -167,7 +167,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsEntities_ItShouldCallAckOnTheProvidedIQueueInstanceOnceWithTheExpectedData()
+  public async Task ProcessMessage_IfTheSourceCollNameIsEntities_ItShouldCallAckOnTheProvidedIQueueInstanceOnceWithTheExpectedData()
   {
     var notifConfigs = new NotifConfig[] {
       new NotifConfig { Protocol = "kafka", TargetURL = "some url" },
@@ -202,7 +202,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsEntities_IfTheChangeDocumentDoesNotHaveNotifConfigs_ItShouldCallSetOnTheProvidedICacheInstanceWithTheExpectedData()
+  public async Task ProcessMessage_IfTheSourceCollNameIsEntities_IfTheChangeDocumentDoesNotHaveNotifConfigs_ItShouldCallSetOnTheProvidedICacheInstanceWithTheExpectedData()
   {
     var source = new ChangeSource
     {
@@ -231,7 +231,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsEntities_IfTheChangeDocumentHasANotifConfigsThatIsTheStringNull_ItShouldCallSetOnTheProvidedICacheInstanceWithTheExpectedData()
+  public async Task ProcessMessage_IfTheSourceCollNameIsEntities_IfTheChangeDocumentHasANotifConfigsThatIsTheStringNull_ItShouldCallSetOnTheProvidedICacheInstanceWithTheExpectedData()
   {
     var source = new ChangeSource
     {
@@ -261,7 +261,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_ItShouldCallGetOnTheProvidedICacheInstanceOnceWithTheExpectedData()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_ItShouldCallGetOnTheProvidedICacheInstanceOnceWithTheExpectedData()
   {
     var source = new ChangeSource
     {
@@ -288,7 +288,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallGetDispatcherOnTheProvidedIDispatchersTwice()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallGetDispatcherOnTheProvidedIDispatchersTwice()
   {
     var notifConfigs = new NotifConfig[] {
       new NotifConfig { Protocol = "kafka", TargetURL = "some kafka url" },
@@ -322,7 +322,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallGetDispatcherOnTheProvidedIDispatchersWithTheExpectedFirstProtocol()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallGetDispatcherOnTheProvidedIDispatchersWithTheExpectedFirstProtocol()
   {
     var notifConfigs = new NotifConfig[] {
       new NotifConfig { Protocol = "kafka", TargetURL = "some kafka url" },
@@ -359,7 +359,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallGetDispatcherOnTheProvidedIDispatchersWithTheExpectedSecondProtocol()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallGetDispatcherOnTheProvidedIDispatchersWithTheExpectedSecondProtocol()
   {
     var notifConfigs = new NotifConfig[] {
       new NotifConfig { Protocol = "kafka", TargetURL = "some kafka url" },
@@ -396,7 +396,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallDispatchOnTheFirstDispatcherOnce()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallDispatchOnTheFirstDispatcherOnce()
   {
     var notifConfigs = new NotifConfig[] {
       new NotifConfig { Protocol = "kafka", TargetURL = "some kafka url" },
@@ -438,7 +438,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallDispatchOnTheFirstDispatcherOnceWithTheExpectedData()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallDispatchOnTheFirstDispatcherOnceWithTheExpectedData()
   {
     var notifConfigs = new NotifConfig[] {
       new NotifConfig { Protocol = "kafka", TargetURL = "some kafka url" },
@@ -493,7 +493,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallDispatchOnTheSecondDispatcherOnce()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallDispatchOnTheSecondDispatcherOnce()
   {
     var notifConfigs = new NotifConfig[] {
       new NotifConfig { Protocol = "kafka", TargetURL = "some kafka url" },
@@ -535,7 +535,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallDispatchOnTheSecondDispatcherOnceWithTheExpectedData()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallDispatchOnTheSecondDispatcherOnceWithTheExpectedData()
   {
     var notifConfigs = new NotifConfig[] {
       new NotifConfig { Protocol = "kafka", TargetURL = "some kafka url" },
@@ -589,7 +589,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallAckOnTheIQueueInstanceOnceWithTheExpectedData()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHas2NotifDestinations_ItShouldCallAckOnTheIQueueInstanceOnceWithTheExpectedData()
   {
     var notifConfigs = new NotifConfig[] {
       new NotifConfig { Protocol = "kafka", TargetURL = "some kafka url" },
@@ -634,7 +634,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHasZeroNotifDestinations_ItShouldNotCallGetDispatcherOnTheProvidedIDispatchers()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeHasZeroNotifDestinations_ItShouldNotCallGetDispatcherOnTheProvidedIDispatchers()
   {
     var source = new ChangeSource
     {
@@ -663,7 +663,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeDoesNotExistInTheCache_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedMethod()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeDoesNotExistInTheCache_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedMethod()
   {
     var source = new ChangeSource
     {
@@ -697,7 +697,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeDoesNotExistInTheCache_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedRequestUri()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeDoesNotExistInTheCache_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedRequestUri()
   {
     var source = new ChangeSource
     {
@@ -731,7 +731,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeDoesNotExistInTheCache_ItShouldCallSetOnTheProvidedICacheInstanceOnceWithTheExpectedData()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeDoesNotExistInTheCache_ItShouldCallSetOnTheProvidedICacheInstanceOnceWithTheExpectedData()
   {
     var source = new ChangeSource
     {
@@ -778,7 +778,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeDoesNotExistInTheCache_IfTheApiCallReturnNoRecords_ItShouldCallSetOnTheProvidedICacheInstanceOnceWithTheExpectedData()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeDoesNotExistInTheCache_IfTheApiCallReturnNoRecords_ItShouldCallSetOnTheProvidedICacheInstanceOnceWithTheExpectedData()
   {
     var source = new ChangeSource
     {
@@ -823,7 +823,7 @@ public class NotifyTests : IDisposable
   }
 
   [Fact]
-  public async void ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeDoesNotExistInTheCache_IfTheEntityOfTheChangeHas1NotifDestinations_ItShouldCallGetDispatcherOnTheProvidedIDispatchersOnceWithTheExpectedArgument()
+  public async Task ProcessMessage_IfTheSourceCollNameIsNotEntities_IfTheEntityOfTheChangeDoesNotExistInTheCache_IfTheEntityOfTheChangeHas1NotifDestinations_ItShouldCallGetDispatcherOnTheProvidedIDispatchersOnceWithTheExpectedArgument()
   {
     var source = new ChangeSource
     {

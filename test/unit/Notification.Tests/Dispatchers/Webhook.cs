@@ -22,6 +22,7 @@ public class WebhookTests : IDisposable
     this._clientMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
       .Returns(Task.FromResult(new HttpResponseMessage { StatusCode = HttpStatusCode.OK }));
 
+    this._callbackMock.Setup(m => m(It.IsAny<bool>()));
   }
 
   public void Dispose()
@@ -31,7 +32,7 @@ public class WebhookTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedMethod()
+  public async Task Dispatch_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedMethod()
   {
     var sut = new Webhook(new HttpClient(this._clientMock.Object));
 
@@ -52,7 +53,7 @@ public class WebhookTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedRequestUri()
+  public async Task Dispatch_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedRequestUri()
   {
     var sut = new Webhook(new HttpClient(this._clientMock.Object));
 
@@ -73,7 +74,7 @@ public class WebhookTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedContent()
+  public async Task Dispatch_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedContent()
   {
     var sut = new Webhook(new HttpClient(this._clientMock.Object));
 
@@ -94,7 +95,7 @@ public class WebhookTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedContentTypeHeader()
+  public async Task Dispatch_ItShouldCallSendAsyncFromTheProvidedHttpClientOnceWithTheExpectedContentTypeHeader()
   {
     var sut = new Webhook(new HttpClient(this._clientMock.Object));
 
@@ -115,7 +116,7 @@ public class WebhookTests : IDisposable
   }
 
   [Fact]
-  public async void Dispatch_ItShouldCallTheProvidedCallbackOnceWithTrue()
+  public async Task Dispatch_ItShouldCallTheProvidedCallbackOnceWithTrue()
   {
     var sut = new Webhook(new HttpClient(this._clientMock.Object));
 
@@ -129,12 +130,12 @@ public class WebhookTests : IDisposable
     };
 
     await sut.Dispatch(data, "http://a.com", this._callbackMock.Object);
-    await Task.Delay(5);
+    await Task.Delay(100);
     this._callbackMock.Verify(m => m(true), Times.Once());
   }
 
   [Fact]
-  public async void Dispatch_IfThePostCallReturnsAFailureStatusCode_ItShouldCallTheProvidedCallbackOnceWithFalse()
+  public async Task Dispatch_IfThePostCallReturnsAFailureStatusCode_ItShouldCallTheProvidedCallbackOnceWithFalse()
   {
     this._clientMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
       .Returns(Task.FromResult(new HttpResponseMessage { StatusCode = HttpStatusCode.NotFound }));
@@ -151,7 +152,7 @@ public class WebhookTests : IDisposable
     };
 
     await sut.Dispatch(data, "http://a.com", this._callbackMock.Object);
-    await Task.Delay(10);
+    await Task.Delay(100);
     this._callbackMock.Verify(m => m(false), Times.Once());
   }
 }

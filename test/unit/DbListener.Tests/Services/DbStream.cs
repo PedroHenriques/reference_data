@@ -63,28 +63,28 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_ItShouldCallGetOnTheICacheInstanceOnce()
+  public async Task Watch_ItShouldCallGetOnTheICacheInstanceOnce()
   {
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
     this._cacheMock.Verify(m => m.GetString("change_resume_data"), Times.Once());
   }
 
   [Fact]
-  public async void Watch_ItShouldCallGetBoolFlagValueOnTheIFeatureFlagsInstanceOnce()
+  public async Task Watch_ItShouldCallGetBoolFlagValueOnTheIFeatureFlagsInstanceOnce()
   {
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
     this._ffMock.Verify(s => s.GetBoolFlagValue("test flag key"), Times.Once());
   }
 
   [Fact]
-  public async void Watch_ItShouldCallSubscribeToValueChangesOnTheIFeatureFlagsInstanceOnce()
+  public async Task Watch_ItShouldCallSubscribeToValueChangesOnTheIFeatureFlagsInstanceOnce()
   {
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
     this._ffMock.Verify(s => s.SubscribeToValueChanges("test flag key", It.IsAny<Action<FlagValueChangeEvent>>()), Times.Once());
   }
 
   [Fact]
-  public async void Watch_InvokingTheCallbackPassedToSubscribeToValueChangesOnTheIFeatureFlagsInstance_IfTheChangeEventHasANewValueOfTrue_ItShouldCallGetOnTheICacheInstanceOnce()
+  public async Task Watch_InvokingTheCallbackPassedToSubscribeToValueChangesOnTheIFeatureFlagsInstance_IfTheChangeEventHasANewValueOfTrue_ItShouldCallGetOnTheICacheInstanceOnce()
   {
     var oldValue = LdValue.Of(false);
     var newValue = LdValue.Of(true);
@@ -99,7 +99,7 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_InvokingTheCallbackPassedToSubscribeToValueChangesOnTheIFeatureFlagsInstance_IfTheChangeEventHasANewValueOfTrue_ItShouldCallWatchOnTheIDbInstanceOnce()
+  public async Task Watch_InvokingTheCallbackPassedToSubscribeToValueChangesOnTheIFeatureFlagsInstance_IfTheChangeEventHasANewValueOfTrue_ItShouldCallWatchOnTheIDbInstanceOnce()
   {
     var oldValue = LdValue.Of(false);
     var newValue = LdValue.Of(true);
@@ -117,7 +117,7 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_InvokingTheCallbackPassedToSubscribeToValueChangesOnTheIFeatureFlagsInstance_IfTheChangeEventHasANewValueOfFalse_ItShouldCancelTheTokenPassedToWatchOnTheIDbInstance()
+  public async Task Watch_InvokingTheCallbackPassedToSubscribeToValueChangesOnTheIFeatureFlagsInstance_IfTheChangeEventHasANewValueOfFalse_ItShouldCancelTheTokenPassedToWatchOnTheIDbInstance()
   {
     var oldValue = LdValue.Of(true);
     var newValue = LdValue.Of(false);
@@ -131,14 +131,14 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_ItShouldCallWatchOnTheIDbInstanceOnce()
+  public async Task Watch_ItShouldCallWatchOnTheIDbInstanceOnce()
   {
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
     this._mongodbMock.Verify(s => s.WatchDb("RefData", null, It.IsAny<CancellationToken>()), Times.Once());
   }
 
   [Fact]
-  public async void Watch_IfThereIsNoResumeDataReturnedFromICache_ItShouldCallWatchOnTheIDbInstanceOnce()
+  public async Task Watch_IfThereIsNoResumeDataReturnedFromICache_ItShouldCallWatchOnTheIDbInstanceOnce()
   {
     ResumeData testData = new ResumeData { ResumeToken = "test token", ClusterTime = "test time" };
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
@@ -149,7 +149,7 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallEnqueueOnTheICacheInstanceTwice()
+  public async Task Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallEnqueueOnTheICacheInstanceTwice()
   {
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>()))
       .Returns((new[] {
@@ -162,7 +162,7 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallEnqueueOnTheICacheInstanceWithTheExpectedFirstItem()
+  public async Task Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallEnqueueOnTheICacheInstanceWithTheExpectedFirstItem()
   {
     var expectedChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "test change record" };
     var testTime = DateTime.Now;
@@ -186,7 +186,7 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallEnqueueOnTheICacheInstanceWithTheExpectedSecondItem()
+  public async Task Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallEnqueueOnTheICacheInstanceWithTheExpectedSecondItem()
   {
     var expectedChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "another test change record" };
     var testTime = DateTime.Now;
@@ -210,7 +210,7 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallSetOnTheICacheInstanceTwice()
+  public async Task Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallSetOnTheICacheInstanceTwice()
   {
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>()))
       .Returns((new[] {
@@ -223,7 +223,7 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallSetOnTheICacheInstanceWithTheExpectedFirstResumeData()
+  public async Task Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallSetOnTheICacheInstanceWithTheExpectedFirstResumeData()
   {
     ResumeData expectedResumeData = new ResumeData { ResumeToken = "test resume token", ClusterTime = "test cluster time" };
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>()))
@@ -240,7 +240,7 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallSetOnTheICacheInstanceWithTheExpectedSecondResumeData()
+  public async Task Watch_If2ItemsAreReceivedFromTheDbWatch_ItShouldCallSetOnTheICacheInstanceWithTheExpectedSecondResumeData()
   {
     ResumeData expectedResumeData = new ResumeData { ResumeToken = "another test resume token", ClusterTime = "another test cluster time" };
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>()))
@@ -257,7 +257,7 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_IfTheItemReceivedFromTheDbWatchHasANullChangeRecord_ItShouldNotCallEnqueueOnTheICacheInstance()
+  public async Task Watch_IfTheItemReceivedFromTheDbWatchHasANullChangeRecord_ItShouldNotCallEnqueueOnTheICacheInstance()
   {
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>()))
       .Returns((new[] {
@@ -269,7 +269,7 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_IfTheItemReceivedFromTheDbWatchHasANullChangeRecord_ItShouldCallSetOnTheICacheInstanceWithTheExpectedValue()
+  public async Task Watch_IfTheItemReceivedFromTheDbWatchHasANullChangeRecord_ItShouldCallSetOnTheICacheInstanceWithTheExpectedValue()
   {
     ResumeData expectedResumeData = new ResumeData { ResumeToken = "another test resume token", ClusterTime = "another test cluster time" };
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>()))
@@ -285,7 +285,7 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async void Watch_IfTheCallToGetBoolFlagValueOnTheIFeatureFlagsInstanceReturnsFalse_ItShouldNotCallWatchOnTheIDbInstance()
+  public async Task Watch_IfTheCallToGetBoolFlagValueOnTheIFeatureFlagsInstanceReturnsFalse_ItShouldNotCallWatchOnTheIDbInstance()
   {
     this._ffMock.Setup(s => s.GetBoolFlagValue(It.IsAny<string>()))
       .Returns(false);
