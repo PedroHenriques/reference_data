@@ -1,11 +1,12 @@
 using System.Net;
+using LaunchDarkly.Sdk.Server.Interfaces;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
 using Notification.Types;
 using Notification.Utils;
-using SharedLibs.Services;
 using SharedLibs.Types;
+using Toolkit;
 using Toolkit.Types;
 
 namespace Notification.Tests.Utils;
@@ -19,6 +20,9 @@ public class NotifyTests : IDisposable
   private readonly Mock<IDispatchers> _dispatchersMock;
   private readonly Mock<IDispatcher> _webhookDispatcherMock;
   private readonly Mock<IDispatcher> _kafkaDispatcherMock;
+  private readonly Mock<ILdClient> _ldClientMock;
+  private readonly LaunchDarkly.Sdk.Context _testLdContext;
+  private readonly FeatureFlags _testFeatureFlags;
 
   public NotifyTests()
   {
@@ -28,13 +32,14 @@ public class NotifyTests : IDisposable
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", "Entities");
     Environment.SetEnvironmentVariable("LD_DISPATCHER_ACTIVE_KEY", "test ff key");
 
-    FeatureFlags.FlagValues = new Dictionary<string, bool> { { "test ff key", true } };
     this._cacheMock = new Mock<ICache>(MockBehavior.Strict);
     this._queueMock = new Mock<IQueue>(MockBehavior.Strict);
     this._httpClientMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
     this._dispatchersMock = new Mock<IDispatchers>(MockBehavior.Strict);
     this._webhookDispatcherMock = new Mock<IDispatcher>(MockBehavior.Strict);
     this._kafkaDispatcherMock = new Mock<IDispatcher>(MockBehavior.Strict);
+    this._ldClientMock = new Mock<ILdClient>(MockBehavior.Strict);
+    this._testLdContext = new LaunchDarkly.Sdk.Context { };
 
     this._cacheMock.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan?>()))
       .Returns(Task.FromResult(true));
@@ -58,6 +63,16 @@ public class NotifyTests : IDisposable
 
     this._kafkaDispatcherMock.Setup(s => s.Dispatch(It.IsAny<NotifData>(), It.IsAny<string>(), It.IsAny<Action<bool>>()))
       .Returns(Task.FromResult(true));
+
+    this._ldClientMock.Setup(m => m.BoolVariation("test ff key", this._testLdContext, It.IsAny<bool>()))
+      .Returns(true);
+
+    this._testFeatureFlags = new FeatureFlags(new Toolkit.Types.FeatureFlagsInputs
+    {
+      Client = this._ldClientMock.Object,
+      Context = this._testLdContext,
+    });
+    this._testFeatureFlags.GetBoolFlagValue("test ff key");
   }
 
   public void Dispose()
@@ -74,6 +89,7 @@ public class NotifyTests : IDisposable
     this._dispatchersMock.Reset();
     this._webhookDispatcherMock.Reset();
     this._kafkaDispatcherMock.Reset();
+    this._ldClientMock.Reset();
   }
 
   [Fact]
@@ -86,7 +102,9 @@ public class NotifyTests : IDisposable
   [Fact]
   public async void ProcessMessage_IfTheFeatureFlagForTheDispatchersBeingActiveIsFalse_ItShouldNotCallDequeueOnTheProvidedIQueueInstance()
   {
-    FeatureFlags.FlagValues["test ff key"] = false;
+    this._ldClientMock.Setup(m => m.BoolVariation("test ff key", this._testLdContext, It.IsAny<bool>()))
+      .Returns(false);
+    this._testFeatureFlags.GetBoolFlagValue("test ff key");
 
     await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
     this._queueMock.Verify(m => m.Dequeue("mongo_changes"), Times.Never());
@@ -95,7 +113,9 @@ public class NotifyTests : IDisposable
   [Fact]
   public async void ProcessMessage_IfTheFeatureFlagForTheDispatchersBeingActiveIsFalse_ItShouldNotCallGetDispatcherOnTheProvidedIDispatchers()
   {
-    FeatureFlags.FlagValues["test ff key"] = false;
+    this._ldClientMock.Setup(m => m.BoolVariation("test ff key", this._testLdContext, It.IsAny<bool>()))
+      .Returns(false);
+    this._testFeatureFlags.GetBoolFlagValue("test ff key");
 
     await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
     this._dispatchersMock.Verify(m => m.GetDispatcher(It.IsAny<string>()), Times.Never());

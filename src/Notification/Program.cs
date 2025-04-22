@@ -14,7 +14,6 @@ using Toolkit.Types;
 using Toolkit;
 using FFUtils = Toolkit.Utils.FeatureFlags;
 using SharedFFConfigs = SharedLibs.Configs.FeatureFlags;
-using FFService = SharedLibs.Services.FeatureFlags;
 using RedisUtils = Toolkit.Utils.Redis;
 using KafkaUtils = Toolkit.Utils.Kafka<string, SharedLibs.Types.NotifData>;
 using SharedLibs.Types;
@@ -66,10 +65,8 @@ internal class Program
     );
     IFeatureFlags featureFlags = new FeatureFlags(inputs);
 
-    new FFService(
-      featureFlags,
-      [FFConfigs.DispatcherKeyActive]
-    );
+    featureFlags.GetBoolFlagValue(FFConfigs.DispatcherKeyActive);
+    featureFlags.SubscribeToValueChanges(FFConfigs.DispatcherKeyActive);
 
     HttpClient httpClient = new HttpClient();
     httpClient.BaseAddress = new Uri(GeneralConfigs.ApiBaseUrl);

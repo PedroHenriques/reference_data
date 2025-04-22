@@ -1,9 +1,11 @@
 using Newtonsoft.Json;
-using Notification.Configs;
+using ffConfigs = Notification.Configs.FeatureFlags;
+using cacheConfigs = Notification.Configs.Cache;
+using dbConfigs = Notification.Configs.Db;
 using Notification.Types;
-using ffService = SharedLibs.Services.FeatureFlags;
 using SharedLibs.Types;
 using Toolkit.Types;
+using Toolkit;
 
 namespace Notification.Utils;
 
@@ -12,12 +14,12 @@ public static class Notify
   public static async Task ProcessMessage(IQueue queue, ICache cache,
     IDispatchers dispatchers, HttpClient httpClient)
   {
-    if (ffService.FlagValues[FeatureFlags.DispatcherKeyActive] == false)
+    if (FeatureFlags.GetCachedBoolFlagValue(ffConfigs.DispatcherKeyActive) == false)
     {
       return;
     }
 
-    string messageStr = await queue.Dequeue(Cache.ChangesQueueKey);
+    string messageStr = await queue.Dequeue(cacheConfigs.ChangesQueueKey);
     if (String.IsNullOrEmpty(messageStr))
     {
       return;
@@ -35,7 +37,7 @@ public static class Notify
       var changeRecord = JsonConvert.DeserializeObject<ChangeRecord>(
         message.ChangeRecord);
 
-      if (changeSource.CollName == Db.ColName)
+      if (changeSource.CollName == dbConfigs.ColName)
       {
         await HandleEntitiesMessage(cache, changeRecord);
       }
@@ -48,7 +50,7 @@ public static class Notify
         );
       }
 
-      await queue.Ack(Cache.ChangesQueueKey, messageStr);
+      await queue.Ack(cacheConfigs.ChangesQueueKey, messageStr);
     }
     catch (Exception e)
     {

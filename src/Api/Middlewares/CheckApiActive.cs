@@ -1,5 +1,5 @@
 using System.Net;
-using SharedLibs.Services;
+using Toolkit;
 using FFApiConfigs = Api.Configs.FeatureFlags;
 
 namespace Api.Middleware;
@@ -15,7 +15,7 @@ public class CheckApiActiveMiddleware
 
   public async Task InvokeAsync(HttpContext context)
   {
-    if (FeatureFlags.FlagValues[FFApiConfigs.ApiKeyActive])
+    if (FeatureFlags.GetCachedBoolFlagValue(FFApiConfigs.ApiKeyActive))
     {
       await this._next.Invoke(context);
     }

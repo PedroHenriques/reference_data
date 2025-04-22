@@ -7,7 +7,6 @@ using Toolkit.Types;
 using MongodbUtils = Toolkit.Utils.Mongodb;
 using FFUtils = Toolkit.Utils.FeatureFlags;
 using FFConfigs = SharedLibs.Configs.FeatureFlags;
-using FFService = SharedLibs.Services.FeatureFlags;
 using FFApiConfigs = Api.Configs.FeatureFlags;
 using GeneralConfigs = SharedLibs.Configs.General;
 using Api.Middleware;
@@ -53,10 +52,10 @@ internal class Program
       app.UseSwaggerUI();
     }
 
-    new FFService(
-      app.Services.GetService<IFeatureFlags>(),
-      [FFApiConfigs.ApiKeyActive]
-    );
+    IFeatureFlags featureFlags = app.Services.GetService<IFeatureFlags>() ??
+      throw new Exception("Failed to get the IFeatureFlags instance from DI.");
+    featureFlags.GetBoolFlagValue(FFApiConfigs.ApiKeyActive);
+    featureFlags.SubscribeToValueChanges(FFApiConfigs.ApiKeyActive);
 
     Entities entitiesRouter = new Entities(app);
     EntityData entityDataRouter = new EntityData(app);

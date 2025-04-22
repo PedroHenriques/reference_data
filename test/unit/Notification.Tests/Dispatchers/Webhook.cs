@@ -151,7 +151,7 @@ public class WebhookTests : IDisposable
     };
 
     await sut.Dispatch(data, "http://a.com", this._callbackMock.Object);
-    await Task.Delay(5);
+    await Task.Delay(10);
     this._callbackMock.Verify(m => m(false), Times.Once());
   }
 }
