@@ -19,11 +19,11 @@ public class Webhook : IDispatcher
     HttpContent content = new StringContent(JsonConvert.SerializeObject(data));
     content.Headers.ContentType = new MediaTypeHeaderValue("application/json", "utf-8");
 
-    this._client.PostAsync(destination, content)
-      .ContinueWith((result) =>
-      {
-        callback(result.Result.IsSuccessStatusCode);
-      });
+    Task.Run(async () =>
+    {
+      var result = await this._client.PostAsync(destination, content);
+      callback(result.IsSuccessStatusCode);
+    });
 
     return Task.CompletedTask;
   }

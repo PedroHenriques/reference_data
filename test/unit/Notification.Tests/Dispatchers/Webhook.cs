@@ -45,6 +45,7 @@ public class WebhookTests : IDisposable
       Id = "",
     };
     await sut.Dispatch(data, "http://a.com", this._callbackMock.Object);
+    await Task.Delay(100);
 
     Assert.Equal(
       HttpMethod.Post,
@@ -66,6 +67,7 @@ public class WebhookTests : IDisposable
       Id = "",
     };
     await sut.Dispatch(data, "http://ww.my-test.url.com", this._callbackMock.Object);
+    await Task.Delay(100);
 
     Assert.Equal(
       new Uri("http://ww.my-test.url.com"),
@@ -87,6 +89,7 @@ public class WebhookTests : IDisposable
       Id = "test id",
     };
     await sut.Dispatch(data, "http://a.com", this._callbackMock.Object);
+    await Task.Delay(100);
 
     Assert.Equal(
       await new StringContent(JsonConvert.SerializeObject(data)).ReadAsStringAsync(),
@@ -108,6 +111,7 @@ public class WebhookTests : IDisposable
       Id = "test id",
     };
     await sut.Dispatch(data, "http://a.com", this._callbackMock.Object);
+    await Task.Delay(100);
 
     Assert.Equal(
       new MediaTypeHeaderValue("application/json", "utf-8"),
