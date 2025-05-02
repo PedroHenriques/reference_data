@@ -24,7 +24,9 @@ internal class Program
     builder.Services.AddSingleton<IMongodb>(sp =>
     {
       var inputs = MongodbUtils.PrepareInputs(DbConfigs.MongoConStr);
-      return new Mongodb(inputs);
+      IMongodb mongo = new Mongodb(inputs);
+      Api.Configs.MongoIndexes.Create(mongo);
+      return mongo;
     });
     builder.Services.AddSingleton<IFeatureFlags>(sp =>
     {
