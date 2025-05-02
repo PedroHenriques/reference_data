@@ -33,17 +33,33 @@ internal class Program
       EndPoints = { CacheConfigs.RedisConStrQueue },
     };
 
-    var schemaRegistryConfig = new SchemaRegistryConfig { Url = KafkaConfigs.SchemaRegistryUrl };
-    var kafkaProducerConfig = new ProducerConfig
-    {
-      BootstrapServers = KafkaConfigs.BootstrapServers,
-      Acks = Acks.All
-    };
-
     var cacheInputs = RedisUtils.PrepareInputs(redisConOpts);
     var queueInputs = RedisUtils.PrepareInputs(redisQueueConOpts);
     ICache cache = new Redis(cacheInputs);
     IQueue queue = new Redis(queueInputs);
+
+    var schemaRegistryConfig = new SchemaRegistryConfig
+    {
+      Url = KafkaConfigs.SchemaRegistryUrl,
+      BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo,
+      BasicAuthUserInfo = $"{KafkaConfigs.SchemaRegistrySaslUsername}:{KafkaConfigs.SchemaRegistrySaslPw}",
+    };
+    var kafkaProducerConfig = new ProducerConfig
+    {
+      BootstrapServers = KafkaConfigs.BootstrapServers,
+      Acks = Acks.All,
+      SecurityProtocol = SecurityProtocol.SaslSsl,
+      SaslMechanism = SaslMechanism.ScramSha256,
+      SaslUsername = KafkaConfigs.BrokerSaslUsername,
+      SaslPassword = KafkaConfigs.BrokerSaslPw,
+    };
+
+    if (SharedGeneralConfigs.DeploymentEnv == "local")
+    {
+      schemaRegistryConfig.BasicAuthCredentialsSource = null;
+      kafkaProducerConfig.SecurityProtocol = null;
+      kafkaProducerConfig.SaslMechanism = null;
+    }
 
     var kafkaInputs = KafkaUtils.PrepareInputs(
       schemaRegistryConfig, KafkaConfigs.SchemaSubject,
