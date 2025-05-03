@@ -155,4 +155,22 @@ public class KafkaTests : IDisposable
     callback(dispatchRes);
     this._callbackMock.Verify(m => m(true), Times.Once());
   }
+
+  [Fact]
+  public async Task Dispatch_IfTheProvidedDataIsADeleteEvent_ItShouldCallPublishFromTheIEventBusInstanceOnceWithTheExpectedMessageValue()
+  {
+    var sut = new Kafka(this._kafkaMock.Object);
+    NotifData data = new NotifData
+    {
+      ChangeTime = DateTime.Now,
+      EventTime = DateTime.Now,
+      ChangeType = "delete",
+      Entity = "",
+      Id = "test data id",
+    };
+
+    await sut.Dispatch(data, "test destination", this._callbackMock.Object);
+
+    Assert.Null((this._kafkaMock.Invocations[0].Arguments[1] as Message<string, NotifData?>).Value);
+  }
 }

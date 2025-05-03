@@ -16,13 +16,19 @@ public class Kafka : IDispatcher
 
   public Task Dispatch(NotifData data, string destination, Action<bool> callback)
   {
+    Message<string, NotifData> message = new Message<string, NotifData>
+    {
+      Key = data.Id,
+    };
+
+    if (data.ChangeType != ChangeRecordTypes.Delete.Name)
+    {
+      message.Value = data;
+    }
+
     this._kafka.Publish(
       destination,
-      new Message<string, NotifData>
-      {
-        Key = data.Id,
-        Value = data
-      },
+      message,
       PublishHandler(callback)
     );
 
