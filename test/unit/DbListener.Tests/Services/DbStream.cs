@@ -21,6 +21,7 @@ public class DbStreamTests : IDisposable
   {
     Environment.SetEnvironmentVariable("REDIS_CON_HOST", "test redis con host");
     Environment.SetEnvironmentVariable("REDIS_CON_PORT", "test redis con port");
+    Environment.SetEnvironmentVariable("REDIS_PW", "test redis pw");
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGE_DATA_KEY", "change_resume_data");
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", "mongo_changes");
     Environment.SetEnvironmentVariable("MONGO_CON_STR", "test mongo con str");
@@ -52,6 +53,7 @@ public class DbStreamTests : IDisposable
   {
     Environment.SetEnvironmentVariable("REDIS_CON_HOST", null);
     Environment.SetEnvironmentVariable("REDIS_CON_PORT", null);
+    Environment.SetEnvironmentVariable("REDIS_PW", null);
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGE_DATA_KEY", null);
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", null);
     Environment.SetEnvironmentVariable("MONGO_CON_STR", null);

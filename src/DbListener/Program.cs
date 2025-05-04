@@ -22,7 +22,12 @@ internal class Program
     ConfigurationOptions redisConOpts = new ConfigurationOptions
     {
       EndPoints = { $"{CacheConfigs.RedisConHost}:{CacheConfigs.RedisConPort}" },
+      Password = CacheConfigs.RedisPw,
     };
+    if (GeneralConfigs.DeploymentEnv == "local")
+    {
+      redisConOpts.Password = null;
+    }
     var redisInputs = RedisUtils.PrepareInputs(redisConOpts);
     ICache cache = new Redis(redisInputs);
     IQueue queue = (IQueue)cache;

@@ -16,8 +16,10 @@ services:
       - NUM_PROCESSES=2
       - REDIS_CON_HOST=notification_db
       - REDIS_CON_PORT=6379
+      - REDIS_PW=pw
       - REDIS_CON_HOST_QUEUE=dblistener_db
       - REDIS_CON_PORT_QUEUE=6379
+      - REDIS_PW_QUEUE=pw
       - API_BASE_URL=http://api:10000
       - KAFKA_BOOTSTRAP_SERVERS=broker:29092
       - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
@@ -69,6 +71,7 @@ services:
       - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
       - REDIS_CON_HOST=dblistener_db
       - REDIS_CON_PORT=6379
+      - REDIS_PW=pw
       - MONGO_DB_NAME=${MONGO_DB_NAME:-RefData}
       - DBLISTENER_CACHE_CHANGE_DATA_KEY=${DBLISTENER_CACHE_CHANGE_DATA_KEY:-change_resume_data}
       - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}

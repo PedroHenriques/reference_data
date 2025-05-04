@@ -28,8 +28,10 @@ public class NotifyTests : IDisposable
   {
     Environment.SetEnvironmentVariable("REDIS_CON_HOST", "test redis con host");
     Environment.SetEnvironmentVariable("REDIS_CON_PORT", "test redis con port");
+    Environment.SetEnvironmentVariable("REDIS_PW", "test redis pw");
     Environment.SetEnvironmentVariable("REDIS_CON_HOST_QUEUE", "test redis con host queue");
     Environment.SetEnvironmentVariable("REDIS_CON_PORT_QUEUE", "test redis con port queue");
+    Environment.SetEnvironmentVariable("REDIS_PW_QUEUE", "test redis pw queue");
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", "mongo_changes");
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", "Entities");
     Environment.SetEnvironmentVariable("LD_NOTIFICATION_ACTIVE_KEY", "test ff key");
@@ -81,8 +83,10 @@ public class NotifyTests : IDisposable
   {
     Environment.SetEnvironmentVariable("REDIS_CON_HOST", null);
     Environment.SetEnvironmentVariable("REDIS_CON_PORT", null);
+    Environment.SetEnvironmentVariable("REDIS_PW", null);
     Environment.SetEnvironmentVariable("REDIS_CON_HOST_QUEUE", null);
     Environment.SetEnvironmentVariable("REDIS_CON_PORT_QUEUE", null);
+    Environment.SetEnvironmentVariable("REDIS_PW_QUEUE", null);
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", null);
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", null);
     Environment.SetEnvironmentVariable("LD_NOTIFICATION_ACTIVE_KEY", null);
