@@ -34,7 +34,9 @@ spec:
             runAsNonRoot: true
           envFrom:
             - configMapRef:
-              name: ${SERVICE}-config
+                name: ${SERVICE}-config
+            - secretRef:
+                name: ${SERVICE}-secret
           resources:
             requests:
               memory: "256Mi"
