@@ -21,7 +21,7 @@ internal class Program
 
     ConfigurationOptions redisConOpts = new ConfigurationOptions
     {
-      EndPoints = { CacheConfigs.RedisConStr },
+      EndPoints = { $"{CacheConfigs.RedisConHost}:{CacheConfigs.RedisConPort}" },
     };
     var redisInputs = RedisUtils.PrepareInputs(redisConOpts);
     ICache cache = new Redis(redisInputs);

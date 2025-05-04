@@ -65,7 +65,8 @@ services:
       - DEPLOYMENT_ENV=local
       - DOTNET_ENVIRONMENT=Development
       - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
-      - REDIS_CON_STR=dblistener_db:6379
+      - REDIS_CON_HOST=dblistener_db
+      - REDIS_CON_PORT=6379
       - MONGO_DB_NAME=${MONGO_DB_NAME:-RefData}
       - DBLISTENER_CACHE_CHANGE_DATA_KEY=${DBLISTENER_CACHE_CHANGE_DATA_KEY:-change_resume_data}
       - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}
