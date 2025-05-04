@@ -25,12 +25,12 @@ internal class Program
   {
     ConfigurationOptions redisConOpts = new ConfigurationOptions
     {
-      EndPoints = { CacheConfigs.RedisConStr },
+      EndPoints = { $"{CacheConfigs.RedisConHost}:{CacheConfigs.RedisConPort}" },
     };
 
     ConfigurationOptions redisQueueConOpts = new ConfigurationOptions
     {
-      EndPoints = { CacheConfigs.RedisConStrQueue },
+      EndPoints = { $"{CacheConfigs.RedisConHostQueue}:{CacheConfigs.RedisConPortQueue}" },
     };
 
     var cacheInputs = RedisUtils.PrepareInputs(redisConOpts);
