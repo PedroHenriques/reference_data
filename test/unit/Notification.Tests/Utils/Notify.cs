@@ -30,7 +30,7 @@ public class NotifyTests : IDisposable
     Environment.SetEnvironmentVariable("REDIS_CON_STR_QUEUE", "test redis con str queue");
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", "mongo_changes");
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", "Entities");
-    Environment.SetEnvironmentVariable("LD_DISPATCHER_ACTIVE_KEY", "test ff key");
+    Environment.SetEnvironmentVariable("LD_NOTIFICATION_ACTIVE_KEY", "test ff key");
 
     this._cacheMock = new Mock<ICache>(MockBehavior.Strict);
     this._queueMock = new Mock<IQueue>(MockBehavior.Strict);
@@ -81,7 +81,7 @@ public class NotifyTests : IDisposable
     Environment.SetEnvironmentVariable("REDIS_CON_STR_QUEUE", null);
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", null);
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", null);
-    Environment.SetEnvironmentVariable("LD_DISPATCHER_ACTIVE_KEY", null);
+    Environment.SetEnvironmentVariable("LD_NOTIFICATION_ACTIVE_KEY", null);
 
     this._cacheMock.Reset();
     this._queueMock.Reset();

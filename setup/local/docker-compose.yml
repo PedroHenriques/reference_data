@@ -30,7 +30,7 @@ services:
       - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
       - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
       - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
-      - LD_DISPATCHER_ACTIVE_KEY=ref-data-notification-send-notifications
+      - LD_NOTIFICATION_ACTIVE_KEY=ref-data-notification-send-notifications
     networks:
       - notification
       - notificationDb
