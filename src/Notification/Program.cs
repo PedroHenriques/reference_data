@@ -89,8 +89,8 @@ internal class Program
     );
     IFeatureFlags featureFlags = new FeatureFlags(inputs);
 
-    featureFlags.GetBoolFlagValue(FFConfigs.DispatcherKeyActive);
-    featureFlags.SubscribeToValueChanges(FFConfigs.DispatcherKeyActive);
+    featureFlags.GetBoolFlagValue(FFConfigs.NotificationKeyActive);
+    featureFlags.SubscribeToValueChanges(FFConfigs.NotificationKeyActive);
 
     HttpClient httpClient = new HttpClient();
     httpClient.BaseAddress = new Uri(GeneralConfigs.ApiBaseUrl);

@@ -14,7 +14,7 @@ public static class Notify
   public static async Task ProcessMessage(IQueue queue, ICache cache,
     IDispatchers dispatchers, HttpClient httpClient)
   {
-    if (FeatureFlags.GetCachedBoolFlagValue(ffConfigs.DispatcherKeyActive) == false)
+    if (FeatureFlags.GetCachedBoolFlagValue(ffConfigs.NotificationKeyActive) == false)
     {
       return;
     }
