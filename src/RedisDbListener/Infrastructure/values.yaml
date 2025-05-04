@@ -1,0 +1,20 @@
+architecture: standalone
+auth:
+  enabled: true
+  existingSecret: ${SERVICE}-secret
+
+master:
+  service:
+    ports:
+      redis: ${DBLISTENER_REDIS_CON_PORT}
+  persistence:
+    enabled: true
+    size: ${DBLISTENER_REDIS_PV_SIZE}  # 8Gi
+    storageClass: standard
+    accessMode: ReadWriteOnce
+    volumeMode: Filesystem
+    mountPath: /bitnami/redis/data
+
+persistence:
+  aofEnabled: true
+  aofRewritePolicy: everysec
