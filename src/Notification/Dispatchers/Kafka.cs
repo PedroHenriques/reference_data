@@ -7,18 +7,18 @@ namespace Notification.Dispatchers;
 
 public class Kafka : IDispatcher
 {
-  private readonly IKafka<string, NotifData> _kafka;
+  private readonly IKafka<NotifDataKafkaKey, NotifData> _kafka;
 
-  public Kafka(IKafka<string, NotifData> eventBus)
+  public Kafka(IKafka<NotifDataKafkaKey, NotifData> eventBus)
   {
     this._kafka = eventBus;
   }
 
   public Task Dispatch(NotifData data, string destination, Action<bool> callback)
   {
-    Message<string, NotifData> message = new Message<string, NotifData>
+    Message<NotifDataKafkaKey, NotifData> message = new Message<NotifDataKafkaKey, NotifData>
     {
-      Key = data.Id,
+      Key = new NotifDataKafkaKey { Id = data.Id },
     };
 
     if (data.ChangeType != ChangeRecordTypes.Delete.Name)
@@ -35,7 +35,7 @@ public class Kafka : IDispatcher
     return Task.CompletedTask;
   }
 
-  private static Action<DeliveryResult<string, NotifData>> PublishHandler(Action<bool> callback)
+  private static Action<DeliveryResult<NotifDataKafkaKey, NotifData>> PublishHandler(Action<bool> callback)
   {
     return result =>
     {

@@ -1,5 +1,6 @@
 using Moq;
 using Notification.Dispatchers;
+using Notification.Types;
 using SharedLibs.Types;
 using Toolkit.Types;
 using SutND = Notification.Dispatchers;
@@ -10,12 +11,12 @@ namespace Notification.Tests.Dispatchers;
 public class DispatchersTests : IDisposable
 {
   private readonly Mock<HttpMessageHandler> _httpClientMock;
-  private readonly Mock<IKafka<string, NotifData>> _kafkaMock;
+  private readonly Mock<IKafka<NotifDataKafkaKey, NotifData>> _kafkaMock;
 
   public DispatchersTests()
   {
     this._httpClientMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
-    this._kafkaMock = new Mock<IKafka<string, NotifData>>(MockBehavior.Strict);
+    this._kafkaMock = new Mock<IKafka<NotifDataKafkaKey, NotifData>>(MockBehavior.Strict);
   }
 
   public void Dispose()
