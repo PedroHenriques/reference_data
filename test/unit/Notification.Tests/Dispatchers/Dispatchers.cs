@@ -11,12 +11,12 @@ namespace Notification.Tests.Dispatchers;
 public class DispatchersTests : IDisposable
 {
   private readonly Mock<HttpMessageHandler> _httpClientMock;
-  private readonly Mock<IKafka<NotifDataKafkaKey, NotifData>> _kafkaMock;
+  private readonly Mock<IKafka<NotifDataKafkaKey, NotifDataKafkaValue>> _kafkaMock;
 
   public DispatchersTests()
   {
     this._httpClientMock = new Mock<HttpMessageHandler>(MockBehavior.Strict);
-    this._kafkaMock = new Mock<IKafka<NotifDataKafkaKey, NotifData>>(MockBehavior.Strict);
+    this._kafkaMock = new Mock<IKafka<NotifDataKafkaKey, NotifDataKafkaValue>>(MockBehavior.Strict);
   }
 
   public void Dispose()

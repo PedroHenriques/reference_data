@@ -28,4 +28,11 @@ public static class Kafka
 
   public static string SchemaRegistrySaslPw = Environment.GetEnvironmentVariable("KAFKA_SCHEMA_REGISTRY_SASL_PW")
     ?? throw new Exception("Could not get the 'KAFKA_SCHEMA_REGISTRY_SASL_PW' environment variable");
+
+  public static Dictionary<string, string> MetadataActionMap = new Dictionary<string, string> {
+    { "insert", "CREATE" },
+    { "delete", "DELETE" },
+    { "update", "UPDATE" },
+    { "replace", "UPDATE" },
+  };
 }

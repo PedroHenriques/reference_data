@@ -106,7 +106,7 @@ public class WebhookTests : IDisposable
     {
       ChangeTime = DateTime.Now,
       EventTime = DateTime.Now,
-      ChangeType = "test change type",
+      ChangeType = "replace",
       Entity = "test entity name",
       Id = "test id",
     };

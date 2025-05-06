@@ -15,8 +15,7 @@ using Toolkit;
 using FFUtils = Toolkit.Utils.FeatureFlags;
 using SharedFFConfigs = SharedLibs.Configs.FeatureFlags;
 using RedisUtils = Toolkit.Utils.Redis;
-using KafkaUtils = Toolkit.Utils.Kafka<Notification.Types.NotifDataKafkaKey, SharedLibs.Types.NotifData>;
-using SharedLibs.Types;
+using KafkaUtils = Toolkit.Utils.Kafka<Notification.Types.NotifDataKafkaKey, Notification.Types.NotifDataKafkaValue>;
 
 [ExcludeFromCodeCoverage(Justification = "Not unit testable due to instantiating classes for service setup.")]
 internal class Program
@@ -73,7 +72,7 @@ internal class Program
       schemaRegistryConfig, KafkaConfigs.SchemaSubject,
       int.Parse(KafkaConfigs.SchemaVersion), kafkaProducerConfig
     );
-    IKafka<NotifDataKafkaKey, NotifData> kafka = new Kafka<NotifDataKafkaKey, NotifData>(kafkaInputs);
+    IKafka<NotifDataKafkaKey, NotifDataKafkaValue> kafka = new Kafka<NotifDataKafkaKey, NotifDataKafkaValue>(kafkaInputs);
 
     IDispatchers dispatchers = new Dispatchers(new HttpClient(), kafka);
 
