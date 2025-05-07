@@ -56,7 +56,7 @@ internal class Program
       BootstrapServers = KafkaConfigs.BootstrapServers,
       Acks = Acks.All,
       SecurityProtocol = SecurityProtocol.SaslSsl,
-      SaslMechanism = SaslMechanism.ScramSha256,
+      SaslMechanism = SaslMechanism.Plain,
       SaslUsername = KafkaConfigs.BrokerSaslUsername,
       SaslPassword = KafkaConfigs.BrokerSaslPw,
     };
