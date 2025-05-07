@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="PJHToolkit" Version="1.3.0" />
+    <PackageReference Include="PJHToolkit" Version="1.3.2" />
     <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
