@@ -1,5 +1,6 @@
 using System.Net;
 using LaunchDarkly.Sdk.Server.Interfaces;
+using MongoDB.Bson;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
@@ -463,6 +464,7 @@ public class NotifyTests : IDisposable
       Id = "test doc id",
       ChangeType = ChangeRecordTypes.Insert,
       Document = new Dictionary<string, dynamic?> {
+        { "_id", ObjectId.GenerateNewId() },
         { "prop1", true },
         { "hello", "world" },
       },
@@ -485,7 +487,11 @@ public class NotifyTests : IDisposable
       ChangeType = changeRecord.ChangeType.Name,
       Entity = source.CollName,
       Id = changeRecord.Id,
-      Document = changeRecord.Document,
+      Document = new Dictionary<string, dynamic?> {
+        { "id", changeRecord.Id },
+        { "prop1", true },
+        { "hello", "world" },
+      },
     };
     await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
     dynamic actualData = this._kafkaDispatcherMock.Invocations[0].Arguments[0];
@@ -560,6 +566,7 @@ public class NotifyTests : IDisposable
       Id = "test doc id",
       ChangeType = ChangeRecordTypes.Insert,
       Document = new Dictionary<string, dynamic?> {
+        { "_id", ObjectId.GenerateNewId() },
         { "some", "data"},
       },
     };
@@ -581,7 +588,10 @@ public class NotifyTests : IDisposable
       ChangeType = changeRecord.ChangeType.Name,
       Entity = source.CollName,
       Id = changeRecord.Id,
-      Document = changeRecord.Document,
+      Document = new Dictionary<string, dynamic?> {
+        { "id", changeRecord.Id },
+        { "some", "data"},
+      },
     };
     await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
     dynamic actualData = this._webhookDispatcherMock.Invocations[0].Arguments[0];

@@ -117,6 +117,12 @@ public static class Notify
       return;
     }
 
+    if (changeRecord.Document != null)
+    {
+      changeRecord.Document.Add("id", changeRecord.Id);
+      changeRecord.Document.Remove("_id");
+    }
+
     foreach (var notif in notifConfigs)
     {
       try
