@@ -15,8 +15,7 @@ using Toolkit;
 using FFUtils = Toolkit.Utils.FeatureFlags;
 using SharedFFConfigs = SharedLibs.Configs.FeatureFlags;
 using RedisUtils = Toolkit.Utils.Redis;
-using KafkaUtils = Toolkit.Utils.Kafka<string, SharedLibs.Types.NotifData>;
-using SharedLibs.Types;
+using KafkaUtils = Toolkit.Utils.Kafka<Notification.Types.NotifDataKafkaKey, Notification.Types.NotifDataKafkaValue>;
 
 [ExcludeFromCodeCoverage(Justification = "Not unit testable due to instantiating classes for service setup.")]
 internal class Program
@@ -25,31 +24,55 @@ internal class Program
   {
     ConfigurationOptions redisConOpts = new ConfigurationOptions
     {
-      EndPoints = { CacheConfigs.RedisConStr },
+      EndPoints = { $"{CacheConfigs.RedisConHost}:{CacheConfigs.RedisConPort}" },
+      Password = CacheConfigs.RedisPw,
     };
 
     ConfigurationOptions redisQueueConOpts = new ConfigurationOptions
     {
-      EndPoints = { CacheConfigs.RedisConStrQueue },
+      EndPoints = { $"{CacheConfigs.RedisConHostQueue}:{CacheConfigs.RedisConPortQueue}" },
+      Password = CacheConfigs.RedisPwQueue,
     };
 
-    var schemaRegistryConfig = new SchemaRegistryConfig { Url = KafkaConfigs.SchemaRegistryUrl };
-    var kafkaProducerConfig = new ProducerConfig
+    if (SharedGeneralConfigs.DeploymentEnv == "local")
     {
-      BootstrapServers = KafkaConfigs.BootstrapServers,
-      Acks = Acks.All
-    };
+      redisConOpts.Password = null;
+      redisQueueConOpts.Password = null;
+    }
 
     var cacheInputs = RedisUtils.PrepareInputs(redisConOpts);
     var queueInputs = RedisUtils.PrepareInputs(redisQueueConOpts);
     ICache cache = new Redis(cacheInputs);
     IQueue queue = new Redis(queueInputs);
 
+    var schemaRegistryConfig = new SchemaRegistryConfig
+    {
+      Url = KafkaConfigs.SchemaRegistryUrl,
+      BasicAuthCredentialsSource = AuthCredentialsSource.UserInfo,
+      BasicAuthUserInfo = $"{KafkaConfigs.SchemaRegistrySaslUsername}:{KafkaConfigs.SchemaRegistrySaslPw}",
+    };
+    var kafkaProducerConfig = new ProducerConfig
+    {
+      BootstrapServers = KafkaConfigs.BootstrapServers,
+      Acks = Acks.All,
+      SecurityProtocol = SecurityProtocol.SaslSsl,
+      SaslMechanism = SaslMechanism.Plain,
+      SaslUsername = KafkaConfigs.BrokerSaslUsername,
+      SaslPassword = KafkaConfigs.BrokerSaslPw,
+    };
+
+    if (SharedGeneralConfigs.DeploymentEnv == "local")
+    {
+      schemaRegistryConfig.BasicAuthCredentialsSource = null;
+      kafkaProducerConfig.SecurityProtocol = null;
+      kafkaProducerConfig.SaslMechanism = null;
+    }
+
     var kafkaInputs = KafkaUtils.PrepareInputs(
       schemaRegistryConfig, KafkaConfigs.SchemaSubject,
       int.Parse(KafkaConfigs.SchemaVersion), kafkaProducerConfig
     );
-    IKafka<string, NotifData> kafka = new Kafka<string, NotifData>(kafkaInputs);
+    IKafka<NotifDataKafkaKey, NotifDataKafkaValue> kafka = new Kafka<NotifDataKafkaKey, NotifDataKafkaValue>(kafkaInputs);
 
     IDispatchers dispatchers = new Dispatchers(new HttpClient(), kafka);
 
@@ -65,8 +88,8 @@ internal class Program
     );
     IFeatureFlags featureFlags = new FeatureFlags(inputs);
 
-    featureFlags.GetBoolFlagValue(FFConfigs.DispatcherKeyActive);
-    featureFlags.SubscribeToValueChanges(FFConfigs.DispatcherKeyActive);
+    featureFlags.GetBoolFlagValue(FFConfigs.NotificationKeyActive);
+    featureFlags.SubscribeToValueChanges(FFConfigs.NotificationKeyActive);
 
     HttpClient httpClient = new HttpClient();
     httpClient.BaseAddress = new Uri(GeneralConfigs.ApiBaseUrl);

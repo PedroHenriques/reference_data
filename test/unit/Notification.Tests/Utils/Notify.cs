@@ -1,5 +1,6 @@
 using System.Net;
 using LaunchDarkly.Sdk.Server.Interfaces;
+using MongoDB.Bson;
 using Moq;
 using Moq.Protected;
 using Newtonsoft.Json;
@@ -26,11 +27,15 @@ public class NotifyTests : IDisposable
 
   public NotifyTests()
   {
-    Environment.SetEnvironmentVariable("REDIS_CON_STR", "test redis con str");
-    Environment.SetEnvironmentVariable("REDIS_CON_STR_QUEUE", "test redis con str queue");
+    Environment.SetEnvironmentVariable("REDIS_CON_HOST", "test redis con host");
+    Environment.SetEnvironmentVariable("REDIS_CON_PORT", "test redis con port");
+    Environment.SetEnvironmentVariable("REDIS_PW", "test redis pw");
+    Environment.SetEnvironmentVariable("REDIS_CON_HOST_QUEUE", "test redis con host queue");
+    Environment.SetEnvironmentVariable("REDIS_CON_PORT_QUEUE", "test redis con port queue");
+    Environment.SetEnvironmentVariable("REDIS_PW_QUEUE", "test redis pw queue");
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", "mongo_changes");
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", "Entities");
-    Environment.SetEnvironmentVariable("LD_DISPATCHER_ACTIVE_KEY", "test ff key");
+    Environment.SetEnvironmentVariable("LD_NOTIFICATION_ACTIVE_KEY", "test ff key");
 
     this._cacheMock = new Mock<ICache>(MockBehavior.Strict);
     this._queueMock = new Mock<IQueue>(MockBehavior.Strict);
@@ -77,11 +82,15 @@ public class NotifyTests : IDisposable
 
   public void Dispose()
   {
-    Environment.SetEnvironmentVariable("REDIS_CON_STR", null);
-    Environment.SetEnvironmentVariable("REDIS_CON_STR_QUEUE", null);
+    Environment.SetEnvironmentVariable("REDIS_CON_HOST", null);
+    Environment.SetEnvironmentVariable("REDIS_CON_PORT", null);
+    Environment.SetEnvironmentVariable("REDIS_PW", null);
+    Environment.SetEnvironmentVariable("REDIS_CON_HOST_QUEUE", null);
+    Environment.SetEnvironmentVariable("REDIS_CON_PORT_QUEUE", null);
+    Environment.SetEnvironmentVariable("REDIS_PW_QUEUE", null);
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", null);
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", null);
-    Environment.SetEnvironmentVariable("LD_DISPATCHER_ACTIVE_KEY", null);
+    Environment.SetEnvironmentVariable("LD_NOTIFICATION_ACTIVE_KEY", null);
 
     this._cacheMock.Reset();
     this._queueMock.Reset();
@@ -455,6 +464,7 @@ public class NotifyTests : IDisposable
       Id = "test doc id",
       ChangeType = ChangeRecordTypes.Insert,
       Document = new Dictionary<string, dynamic?> {
+        { "_id", ObjectId.GenerateNewId() },
         { "prop1", true },
         { "hello", "world" },
       },
@@ -477,7 +487,11 @@ public class NotifyTests : IDisposable
       ChangeType = changeRecord.ChangeType.Name,
       Entity = source.CollName,
       Id = changeRecord.Id,
-      Document = changeRecord.Document,
+      Document = new Dictionary<string, dynamic?> {
+        { "id", changeRecord.Id },
+        { "prop1", true },
+        { "hello", "world" },
+      },
     };
     await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
     dynamic actualData = this._kafkaDispatcherMock.Invocations[0].Arguments[0];
@@ -552,6 +566,7 @@ public class NotifyTests : IDisposable
       Id = "test doc id",
       ChangeType = ChangeRecordTypes.Insert,
       Document = new Dictionary<string, dynamic?> {
+        { "_id", ObjectId.GenerateNewId() },
         { "some", "data"},
       },
     };
@@ -573,7 +588,10 @@ public class NotifyTests : IDisposable
       ChangeType = changeRecord.ChangeType.Name,
       Entity = source.CollName,
       Id = changeRecord.Id,
-      Document = changeRecord.Document,
+      Document = new Dictionary<string, dynamic?> {
+        { "id", changeRecord.Id },
+        { "some", "data"},
+      },
     };
     await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
     dynamic actualData = this._webhookDispatcherMock.Invocations[0].Arguments[0];

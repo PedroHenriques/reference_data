@@ -35,11 +35,13 @@ spec:
             runAsNonRoot: true
           envFrom:
             - configMapRef:
-              name: ${SERVICE}-config
+                name: ${SERVICE}-config
+            - secretRef:
+                name: ${SERVICE}-secret
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "500m"
+              memory: ${API_MS_REQ_RAM}
+              cpu: ${API_MS_REQ_CPU}
             limits:
-              memory: "512Mi"
-              cpu: "1"
+              memory: ${API_MS_LIMIT_RAM}
+              cpu: ${API_MS_LIMIT_CPU}

@@ -9,7 +9,7 @@ public class Dispatchers : IDispatchers
   private readonly Dictionary<string, IDispatcher> _dispatchers;
 
   public Dispatchers(
-    HttpClient httpClient, IKafka<string, NotifData> kafka
+    HttpClient httpClient, IKafka<NotifDataKafkaKey, NotifDataKafkaValue> kafka
   )
   {
     this._dispatchers = new Dictionary<string, IDispatcher>

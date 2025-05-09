@@ -17,6 +17,7 @@ public static class FeatureFlags
 
   public static Dictionary<string, EnvNames> EnvName = new Dictionary<string, EnvNames>
   {
+    { "local", EnvNames.dev },
     { "dev", EnvNames.dev },
     { "qua", EnvNames.qua },
     { "prd", EnvNames.prd },

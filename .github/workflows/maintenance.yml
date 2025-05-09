@@ -1,0 +1,16 @@
+name: maintenance
+on:
+  schedule:
+  - cron: "0 8 * * *"
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  maintenance:
+    uses: PedroHenriques/ci_cd_test_templates/.github/workflows/repo_maintenance.yml@main
+    with:
+      pr_reviewers: PedroHenriques
+    secrets: inherit

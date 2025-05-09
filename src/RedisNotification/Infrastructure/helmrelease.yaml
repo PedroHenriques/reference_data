@@ -1,0 +1,30 @@
+apiVersion: helm.toolkit.fluxcd.io/v2beta1
+kind: HelmRelease
+metadata:
+  name: ${SERVICE}-helmrelease
+  namespace: ${NAMESPACE}
+  labels:
+    app: ${SERVICE}
+    env: ${ENVIRONMENT}
+    version: ${REDIS_HELM_CHART_VERSION}
+spec:
+  interval: 5m
+  chart:
+    spec:
+      chart: redis
+      version: ${REDIS_HELM_CHART_VERSION}
+      sourceRef:
+        kind: HelmRepository
+        name: bitnami
+        namespace: flux-system
+  valuesFrom:
+    - kind: ConfigMap
+      name: ${SERVICE}-config
+      valuesKey: values.yaml
+  install:
+    createNamespace: false
+    remediation:
+      retries: 3
+  upgrade:
+    remediation:
+      retries: 3

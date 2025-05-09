@@ -1,0 +1,20 @@
+architecture: standalone
+auth:
+  enabled: true
+  existingSecret: ${SERVICE}-secret
+
+master:
+  service:
+    ports:
+      redis: ${NOTIFICATION_REDIS_CON_PORT}
+  persistence:
+    enabled: true
+    size: ${NOTIFICATION_REDIS_PV_SIZE}
+    storageClass: standard
+    accessMode: ReadWriteOnce
+    volumeMode: Filesystem
+    mountPath: /bitnami/redis/data
+
+persistence:
+  aofEnabled: true
+  aofRewritePolicy: everysec

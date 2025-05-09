@@ -13,8 +13,8 @@ spec:
     kind: Deployment
     name: ${SERVICE}-deployment
     namespace: ${NAMESPACE}
-  minReplicas: ${API_MS_MIN_REPLICAS}
-  maxReplicas: ${API_MS_MAX_REPLICAS}
+  minReplicas: ${NOTIFICATION_MS_MIN_REPLICAS}
+  maxReplicas: ${NOTIFICATION_MS_MAX_REPLICAS}
   metrics:
   - type: Resource
     resource:

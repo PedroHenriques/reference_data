@@ -14,7 +14,7 @@ public static class Notify
   public static async Task ProcessMessage(IQueue queue, ICache cache,
     IDispatchers dispatchers, HttpClient httpClient)
   {
-    if (FeatureFlags.GetCachedBoolFlagValue(ffConfigs.DispatcherKeyActive) == false)
+    if (FeatureFlags.GetCachedBoolFlagValue(ffConfigs.NotificationKeyActive) == false)
     {
       return;
     }
@@ -115,6 +115,12 @@ public static class Notify
     if (notifConfigs == null)
     {
       return;
+    }
+
+    if (changeRecord.Document != null)
+    {
+      changeRecord.Document.Add("id", changeRecord.Id);
+      changeRecord.Document.Remove("_id");
     }
 
     foreach (var notif in notifConfigs)

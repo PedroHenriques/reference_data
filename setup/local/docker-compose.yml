@@ -11,22 +11,30 @@ services:
       dblistener_db:
         condition: service_healthy
     environment:
-      - DEPLOYMENT_ENV=dev
+      - DEPLOYMENT_ENV=local
       - DOTNET_ENVIRONMENT=Development
       - NUM_PROCESSES=2
-      - REDIS_CON_STR=notification_db:6379
-      - REDIS_CON_STR_QUEUE=dblistener_db:6379
+      - REDIS_CON_HOST=notification_db
+      - REDIS_CON_PORT=6379
+      - REDIS_PW=pw
+      - REDIS_CON_HOST_QUEUE=dblistener_db
+      - REDIS_CON_PORT_QUEUE=6379
+      - REDIS_PW_QUEUE=pw
       - API_BASE_URL=http://api:10000
       - KAFKA_BOOTSTRAP_SERVERS=broker:29092
       - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
       - KAFKA_SCHEMA_SUBJECT=${KAFKA_SCHEMA_SUBJECT:-refdata}
       - KAFKA_SCHEMA_VERSION=${KAFKA_SCHEMA_VERSION:-1}
+      - KAFKA_BROKER_SASL_USERNAME=user
+      - KAFKA_BROKER_SASL_PW=pw
+      - KAFKA_SCHEMA_REGISTRY_SASL_USERNAME=user
+      - KAFKA_SCHEMA_REGISTRY_SASL_PW=pw
       - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}
       - MONGO_COL_NAME=${MONGO_COL_NAME:-Entities}
       - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
       - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
       - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
-      - LD_DISPATCHER_ACTIVE_KEY=ref-data-notification-send-notifications
+      - LD_NOTIFICATION_ACTIVE_KEY=ref-data-notification-send-notifications
     networks:
       - notification
       - notificationDb
@@ -58,10 +66,12 @@ services:
       api_db:
         condition: service_healthy
     environment:
-      - DEPLOYMENT_ENV=dev
+      - DEPLOYMENT_ENV=local
       - DOTNET_ENVIRONMENT=Development
       - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
-      - REDIS_CON_STR=dblistener_db:6379
+      - REDIS_CON_HOST=dblistener_db
+      - REDIS_CON_PORT=6379
+      - REDIS_PW=pw
       - MONGO_DB_NAME=${MONGO_DB_NAME:-RefData}
       - DBLISTENER_CACHE_CHANGE_DATA_KEY=${DBLISTENER_CACHE_CHANGE_DATA_KEY:-change_resume_data}
       - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}
@@ -110,7 +120,7 @@ services:
       api_db:
         condition: service_healthy
     environment:
-      - DEPLOYMENT_ENV=dev
+      - DEPLOYMENT_ENV=local
       - DOTNET_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=10000
       - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
