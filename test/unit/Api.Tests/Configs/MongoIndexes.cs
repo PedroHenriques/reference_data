@@ -14,6 +14,7 @@ public class MongoIndexesTests : IDisposable
 
   public MongoIndexesTests()
   {
+    Environment.SetEnvironmentVariable("MONGO_CON_STR", "test db con str");
     Environment.SetEnvironmentVariable("MONGO_DB_NAME", "RefData");
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", "Entities");
 
@@ -25,6 +26,7 @@ public class MongoIndexesTests : IDisposable
 
   public void Dispose()
   {
+    Environment.SetEnvironmentVariable("MONGO_CON_STR", null);
     Environment.SetEnvironmentVariable("MONGO_DB_NAME", null);
     Environment.SetEnvironmentVariable("MONGO_COL_NAME", null);
 
