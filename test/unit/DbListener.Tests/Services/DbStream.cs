@@ -9,6 +9,7 @@ using LaunchDarkly.Sdk;
 
 namespace DbListener.Tests.Services;
 
+[CollectionDefinition("DbStreamTests", DisableParallelization = true)]
 [Trait("Type", "Unit")]
 public class DbStreamTests : IDisposable
 {

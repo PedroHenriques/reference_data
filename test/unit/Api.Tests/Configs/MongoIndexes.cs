@@ -7,6 +7,7 @@ using Toolkit.Types;
 
 namespace Api.Tests.Configs;
 
+[CollectionDefinition("MongoIndexesTests", DisableParallelization = true)]
 [Trait("Type", "Unit")]
 public class MongoIndexesTests : IDisposable
 {

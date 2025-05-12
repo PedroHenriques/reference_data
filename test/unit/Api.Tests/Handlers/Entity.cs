@@ -6,6 +6,7 @@ using Toolkit.Types;
 
 namespace Api.Tests.Handlers;
 
+[CollectionDefinition("EntityTests", DisableParallelization = true)]
 [Trait("Type", "Unit")]
 public class EntityTests : IDisposable
 {
