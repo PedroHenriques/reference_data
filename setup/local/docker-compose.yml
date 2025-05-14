@@ -1,116 +1,6 @@
 services:
-  notification:
-    build:
-      context: ../../
-      dockerfile: ./src/Notification/Dockerfile
-    container_name: "notification"
-    restart: on-failure
-    depends_on:
-      notification_db:
-        condition: service_healthy
-      dblistener_db:
-        condition: service_healthy
-    environment:
-      - DEPLOYMENT_ENV=local
-      - DOTNET_ENVIRONMENT=Development
-      - NUM_PROCESSES=2
-      - REDIS_CON_HOST=notification_db
-      - REDIS_CON_PORT=6379
-      - REDIS_PW=pw
-      - REDIS_CON_HOST_QUEUE=dblistener_db
-      - REDIS_CON_PORT_QUEUE=6379
-      - REDIS_PW_QUEUE=pw
-      - API_BASE_URL=http://api:10000
-      - KAFKA_BOOTSTRAP_SERVERS=broker:29092
-      - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
-      - KAFKA_SCHEMA_SUBJECT=${KAFKA_SCHEMA_SUBJECT:-refdata}
-      - KAFKA_SCHEMA_VERSION=${KAFKA_SCHEMA_VERSION:-1}
-      - KAFKA_BROKER_SASL_USERNAME=user
-      - KAFKA_BROKER_SASL_PW=pw
-      - KAFKA_SCHEMA_REGISTRY_SASL_USERNAME=user
-      - KAFKA_SCHEMA_REGISTRY_SASL_PW=pw
-      - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}
-      - MONGO_COL_NAME=${MONGO_COL_NAME:-Entities}
-      - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
-      - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
-      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
-      - LD_NOTIFICATION_ACTIVE_KEY=ref-data-notification-send-notifications
-    networks:
-      - notification
-      - notificationDb
-      - dblistenerDb
-      - api
-      - kafka
-
-  notification_db:
-    image: redis:7-alpine
-    container_name: "notification_db"
-    restart: on-failure
-    healthcheck:
-      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
-      interval: 1s
-      timeout: 3s
-      retries: 5
-    networks:
-      - notificationDb
-
-  dblistener:
-    build:
-      context: ../../
-      dockerfile: ./src/DbListener/Dockerfile
-    container_name: "dblistener"
-    restart: on-failure
-    depends_on:
-      dblistener_db:
-        condition: service_healthy
-      api_db:
-        condition: service_healthy
-    environment:
-      - DEPLOYMENT_ENV=local
-      - DOTNET_ENVIRONMENT=Development
-      - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
-      - REDIS_CON_HOST=dblistener_db
-      - REDIS_CON_PORT=6379
-      - REDIS_PW=pw
-      - MONGO_DB_NAME=${MONGO_DB_NAME:-RefData}
-      - DBLISTENER_CACHE_CHANGE_DATA_KEY=${DBLISTENER_CACHE_CHANGE_DATA_KEY:-change_resume_data}
-      - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}
-      - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
-      - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
-      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
-      - LD_DBLISTENER_ACTIVE_KEY=ref-data-db-listener-sub-stream
-    networks:
-      - dblistener
-      - dblistenerDb
-      - apiDb
-
-  dblistener_db:
-    image: redis:7-alpine
-    container_name: "dblistener_db"
-    restart: on-failure
-    healthcheck:
-      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
-      interval: 1s
-      timeout: 3s
-      retries: 5
-    networks:
-      - dblistener
-      - dblistenerDb
-
-  redis_gui:
-    image: redislabs/redisinsight:latest
-    container_name: "redis_gui"
-    restart: on-failure
-    depends_on:
-      dblistener_db:
-        condition: service_healthy
-    ports:
-      - ${REDIS_GUI_PORT:-9001}:5540
-    networks:
-      - dblistenerDb
-      - notificationDb
-
   api:
+    image: ${PROJECT_NAME:-myapp}_api:${IMAGE_TAG:-latest}
     build:
       context: ../../
       dockerfile: ./src/Api/Dockerfile
@@ -119,21 +9,46 @@ services:
     depends_on:
       api_db:
         condition: service_healthy
+      api_redis:
+        condition: service_healthy
     environment:
-      - DEPLOYMENT_ENV=local
       - DOTNET_ENVIRONMENT=Development
       - ASPNETCORE_HTTP_PORTS=10000
       - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
-      - MONGO_DB_NAME=${MONGO_DB_NAME:-RefData}
-      - MONGO_COL_NAME=${MONGO_COL_NAME:-Entities}
-      - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
-      - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
-      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
-      - LD_API_ACTIVE_KEY=ref-data-api-serve-requests
+      - REDIS_CON_STR=api_redis:6379
+      - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
+      - KAFKA_CON_STR=broker:29092
     ports:
       - ${API_PORT:-10000}:10000
     networks:
       - api
+      - apiDb
+      - apiRedis
+      - kafka
+
+  api_redis:
+    image: redis:7-alpine
+    container_name: "api_redis"
+    restart: on-failure
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    networks:
+      - apiRedis
+
+  redis_gui:
+    image: redislabs/redisinsight:latest
+    container_name: "redis_gui"
+    restart: on-failure
+    depends_on:
+      api_redis:
+        condition: service_healthy
+    ports:
+      - ${REDIS_GUI_PORT:-9001}:5540
+    networks:
+      - apiRedis
 
   api_db:
     image: mongo:8-noble
@@ -159,9 +74,8 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${API_DB_ADMIN_USER:-admin}
       - MONGO_INITDB_ROOT_PASSWORD=${API_DB_ADMIN_PW:-pw}
-      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE:-RefData}
+      - MONGO_INITDB_DATABASE=RefData
     networks:
-      - api
       - apiDb
 
   # Used to start the replica set in the MongoDb instance (will run once and exit)
@@ -203,20 +117,6 @@ services:
     networks:
       - apiDb
   
-  webhook_server:
-    build:
-      context: ../../
-      dockerfile: ./setup/local/webhook/Dockerfile
-    container_name: "webhook_server"
-    restart: on-failure
-    environment:
-      - DOTNET_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=10000
-    ports:
-      - ${WEBHOOK_API_PORT:-10001}:10000
-    networks:
-      - notification
-
   broker:
     image: confluentinc/cp-kafka:latest
     container_name: broker
@@ -261,7 +161,7 @@ services:
     image: provectuslabs/kafka-ui:latest
     container_name: kafka-ui
     ports:
-      - ${KAFKA_GUI_PORT:-9002}:8080
+      - 9002:8080
     depends_on:
       - broker
       - schema-registry
@@ -277,8 +177,5 @@ services:
 networks:
   api:
   apiDb:
-  dblistener:
-  dblistenerDb:
-  notification:
-  notificationDb:
+  apiRedis:
   kafka:

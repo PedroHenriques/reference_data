@@ -1,67 +1,89 @@
-using EntityModel = Api.Models.Entity;
-using Api.Routers;
-using DbConfigs = Api.Configs.Db;
-using System.Diagnostics.CodeAnalysis;
+using System.Dynamic;
+using StackExchange.Redis;
+using Confluent.Kafka;
 using Toolkit;
 using Toolkit.Types;
 using MongodbUtils = Toolkit.Utils.Mongodb;
-using FFUtils = Toolkit.Utils.FeatureFlags;
-using FFConfigs = SharedLibs.Configs.FeatureFlags;
-using FFApiConfigs = Api.Configs.FeatureFlags;
-using GeneralConfigs = SharedLibs.Configs.General;
-using Api.Middleware;
+using RedisUtils = Toolkit.Utils.Redis;
+using KafkaUtils = Toolkit.Utils.Kafka<string, dynamic>;
+using Confluent.SchemaRegistry;
 
-[ExcludeFromCodeCoverage(Justification = "Not unit testable due to instantiating classes for service setup.")]
-internal class Program
+WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+builder.Services.AddEndpointsApiExplorer();
+builder.Services.AddSwaggerGen();
+
+WebApplication app = builder.Build();
+
+if (app.Environment.IsDevelopment())
 {
-  private static void Main(string[] args)
-  {
-    WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
-
-    builder.Services.AddEndpointsApiExplorer();
-    builder.Services.AddSwaggerGen();
-
-    builder.Services.AddSingleton<IMongodb>(sp =>
-    {
-      var inputs = MongodbUtils.PrepareInputs(DbConfigs.MongoConStr);
-      IMongodb mongo = new Mongodb(inputs);
-      Api.Configs.MongoIndexes.Create(mongo);
-      return mongo;
-    });
-    builder.Services.AddSingleton<IFeatureFlags>(sp =>
-    {
-      EnvNames ffEnvName;
-      if (FFConfigs.EnvName.TryGetValue(GeneralConfigs.DeploymentEnv, out ffEnvName) == false)
-      {
-        throw new Exception("The value provided in the 'DEPLOYMENT_ENV' environment variable does not map to any valid FeatureFlag environment name.");
-      }
-
-      var inputs = FFUtils.PrepareInputs(
-        FFConfigs.EnvSdkKey, FFConfigs.ContextApiKey, FFConfigs.ContextName,
-        ffEnvName
-      );
-      return new FeatureFlags(inputs);
-    });
-    builder.Services.AddScoped<EntityModel>();
-
-    WebApplication app = builder.Build();
-
-    app.UseMiddleware<CheckApiActiveMiddleware>();
-
-    if (app.Environment.IsDevelopment())
-    {
-      app.UseSwagger();
-      app.UseSwaggerUI();
-    }
-
-    IFeatureFlags featureFlags = app.Services.GetService<IFeatureFlags>() ??
-      throw new Exception("Failed to get the IFeatureFlags instance from DI.");
-    featureFlags.GetBoolFlagValue(FFApiConfigs.ApiKeyActive);
-    featureFlags.SubscribeToValueChanges(FFApiConfigs.ApiKeyActive);
-
-    Entities entitiesRouter = new Entities(app);
-    EntityData entityDataRouter = new EntityData(app);
-
-    app.Run();
-  }
+  app.UseSwagger();
+  app.UseSwaggerUI();
 }
+
+app.MapGet(
+  "/",
+  async () =>
+  {
+    dynamic document = new ExpandoObject();
+    document.prop1 = "value 1";
+    document.prop2 = "value 2";
+
+    string? mongoConStr = Environment.GetEnvironmentVariable("MONGO_CON_STR");
+    if (mongoConStr == null)
+    {
+      throw new Exception("Could not get the 'MONGO_CON_STR' environment variable");
+    }
+    MongoDbInputs mongodbInputs = MongodbUtils.PrepareInputs(mongoConStr);
+    IMongodb mongoDb = new Mongodb(mongodbInputs);
+    await mongoDb.InsertOne<dynamic>("myTestDb", "myTestCol", document);
+
+
+    string? redisConStr = Environment.GetEnvironmentVariable("REDIS_CON_STR");
+    if (redisConStr == null)
+    {
+      throw new Exception("Could not get the 'REDIS_CON_STR' environment variable");
+    }
+    ConfigurationOptions redisConOpts = new ConfigurationOptions
+    {
+      EndPoints = { redisConStr },
+    };
+    RedisInputs redisInputs = RedisUtils.PrepareInputs(redisConOpts);
+    ICache redis = new Redis(redisInputs);
+    await redis.Set("prop1", document.prop1);
+    await redis.Set("prop2", document.prop2);
+
+
+    string? schemaRegistryUrl = Environment.GetEnvironmentVariable("KAFKA_SCHEMA_REGISTRY_URL");
+    if (schemaRegistryUrl == null)
+    {
+      throw new Exception("Could not get the 'KAFKA_SCHEMA_REGISTRY_URL' environment variable");
+    }
+    SchemaRegistryConfig schemaRegistryConfig = new SchemaRegistryConfig { Url = schemaRegistryUrl };
+
+    string? kafkaConStr = Environment.GetEnvironmentVariable("KAFKA_CON_STR");
+    if (kafkaConStr == null)
+    {
+      throw new Exception("Could not get the 'KAFKA_CON_STR' environment variable");
+    }
+    var producerConfig = new ProducerConfig
+    {
+      BootstrapServers = kafkaConStr,
+    };
+
+    KafkaInputs<string, dynamic> kafkaInputs = KafkaUtils.PrepareInputs(
+      schemaRegistryConfig, "myTestTopic-value", 1, producerConfig
+    );
+    IKafka<string, dynamic> kafka = new Kafka<string, dynamic>(kafkaInputs);
+    kafka.Publish(
+      "myTestTopic",
+      new Message<string, dynamic> { Key = "prop1", Value = document },
+      (res) => { Console.WriteLine($"Event inserted in partition: {res.Partition} and offset: {res.Offset}."); }
+    );
+
+
+    return Results.Ok("Hello World!");
+  }
+);
+
+app.Run();
