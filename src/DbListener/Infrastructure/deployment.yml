@@ -39,8 +39,8 @@ spec:
                 name: ${SERVICE}-secret
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "500m"
+              memory: ${DBLISTENER_MS_REQ_RAM}
+              cpu: ${DBLISTENER_MS_REQ_CPU}
             limits:
-              memory: "512Mi"
-              cpu: "1"
+              memory: ${DBLISTENER_MS_LIMIT_RAM}
+              cpu: ${DBLISTENER_MS_LIMIT_CPU}
