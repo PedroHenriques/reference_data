@@ -1,5 +1,6 @@
 services:
   notification:
+    image: ${PROJECT_NAME:-myapp}_notification:${IMAGE_TAG:-latest}
     build:
       context: ../../
       dockerfile: ./src/Notification/Dockerfile
@@ -55,6 +56,7 @@ services:
       - notificationDb
 
   dblistener:
+    image: ${PROJECT_NAME:-myapp}_dblistener:${IMAGE_TAG:-latest}
     build:
       context: ../../
       dockerfile: ./src/DbListener/Dockerfile
@@ -111,6 +113,7 @@ services:
       - notificationDb
 
   api:
+    image: ${PROJECT_NAME:-myapp}_api:${IMAGE_TAG:-latest}
     build:
       context: ../../
       dockerfile: ./src/Api/Dockerfile
