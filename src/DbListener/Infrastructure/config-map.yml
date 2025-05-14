@@ -6,7 +6,7 @@ metadata:
   labels:
     app: ${SERVICE}
     env: ${ENVIRONMENT}
-    version: ${IMG_TAG}
+    version: "${IMG_TAG}"
 data:
   DEPLOYMENT_ENV: ${DEPLOYMENT_ENV}
   DOTNET_ENVIRONMENT: ${DOTNET_ENVIRONMENT}
