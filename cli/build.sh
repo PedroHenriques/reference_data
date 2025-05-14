@@ -10,7 +10,7 @@ while [ "$#" -gt 0 ]; do
     --cicd) shift 1;;
 
     -*) echo "unknown option: $1" >&2; exit 1;;
-    *) PROJ=$1; shift 1;;
+    *) PROJ="${PROJ}$1 "; shift 1;;
   esac
 done
 
