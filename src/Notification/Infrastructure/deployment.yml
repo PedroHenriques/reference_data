@@ -28,8 +28,6 @@ spec:
         - name: ${SERVICE}
           image: ${IMG_NAME}:${IMG_TAG}
           imagePullPolicy: Always
-          ports:
-            - containerPort: ${API_MS_PORT}
           securityContext:
             readOnlyRootFilesystem: true
             runAsNonRoot: true
@@ -40,8 +38,8 @@ spec:
                 name: ${SERVICE}-secret
           resources:
             requests:
-              memory: "256Mi"
-              cpu: "500m"
+              memory: ${NOTIFICATION_MS_REQ_RAM}
+              cpu: ${NOTIFICATION_MS_REQ_CPU}
             limits:
-              memory: "512Mi"
-              cpu: "1"
+              memory: ${NOTIFICATION_MS_LIMIT_RAM}
+              cpu: ${NOTIFICATION_MS_LIMIT_CPU}
