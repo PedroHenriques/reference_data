@@ -6,7 +6,7 @@ metadata:
   labels:
     app: ${SERVICE}
     env: ${ENVIRONMENT}
-    version: ${IMG_TAG}
+    version: "${IMG_TAG}"
 spec:
   selector:
     matchLabels:
@@ -21,7 +21,7 @@ spec:
       labels:
         app: ${SERVICE}
         env: ${ENVIRONMENT}
-        version: ${IMG_TAG}
+        version: "${IMG_TAG}"
     spec:
       serviceAccountName: ${SERVICE}-service-account
       containers:
