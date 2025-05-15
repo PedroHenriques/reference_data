@@ -3,5 +3,6 @@ obj/
 
 TestResults/
 coverageReport/
+release/
 
 .env
