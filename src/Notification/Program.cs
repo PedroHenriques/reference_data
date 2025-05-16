@@ -26,12 +26,14 @@ internal class Program
     {
       EndPoints = { $"{CacheConfigs.RedisConHost}:{CacheConfigs.RedisConPort}" },
       Password = CacheConfigs.RedisPw,
+      Ssl = false,
     };
 
     ConfigurationOptions redisQueueConOpts = new ConfigurationOptions
     {
       EndPoints = { $"{CacheConfigs.RedisConHostQueue}:{CacheConfigs.RedisConPortQueue}" },
       Password = CacheConfigs.RedisPwQueue,
+      Ssl = false,
     };
 
     if (SharedGeneralConfigs.DeploymentEnv == "local")

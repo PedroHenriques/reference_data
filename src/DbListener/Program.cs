@@ -23,6 +23,7 @@ internal class Program
     {
       EndPoints = { $"{CacheConfigs.RedisConHost}:{CacheConfigs.RedisConPort}" },
       Password = CacheConfigs.RedisPw,
+      Ssl = false,
     };
     if (GeneralConfigs.DeploymentEnv == "local")
     {
