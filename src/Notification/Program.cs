@@ -26,12 +26,14 @@ internal class Program
     {
       EndPoints = { $"{CacheConfigs.RedisConHost}:{CacheConfigs.RedisConPort}" },
       Password = CacheConfigs.RedisPw,
+      Ssl = false,
     };
 
     ConfigurationOptions redisQueueConOpts = new ConfigurationOptions
     {
       EndPoints = { $"{CacheConfigs.RedisConHostQueue}:{CacheConfigs.RedisConPortQueue}" },
       Password = CacheConfigs.RedisPwQueue,
+      Ssl = false,
     };
 
     if (SharedGeneralConfigs.DeploymentEnv == "local")
@@ -92,7 +94,7 @@ internal class Program
     featureFlags.SubscribeToValueChanges(FFConfigs.NotificationKeyActive);
 
     HttpClient httpClient = new HttpClient();
-    httpClient.BaseAddress = new Uri(GeneralConfigs.ApiBaseUrl);
+    httpClient.BaseAddress = new Uri($"{GeneralConfigs.ApiBaseUrl}:{GeneralConfigs.ApiPort}");
 
     for (int i = 0; i < GeneralConfigs.NumberProcesses; i++)
     {

@@ -149,6 +149,19 @@ Each test project's coverage report will be located inside a directory named `Te
 
 The HTML coverage report is located inside the directory `./coverageReport`, which contains an `index.html` file.
 
+## Project dependencies update validations
+To check for updates to the project dependencies and update them if needed, from the root of the project run the command
+```sh
+sh cli/dependencies_update.sh [flags]
+```
+Where:
+
+**flags:**
+- `-u` | `--update`: Update all outdated dependencies. You will be prompted for each one for confirmation before updating
+- `-y`: Update all dependencies without prompting
+
+If the update flag is not provided, the script will print the report with all the dependencies that are outdated, but will not update any of them.
+
 ## CI/CD lifecycle
 This project uses the reusable pipeline templates for Docker build artifacts located at `https://github.com/PedroHenriques/ci_cd_workflow_templates` and follows the work flow below.
 ![alt text](documentation/ci_cd_tbd_workflow.drawio.png)
