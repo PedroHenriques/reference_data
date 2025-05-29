@@ -40,7 +40,7 @@ public class DbStreamTests : IDisposable
       .Returns(Task.FromResult(true));
 
     this._queueMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>()))
-      .Returns(Task.FromResult((long)1));
+      .Returns(Task.FromResult(new string[] { }));
 
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>()))
       .Returns((new[] { new WatchData { ChangeTime = DateTime.Now, ResumeData = new ResumeData { }, Source = new ChangeSource { } } }).ToAsyncEnumerable());

@@ -12,15 +12,15 @@ namespace Notification.Utils;
 public static class Notify
 {
   public static async Task ProcessMessage(IQueue queue, ICache cache,
-    IDispatchers dispatchers, HttpClient httpClient)
+    IDispatchers dispatchers, HttpClient httpClient, string processId)
   {
     if (FeatureFlags.GetCachedBoolFlagValue(ffConfigs.NotificationKeyActive) == false)
     {
       return;
     }
 
-    string messageStr = await queue.Dequeue(cacheConfigs.ChangesQueueKey);
-    if (String.IsNullOrEmpty(messageStr))
+    var (messageId, messageStr) = await queue.Dequeue(cacheConfigs.ChangesQueueKey, $"thread-{processId}");
+    if (String.IsNullOrEmpty(messageId) || String.IsNullOrEmpty(messageStr))
     {
       return;
     }
@@ -50,11 +50,12 @@ public static class Notify
         );
       }
 
-      await queue.Ack(cacheConfigs.ChangesQueueKey, messageStr);
+      await queue.Ack(cacheConfigs.ChangesQueueKey, messageId);
     }
     catch (Exception e)
     {
-      // @TODO: call nack()
+      await queue.Nack(cacheConfigs.ChangesQueueKey, messageId, 2);
+      Console.WriteLine(e);
       Console.WriteLine(e.Message);
     }
   }
@@ -80,7 +81,7 @@ public static class Notify
     }
     if (
       changeRecord.Document.ContainsKey("notifConfigs") == false ||
-      changeRecord.Document["notifConfigs"] == "null"
+      changeRecord.Document["notifConfigs"] == null
     )
     {
       changeRecord.Document["notifConfigs"] = "";
@@ -88,7 +89,7 @@ public static class Notify
 
     var result = await cache.Set(
       $"entity:{changeRecord.Document["name"]}|notif configs",
-      changeRecord.Document["notifConfigs"]
+      JsonConvert.SerializeObject(changeRecord.Document["notifConfigs"])
     );
 
     if (result == false)
@@ -101,14 +102,10 @@ public static class Notify
     DateTime changeTime, ChangeRecord changeRecord, IDispatchers dispatchers,
     HttpClient httpClient, Action<bool> callback)
   {
-    List<Task> tasks = new List<Task>();
-
-    var configsStr = await cache.GetString($"entity:\"{entityName}\"|notif configs");
+    var configsStr = await cache.GetString($"entity:{entityName}|notif configs");
     if (configsStr == null)
     {
-      var getEntityRes = await GetEntityInformation(httpClient, cache, entityName);
-      tasks.Add(getEntityRes.CacheNotifConfigs);
-      configsStr = getEntityRes.NotifConfigsStr;
+      configsStr = await GetEntityInformation(httpClient, cache, entityName);
     }
 
     var notifConfigs = JsonConvert.DeserializeObject<NotifConfig[]>(configsStr);
@@ -154,7 +151,7 @@ public static class Notify
     }
   }
 
-  private static async Task<GetEntityInfoRes> GetEntityInformation(
+  private static async Task<string> GetEntityInformation(
     HttpClient httpClient, ICache cache, string entityName)
   {
     var response = await httpClient.GetAsync(
@@ -164,26 +161,24 @@ public static class Notify
 
     string notifConfigsStr = "";
     var document = new Dictionary<string, dynamic?> {
-      { "name", $"\"{entityName}\"" },
+      { "name", $"{entityName}" },
     };
     if (resData.Metadata.TotalCount > 0)
     {
       notifConfigsStr = JsonConvert.SerializeObject(resData.Data[0].notifConfigs);
-      document.Add("notifConfigs", notifConfigsStr);
+      document.Add("notifConfigs", resData.Data[0].notifConfigs);
     }
 
-    return new GetEntityInfoRes
-    {
-      NotifConfigsStr = notifConfigsStr,
-      CacheNotifConfigs = HandleEntitiesMessage(
-        cache,
-        new ChangeRecord
-        {
-          Id = "",
-          ChangeType = ChangeRecordTypes.Insert,
-          Document = document,
-        }
-      ),
-    };
+    var _ = HandleEntitiesMessage(
+      cache,
+      new ChangeRecord
+      {
+        Id = "",
+        ChangeType = ChangeRecordTypes.Insert,
+        Document = document,
+      }
+    );
+
+    return notifConfigsStr;
   }
 }
