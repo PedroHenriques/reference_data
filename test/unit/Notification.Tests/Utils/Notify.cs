@@ -51,9 +51,11 @@ public class NotifyTests : IDisposable
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(""));
 
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(new ChangeQueueItem { ChangeRecord = "", ChangeTime = DateTime.Now, Source = "" })));
-    this._queueMock.Setup(s => s.Ack(It.IsAny<string>(), It.IsAny<string>()))
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("some id", JsonConvert.SerializeObject(new ChangeQueueItem { ChangeRecord = "", ChangeTime = DateTime.Now, Source = "" }))));
+    this._queueMock.Setup(s => s.Ack(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
+      .Returns(Task.FromResult(true));
+    this._queueMock.Setup(s => s.Nack(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
       .Returns(Task.FromResult(true));
 
     this._httpClientMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
@@ -104,8 +106,8 @@ public class NotifyTests : IDisposable
   [Fact]
   public async Task ProcessMessage_ItShouldCallDequeueOnTheProvidedIQueueInstanceOnce()
   {
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
-    this._queueMock.Verify(m => m.Dequeue("mongo_changes"), Times.Once());
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "test id");
+    this._queueMock.Verify(m => m.Dequeue("mongo_changes", "thread-test id"), Times.Once());
   }
 
   [Fact]
@@ -115,8 +117,8 @@ public class NotifyTests : IDisposable
       .Returns(false);
     this._testFeatureFlags.GetBoolFlagValue("test ff key");
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
-    this._queueMock.Verify(m => m.Dequeue("mongo_changes"), Times.Never());
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "yup");
+    this._queueMock.Verify(m => m.Dequeue("mongo_changes", "thread-yup"), Times.Never());
   }
 
   [Fact]
@@ -126,17 +128,17 @@ public class NotifyTests : IDisposable
       .Returns(false);
     this._testFeatureFlags.GetBoolFlagValue("test ff key");
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
     this._dispatchersMock.Verify(m => m.GetDispatcher(It.IsAny<string>()), Times.Never());
   }
 
   [Fact]
   public async Task ProcessMessage_IfThereAreNoMessagesInTheQueue_ItShouldNotCallTheICacheInstance()
   {
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(""));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult<(string?, string?)>((null, null)));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
     this._cacheMock.Verify(m => m.Set(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan?>()), Times.Never());
     this._cacheMock.Verify(m => m.GetString(It.IsAny<string>()), Times.Never());
   }
@@ -159,7 +161,7 @@ public class NotifyTests : IDisposable
       ChangeType = ChangeRecordTypes.Insert,
       Document = new Dictionary<string, dynamic?> {
         { "name", "test entity name" },
-        { "notifConfigs", notifConfigsStr },
+        { "notifConfigs", notifConfigs },
       },
     };
     var change = new ChangeQueueItem
@@ -168,10 +170,10 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("random id", JsonConvert.SerializeObject(change))));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
     this._cacheMock.Verify(m => m.Set("entity:test entity name|notif configs", notifConfigsStr, It.IsAny<TimeSpan?>()), Times.Once());
   }
 
@@ -203,11 +205,11 @@ public class NotifyTests : IDisposable
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
     var changeStr = JsonConvert.SerializeObject(change);
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(changeStr));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("hello", changeStr)));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
-    this._queueMock.Verify(m => m.Ack("mongo_changes", changeStr), Times.Once());
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
+    this._queueMock.Verify(m => m.Ack("mongo_changes", "hello", true), Times.Once());
   }
 
   [Fact]
@@ -232,11 +234,11 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("world", JsonConvert.SerializeObject(change))));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
-    this._cacheMock.Verify(m => m.Set("entity:test entity name|notif configs", "", It.IsAny<TimeSpan?>()), Times.Once());
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
+    this._cacheMock.Verify(m => m.Set("entity:test entity name|notif configs", "\"\"", It.IsAny<TimeSpan?>()), Times.Once());
   }
 
   [Fact]
@@ -253,7 +255,7 @@ public class NotifyTests : IDisposable
       ChangeType = ChangeRecordTypes.Insert,
       Document = new Dictionary<string, dynamic?> {
         { "name", "test entity name" },
-        { "notif_configs", "null" },
+        { "notif_configs", null },
       },
     };
     var change = new ChangeQueueItem
@@ -262,11 +264,11 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("bread", JsonConvert.SerializeObject(change))));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
-    this._cacheMock.Verify(m => m.Set("entity:test entity name|notif configs", "", It.IsAny<TimeSpan?>()), Times.Once());
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
+    this._cacheMock.Verify(m => m.Set("entity:test entity name|notif configs", "\"\"", It.IsAny<TimeSpan?>()), Times.Once());
   }
 
   [Fact]
@@ -289,11 +291,11 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("butter", JsonConvert.SerializeObject(change))));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
-    this._cacheMock.Verify(m => m.GetString("entity:\"Not Entities\"|notif configs"), Times.Once());
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
+    this._cacheMock.Verify(m => m.GetString("entity:Not Entities|notif configs"), Times.Once());
   }
 
   [Fact]
@@ -321,12 +323,12 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("something", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(notifConfigsStr));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
     this._dispatchersMock.Verify(m => m.GetDispatcher(It.IsAny<string>()), Times.Exactly(2));
   }
 
@@ -355,12 +357,12 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("test test", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(notifConfigsStr));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
     Assert.Equal(
       "kafka",
       this._dispatchersMock.Invocations[0].Arguments[0]
@@ -392,12 +394,12 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("a", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(notifConfigsStr));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
     Assert.Equal(
       "webhook",
       this._dispatchersMock.Invocations[1].Arguments[0]
@@ -429,8 +431,8 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("aa", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(notifConfigsStr));
 
@@ -442,7 +444,7 @@ public class NotifyTests : IDisposable
       EventTime = DateTime.Now,
       Id = changeRecord.Id,
     };
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
     this._kafkaDispatcherMock.Verify(m => m.Dispatch(It.IsAny<NotifData>(), "some kafka url", It.IsAny<Action<bool>>()), Times.Once());
   }
 
@@ -475,8 +477,8 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("ab", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(notifConfigsStr));
 
@@ -493,7 +495,7 @@ public class NotifyTests : IDisposable
         { "hello", "world" },
       },
     };
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
     dynamic actualData = this._kafkaDispatcherMock.Invocations[0].Arguments[0];
 
     Assert.InRange(actualData.EventTime, expectedData.EventTime, expectedData.EventTime.AddMilliseconds(100));
@@ -531,8 +533,8 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("bb", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(notifConfigsStr));
 
@@ -544,7 +546,7 @@ public class NotifyTests : IDisposable
       EventTime = DateTime.Now,
       Id = changeRecord.Id,
     };
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
     this._webhookDispatcherMock.Verify(m => m.Dispatch(It.IsAny<NotifData>(), "some webhook url", It.IsAny<Action<bool>>()), Times.Once());
   }
 
@@ -576,8 +578,8 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("gsiyd", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(notifConfigsStr));
 
@@ -593,7 +595,7 @@ public class NotifyTests : IDisposable
         { "some", "data"},
       },
     };
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
     dynamic actualData = this._webhookDispatcherMock.Invocations[0].Arguments[0];
 
     Assert.InRange(actualData.EventTime, expectedData.EventTime, expectedData.EventTime.AddMilliseconds(100));
@@ -633,8 +635,8 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("auiyf", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(notifConfigsStr));
 
@@ -647,8 +649,8 @@ public class NotifyTests : IDisposable
       Id = changeRecord.Id,
       Document = changeRecord.Document,
     };
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
-    this._queueMock.Setup(s => s.Ack("mongo_changes", JsonConvert.SerializeObject(change)));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
+    this._queueMock.Setup(s => s.Ack("mongo_changes", JsonConvert.SerializeObject(change), true));
   }
 
   [Fact]
@@ -671,12 +673,12 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("viufhv", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(""));
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object));
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), "");
     this._dispatchersMock.Verify(m => m.GetDispatcher(It.IsAny<string>()), Times.Never());
   }
 
@@ -700,14 +702,14 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("asdsad", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(null));
     var testHttpClient = new HttpClient(this._httpClientMock.Object);
     testHttpClient.BaseAddress = new Uri("http://localhost");
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, testHttpClient);
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, testHttpClient, "");
     Assert.Equal(
       HttpMethod.Get,
       (this._httpClientMock.Invocations[0].Arguments[0] as dynamic).Method
@@ -734,14 +736,14 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("uifydsuf", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(null));
     var testHttpClient = new HttpClient(this._httpClientMock.Object);
     testHttpClient.BaseAddress = new Uri("http://localhost");
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, testHttpClient);
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, testHttpClient, "");
     Assert.Equal(
       new Uri("http://localhost/v1/entities/?filter={\"name\":\"Not Entities\"}"),
       (this._httpClientMock.Invocations[0].Arguments[0] as dynamic).RequestUri
@@ -768,8 +770,8 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("dfouisfg", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(null));
     var notifConfigs = new NotifConfig[] {
@@ -791,8 +793,8 @@ public class NotifyTests : IDisposable
     var testHttpClient = new HttpClient(this._httpClientMock.Object);
     testHttpClient.BaseAddress = new Uri("http://localhost");
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, testHttpClient);
-    this._cacheMock.Verify(m => m.Set("entity:\"Not Entities\"|notif configs", JsonConvert.SerializeObject(notifConfigs), It.IsAny<TimeSpan?>()), Times.Once());
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, testHttpClient, "");
+    this._cacheMock.Verify(m => m.Set("entity:Not Entities|notif configs", JsonConvert.SerializeObject(notifConfigs), It.IsAny<TimeSpan?>()), Times.Once());
   }
 
   [Fact]
@@ -815,8 +817,8 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("afdoifuu", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(null));
     var notifConfigs = new NotifConfig[] {
@@ -836,8 +838,8 @@ public class NotifyTests : IDisposable
     var testHttpClient = new HttpClient(this._httpClientMock.Object);
     testHttpClient.BaseAddress = new Uri("http://localhost");
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, testHttpClient);
-    this._cacheMock.Verify(m => m.Set("entity:\"Not Entities\"|notif configs", "", It.IsAny<TimeSpan?>()), Times.Once());
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, testHttpClient, "");
+    this._cacheMock.Verify(m => m.Set("entity:Not Entities|notif configs", "\"\"", It.IsAny<TimeSpan?>()), Times.Once());
   }
 
   [Fact]
@@ -860,8 +862,8 @@ public class NotifyTests : IDisposable
       Source = JsonConvert.SerializeObject(source),
       ChangeRecord = JsonConvert.SerializeObject(changeRecord),
     };
-    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>()))
-      .Returns(Task.FromResult(JsonConvert.SerializeObject(change)));
+    this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
+      .Returns(Task.FromResult(("guihugh", JsonConvert.SerializeObject(change))));
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(null));
     var notifConfigs = new NotifConfig[] {
@@ -883,7 +885,7 @@ public class NotifyTests : IDisposable
     var testHttpClient = new HttpClient(this._httpClientMock.Object);
     testHttpClient.BaseAddress = new Uri("http://localhost");
 
-    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, testHttpClient);
+    await Notify.ProcessMessage(this._queueMock.Object, this._cacheMock.Object, this._dispatchersMock.Object, testHttpClient, "");
     this._dispatchersMock.Verify(m => m.GetDispatcher("webhook"), Times.Once());
   }
 }

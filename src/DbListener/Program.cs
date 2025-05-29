@@ -29,7 +29,7 @@ internal class Program
     {
       redisConOpts.Password = null;
     }
-    var redisInputs = RedisUtils.PrepareInputs(redisConOpts);
+    var redisInputs = RedisUtils.PrepareInputs(redisConOpts, "dblistener-service");
     ICache cache = new Redis(redisInputs);
     IQueue queue = (IQueue)cache;
 

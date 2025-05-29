@@ -42,8 +42,8 @@ internal class Program
       redisQueueConOpts.Password = null;
     }
 
-    var cacheInputs = RedisUtils.PrepareInputs(redisConOpts);
-    var queueInputs = RedisUtils.PrepareInputs(redisQueueConOpts);
+    var cacheInputs = RedisUtils.PrepareInputs(redisConOpts, "notification-service");
+    var queueInputs = RedisUtils.PrepareInputs(redisQueueConOpts, "notification-service");
     ICache cache = new Redis(cacheInputs);
     IQueue queue = new Redis(queueInputs);
 
