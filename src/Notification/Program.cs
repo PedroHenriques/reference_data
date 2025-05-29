@@ -1,7 +1,6 @@
 ﻿using Confluent.Kafka;
 using Confluent.SchemaRegistry;
 using Notification.Dispatchers;
-using Notification.Services;
 using Notification.Types;
 using StackExchange.Redis;
 using CacheConfigs = Notification.Configs.Cache;
@@ -16,6 +15,7 @@ using FFUtils = Toolkit.Utils.FeatureFlags;
 using SharedFFConfigs = SharedLibs.Configs.FeatureFlags;
 using RedisUtils = Toolkit.Utils.Redis;
 using KafkaUtils = Toolkit.Utils.Kafka<Notification.Types.NotifDataKafkaKey, Notification.Types.NotifDataKafkaValue>;
+using Notification.Utils;
 
 [ExcludeFromCodeCoverage(Justification = "Not unit testable due to instantiating classes for service setup.")]
 internal class Program
@@ -98,7 +98,22 @@ internal class Program
 
     for (int i = 0; i < GeneralConfigs.NumberProcesses; i++)
     {
-      _ = Notify.Watch(queue, cache, dispatchers, httpClient);
+      _ = Task.Run(async () =>
+      {
+        while (true)
+        {
+          try
+          {
+            await Notify.ProcessMessage(
+              queue, cache, dispatchers, httpClient, i.ToString()
+            );
+          }
+          catch
+          {
+            // @TODO Log it
+          }
+        }
+      });
     }
 
     Thread.Sleep(Timeout.Infinite);
