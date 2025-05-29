@@ -98,6 +98,8 @@ internal class Program
 
     for (int i = 0; i < GeneralConfigs.NumberProcesses; i++)
     {
+      string threadId = $"{System.Environment.MachineName}_{i}";
+      Console.WriteLine($"Starting process with id: {threadId}");
       _ = Task.Run(async () =>
       {
         while (true)
@@ -105,7 +107,7 @@ internal class Program
           try
           {
             await Notify.ProcessMessage(
-              queue, cache, dispatchers, httpClient, i.ToString()
+              queue, cache, dispatchers, httpClient, threadId
             );
           }
           catch
