@@ -52,14 +52,15 @@ public class NotifyTests : IDisposable
       .Returns(Task.FromResult<string?>(""));
 
     this._queueMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
-      .Returns(Task.FromResult(("some id", JsonConvert.SerializeObject(new ChangeQueueItem { ChangeRecord = "", ChangeTime = DateTime.Now, Source = "" }))));
+      .Returns(Task.FromResult(("some id", JsonConvert.SerializeObject(new ChangeQueueItem { ChangeRecord = JsonConvert.SerializeObject(new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Insert }), ChangeTime = DateTime.Now, Source = JsonConvert.SerializeObject(new ChangeSource { }) }))));
     this._queueMock.Setup(s => s.Ack(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
       .Returns(Task.FromResult(true));
     this._queueMock.Setup(s => s.Nack(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>()))
       .Returns(Task.FromResult(true));
 
+    HttpContent entityGetResContent = new StringContent(JsonConvert.SerializeObject(new FindResult<dynamic> { }));
     this._httpClientMock.Protected().Setup<Task<HttpResponseMessage>>("SendAsync", ItExpr.IsAny<HttpRequestMessage>(), ItExpr.IsAny<CancellationToken>())
-      .Returns(Task.FromResult(new HttpResponseMessage { StatusCode = HttpStatusCode.OK }));
+      .Returns(Task.FromResult(new HttpResponseMessage { StatusCode = HttpStatusCode.OK, Content = entityGetResContent }));
 
     this._dispatchersMock.SetupSequence(s => s.GetDispatcher(It.IsAny<string>()))
       .Returns(this._kafkaDispatcherMock.Object)
