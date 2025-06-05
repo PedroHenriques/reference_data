@@ -10,11 +10,7 @@ master:
   persistence:
     enabled: true
     size: ${NOTIFICATION_REDIS_PV_SIZE}
-    storageClass: standard
     accessMode: ReadWriteOnce
-    volumeMode: Filesystem
-    mountPath: /bitnami/redis/data
 
-persistence:
-  aofEnabled: true
-  aofRewritePolicy: everysec
+global:
+  storageClass: managed-csi

@@ -16,11 +16,10 @@ spec:
       sourceRef:
         kind: HelmRepository
         name: bitnami
-        namespace: flux-system
+        namespace: ${ENVIRONMENT}
   valuesFrom:
     - kind: ConfigMap
       name: ${SERVICE}-config
-      valuesKey: values.yaml
   install:
     createNamespace: false
     remediation:

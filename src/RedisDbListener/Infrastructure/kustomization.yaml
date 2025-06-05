@@ -4,13 +4,12 @@ kind: Kustomization
 configMapGenerator:
   - name: ${SERVICE}-config
     files:
-      - values.yaml
+      - values.yaml=values.yaml
 
 generatorOptions:
   disableNameSuffixHash: true
 
 namespace: ${NAMESPACE}
 resources:
-  - namespace.yaml
   - secret.yaml
   - helmrelease.yaml
