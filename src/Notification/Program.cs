@@ -27,6 +27,7 @@ internal class Program
       EndPoints = { $"{CacheConfigs.RedisConHost}:{CacheConfigs.RedisConPort}" },
       Password = CacheConfigs.RedisPw,
       Ssl = false,
+      AbortOnConnectFail = false,
     };
 
     ConfigurationOptions redisQueueConOpts = new ConfigurationOptions
@@ -34,13 +35,8 @@ internal class Program
       EndPoints = { $"{CacheConfigs.RedisConHostQueue}:{CacheConfigs.RedisConPortQueue}" },
       Password = CacheConfigs.RedisPwQueue,
       Ssl = false,
+      AbortOnConnectFail = false,
     };
-
-    if (SharedGeneralConfigs.DeploymentEnv == "local")
-    {
-      redisConOpts.Password = null;
-      redisQueueConOpts.Password = null;
-    }
 
     var cacheInputs = RedisUtils.PrepareInputs(redisConOpts, "notification-service");
     var queueInputs = RedisUtils.PrepareInputs(redisQueueConOpts, "notification-service");

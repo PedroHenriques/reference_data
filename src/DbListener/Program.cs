@@ -24,11 +24,8 @@ internal class Program
       EndPoints = { $"{CacheConfigs.RedisConHost}:{CacheConfigs.RedisConPort}" },
       Password = CacheConfigs.RedisPw,
       Ssl = false,
+      AbortOnConnectFail = false,
     };
-    if (GeneralConfigs.DeploymentEnv == "local")
-    {
-      redisConOpts.Password = null;
-    }
     var redisInputs = RedisUtils.PrepareInputs(redisConOpts, "dblistener-service");
     ICache cache = new Redis(redisInputs);
     IQueue queue = (IQueue)cache;
