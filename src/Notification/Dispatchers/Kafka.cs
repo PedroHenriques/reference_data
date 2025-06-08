@@ -3,6 +3,7 @@ using KafkaConfigs = Notification.Configs.Kafka;
 using Notification.Types;
 using SharedLibs.Types;
 using Toolkit.Types;
+using Notification.Configs;
 
 namespace Notification.Dispatchers;
 
@@ -32,7 +33,7 @@ public class Kafka : IDispatcher
           ActionDatetime = data.ChangeTime,
           EventDatetime = data.EventTime,
           CorrelationId = Guid.NewGuid().ToString(),
-          Source = "Commercial Catalogue",
+          Source = General.ProjectName,
         },
         Data = new NotifDataKafkaValueData
         {

@@ -15,4 +15,7 @@ public static class General
     Environment.GetEnvironmentVariable("NUM_PROCESSES") ??
     throw new Exception("Could not get the 'NUM_PROCESSES' environment variable")
   );
+
+  public static string ProjectName = Environment.GetEnvironmentVariable("PROJECT_NAME")
+    ?? throw new Exception("Could not get the 'PROJECT_NAME' environment variable");
 }
