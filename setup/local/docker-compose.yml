@@ -17,10 +17,10 @@ services:
       - NUM_PROCESSES=2
       - REDIS_CON_HOST=notification_db
       - REDIS_CON_PORT=6379
-      - REDIS_PW=pw
+      - REDIS_PW=other password
       - REDIS_CON_HOST_QUEUE=dblistener_db
       - REDIS_CON_PORT_QUEUE=6379
-      - REDIS_PW_QUEUE=pw
+      - REDIS_PW_QUEUE=password
       - API_BASE_URL=http://api
       - API_PORT=${API_PORT:-10000}
       - KAFKA_BOOTSTRAP_SERVERS=broker:29092
@@ -37,6 +37,7 @@ services:
       - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
       - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
       - LD_NOTIFICATION_ACTIVE_KEY=ref-data-notification-send-notifications
+      - PROJECT_NAME=${PROJECT_NAME:-myapp}
     networks:
       - notification
       - notificationDb
@@ -48,8 +49,12 @@ services:
     image: redis:7-alpine
     container_name: "notification_db"
     restart: on-failure
+    command:
+      - /bin/sh
+      - -c
+      - redis-server --requirepass 'other password'
     healthcheck:
-      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
+      test: [ "CMD-SHELL", "redis-cli -a 'other password' ping | grep PONG" ]
       interval: 1s
       timeout: 3s
       retries: 5
@@ -74,7 +79,7 @@ services:
       - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
       - REDIS_CON_HOST=dblistener_db
       - REDIS_CON_PORT=6379
-      - REDIS_PW=pw
+      - REDIS_PW=password
       - MONGO_DB_NAME=${MONGO_DB_NAME:-referenceData}
       - DBLISTENER_CACHE_CHANGE_DATA_KEY=${DBLISTENER_CACHE_CHANGE_DATA_KEY:-change_resume_data}
       - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}
@@ -91,8 +96,12 @@ services:
     image: redis:7-alpine
     container_name: "dblistener_db"
     restart: on-failure
+    command:
+      - /bin/sh
+      - -c
+      - redis-server --requirepass 'password'
     healthcheck:
-      test: [ "CMD-SHELL", "redis-cli ping | grep PONG" ]
+      test: [ "CMD-SHELL", "redis-cli -a 'password' ping | grep PONG" ]
       interval: 1s
       timeout: 3s
       retries: 5
@@ -106,6 +115,8 @@ services:
     restart: on-failure
     depends_on:
       dblistener_db:
+        condition: service_healthy
+      notification_db:
         condition: service_healthy
     ports:
       - ${REDIS_GUI_PORT:-9001}:5540

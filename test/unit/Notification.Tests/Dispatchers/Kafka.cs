@@ -24,6 +24,10 @@ public class KafkaTests : IDisposable
     Environment.SetEnvironmentVariable("KAFKA_BROKER_SASL_PW", "a");
     Environment.SetEnvironmentVariable("KAFKA_SCHEMA_REGISTRY_SASL_USERNAME", "a");
     Environment.SetEnvironmentVariable("KAFKA_SCHEMA_REGISTRY_SASL_PW", "a");
+    Environment.SetEnvironmentVariable("API_BASE_URL", "a");
+    Environment.SetEnvironmentVariable("API_PORT", "a");
+    Environment.SetEnvironmentVariable("NUM_PROCESSES", "1");
+    Environment.SetEnvironmentVariable("PROJECT_NAME", "test proj name");
 
     this._kafkaMock = new Mock<IKafka<NotifDataKafkaKey, NotifDataKafkaValue>>(MockBehavior.Strict);
     this._callbackMock = new Mock<Action<bool>>(MockBehavior.Strict);
@@ -42,6 +46,10 @@ public class KafkaTests : IDisposable
     Environment.SetEnvironmentVariable("KAFKA_BROKER_SASL_PW", null);
     Environment.SetEnvironmentVariable("KAFKA_SCHEMA_REGISTRY_SASL_USERNAME", null);
     Environment.SetEnvironmentVariable("KAFKA_SCHEMA_REGISTRY_SASL_PW", null);
+    Environment.SetEnvironmentVariable("API_BASE_URL", null);
+    Environment.SetEnvironmentVariable("API_PORT", null);
+    Environment.SetEnvironmentVariable("NUM_PROCESSES", null);
+    Environment.SetEnvironmentVariable("PROJECT_NAME", null);
 
     this._kafkaMock.Reset();
     this._callbackMock.Reset();
@@ -119,7 +127,7 @@ public class KafkaTests : IDisposable
         ActionDatetime = data.ChangeTime,
         EventDatetime = data.EventTime,
         CorrelationId = "",
-        Source = "Commercial Catalogue",
+        Source = "test proj name",
       },
       Data = new NotifDataKafkaValueData
       {
