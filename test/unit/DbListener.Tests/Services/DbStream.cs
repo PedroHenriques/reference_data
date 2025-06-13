@@ -69,6 +69,7 @@ public class DbStreamTests : IDisposable
     this._queueMock.Reset();
     this._mongodbMock.Reset();
     this._ffMock.Reset();
+    this._loggerMock.Reset();
   }
 
   [Fact]
