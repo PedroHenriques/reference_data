@@ -35,12 +35,20 @@ public class TraceIdMiddleware
       {
         traceID = Activity.Current.TraceId.ToString();
       }
-      this._logger.Log(LogLevel.Warning, "No trace ID provided with the request. Using the generated trace id: {traceId}", traceID);
+      this._logger.Log(
+        LogLevel.Warning,
+        "No trace ID provided with the request. Using the generated trace id: {traceId}",
+        traceID
+      );
     }
     else
     {
       activity = Logger.SetTraceIds(traceId, _activitySourceName, _activityName);
-      this._logger.Log(LogLevel.Warning, "Trace ID - {traceId} - provided with the request. Using it in the logs of this request.", traceId);
+      this._logger.Log(
+        LogLevel.Information,
+        "Trace ID - {traceId} - provided with the request. Using it in the logs of this request.",
+        traceId
+      );
     }
 
     try
