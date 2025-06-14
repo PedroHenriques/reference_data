@@ -161,7 +161,7 @@ services:
       - PROJECT_NAME=${PROJECT_NAME:-myapp}
       - LOG_DESTINATION_HOST=logstash
       - LOG_DESTINATION_PORT=5080
-      - LOG_LEVEL=warning
+      - LOG_LEVEL=debug
       - SERVICE_NAME=api
       - SERVICE_VERSION=local_test
       - TRACE_ID_REQ_HEADER=x-trace-id
