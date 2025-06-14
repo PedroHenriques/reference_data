@@ -10,10 +10,12 @@ namespace Notification.Dispatchers;
 public class Kafka : IDispatcher
 {
   private readonly IKafka<NotifDataKafkaKey, NotifDataKafkaValue> _kafka;
+  private readonly ILogger _logger;
 
-  public Kafka(IKafka<NotifDataKafkaKey, NotifDataKafkaValue> eventBus)
+  public Kafka(IKafka<NotifDataKafkaKey, NotifDataKafkaValue> eventBus, ILogger logger)
   {
     this._kafka = eventBus;
+    this._logger = logger;
   }
 
   public Task Dispatch(NotifData data, string destination, Action<bool> callback)
@@ -47,20 +49,26 @@ public class Kafka : IDispatcher
     this._kafka.Publish(
       destination,
       message,
-      PublishHandler(callback)
+      PublishHandler(callback, this._logger)
     );
 
     return Task.CompletedTask;
   }
 
-  private static Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>> PublishHandler(Action<bool> callback)
+  private static Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>> PublishHandler(
+    Action<bool> callback, ILogger logger
+  )
   {
     return result =>
     {
-      Console.WriteLine($"Status: {result.Status}");
-      Console.WriteLine($"Partition: {result.Partition}");
-      Console.WriteLine($"Offset: {result.Offset}");
-      callback(result.Status != PersistenceStatus.NotPersisted);
+      bool persisted = result.Status != PersistenceStatus.NotPersisted;
+
+      logger.Log(
+        persisted ? Microsoft.Extensions.Logging.LogLevel.Information : Microsoft.Extensions.Logging.LogLevel.Error,
+        null,
+        $"Kafka Dispatcher - publish event callback: Document id = {result.Key.Id} | Status = {result.Status} | Partition = {result.Partition} | Offset = {result.Offset}"
+      );
+      callback(persisted);
     };
   }
 }
