@@ -8,6 +8,7 @@ using Toolkit;
 using FFUtils = Toolkit.Utils.FeatureFlags;
 using MongodbUtils = Toolkit.Utils.Mongodb;
 using RedisUtils = Toolkit.Utils.Redis;
+using LoggerUtils = Toolkit.Utils.Logger;
 using FFConfigs = SharedLibs.Configs.FeatureFlags;
 using GeneralConfigs = SharedLibs.Configs.General;
 
@@ -16,6 +17,9 @@ internal class Program
 {
   private static async Task Main(string[] args)
   {
+    var loggerInputs = LoggerUtils.PrepareInputs("DbListener", "Program.cs", "Main thread");
+    ILogger logger = new Logger(loggerInputs);
+
     var mongodbInputs = MongodbUtils.PrepareInputs(DbConfigs.MongoConStr);
     IMongodb db = new Mongodb(mongodbInputs);
 
@@ -42,7 +46,7 @@ internal class Program
     );
     IFeatureFlags ff = new FeatureFlags(inputs);
 
-    await DbStream.Watch(cache, queue, db, ff);
+    await DbStream.Watch(cache, queue, db, ff, logger);
 
     Thread.Sleep(Timeout.Infinite);
   }

@@ -12,6 +12,7 @@ using System.Diagnostics.CodeAnalysis;
 using Toolkit.Types;
 using Toolkit;
 using FFUtils = Toolkit.Utils.FeatureFlags;
+using LoggerUtils = Toolkit.Utils.Logger;
 using SharedFFConfigs = SharedLibs.Configs.FeatureFlags;
 using RedisUtils = Toolkit.Utils.Redis;
 using KafkaUtils = Toolkit.Utils.Kafka<Notification.Types.NotifDataKafkaKey, Notification.Types.NotifDataKafkaValue>;
@@ -20,8 +21,11 @@ using Notification.Utils;
 [ExcludeFromCodeCoverage(Justification = "Not unit testable due to instantiating classes for service setup.")]
 internal class Program
 {
-  private static Task Main(string[] args)
+  private static async Task Main(string[] args)
   {
+    var loggerInputs = LoggerUtils.PrepareInputs("Notification", "Program.cs", "Main thread");
+    ILogger logger = new Logger(loggerInputs);
+
     ConfigurationOptions redisConOpts = new ConfigurationOptions
     {
       EndPoints = { $"{CacheConfigs.RedisConHost}:{CacheConfigs.RedisConPort}" },
@@ -72,7 +76,7 @@ internal class Program
     );
     IKafka<NotifDataKafkaKey, NotifDataKafkaValue> kafka = new Kafka<NotifDataKafkaKey, NotifDataKafkaValue>(kafkaInputs);
 
-    IDispatchers dispatchers = new Dispatchers(new HttpClient(), kafka);
+    IDispatchers dispatchers = new Dispatchers(new HttpClient(), kafka, logger);
 
     EnvNames ffEnvName;
     if (SharedFFConfigs.EnvName.TryGetValue(SharedGeneralConfigs.DeploymentEnv, out ffEnvName) == false)
@@ -92,29 +96,39 @@ internal class Program
     HttpClient httpClient = new HttpClient();
     httpClient.BaseAddress = new Uri($"{GeneralConfigs.ApiBaseUrl}:{GeneralConfigs.ApiPort}");
 
+    List<Task> tasks = new List<Task>();
     for (int i = 0; i < GeneralConfigs.NumberProcesses; i++)
     {
       string threadId = $"{System.Environment.MachineName}_{i}";
-      Console.WriteLine($"Starting process with id: {threadId}");
-      _ = Task.Run(async () =>
-      {
-        while (true)
+      logger.Log(
+        Microsoft.Extensions.Logging.LogLevel.Information,
+        null,
+        $"Starting process with id: {threadId}"
+      );
+
+      tasks.Add(
+        Task.Run(async () =>
         {
-          try
+          while (true)
           {
-            await Notify.ProcessMessage(
-              queue, cache, dispatchers, httpClient, threadId
-            );
+            try
+            {
+              await Notify.ProcessMessage(
+                queue, cache, dispatchers, httpClient, logger, threadId
+              );
+            }
+            catch (Exception ex)
+            {
+              logger.Log(
+                Microsoft.Extensions.Logging.LogLevel.Error,
+                ex, ex.Message
+              );
+            }
           }
-          catch
-          {
-            // @TODO Log it
-          }
-        }
-      });
+        })
+      );
     }
 
-    Thread.Sleep(Timeout.Infinite);
-    return Task.CompletedTask;
+    await Task.WhenAll(tasks);
   }
 }

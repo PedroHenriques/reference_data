@@ -1,5 +1,6 @@
 using Newtonsoft.Json;
 using ffConfigs = Notification.Configs.FeatureFlags;
+using queueConfigs = Notification.Configs.Queue;
 using cacheConfigs = Notification.Configs.Cache;
 using dbConfigs = Notification.Configs.Db;
 using Notification.Types;
@@ -12,21 +13,27 @@ namespace Notification.Utils;
 public static class Notify
 {
   public static async Task ProcessMessage(IQueue queue, ICache cache,
-    IDispatchers dispatchers, HttpClient httpClient, string processId)
+    IDispatchers dispatchers, HttpClient httpClient, ILogger logger,
+    string processId
+  )
   {
     if (FeatureFlags.GetCachedBoolFlagValue(ffConfigs.NotificationKeyActive) == false)
     {
       return;
     }
 
-    var (messageId, messageStr) = await queue.Dequeue(cacheConfigs.ChangesQueueKey, $"thread-{processId}");
-    if (String.IsNullOrEmpty(messageId) || String.IsNullOrEmpty(messageStr))
-    {
-      return;
-    }
-
+    string? messageId = null;
     try
     {
+      var (id, messageStr) = await queue.Dequeue(
+        cacheConfigs.ChangesQueueKey, $"thread-{processId}"
+      );
+      if (String.IsNullOrEmpty(id) || String.IsNullOrEmpty(messageStr))
+      {
+        return;
+      }
+      messageId = id;
+
       var message = JsonConvert.DeserializeObject<ChangeQueueItem>(messageStr);
       if (message.Source == null || message.ChangeRecord == null)
       {
@@ -39,40 +46,58 @@ public static class Notify
 
       if (changeSource.CollName == dbConfigs.ColName)
       {
-        await HandleEntitiesMessage(cache, changeRecord);
+        await HandleEntitiesMessage(cache, logger, changeRecord);
       }
       else
       {
         await HandleDataMessage(
           cache, changeSource.CollName, message.ChangeTime,
-          changeRecord, dispatchers, httpClient,
-          DispatcherHandler(queue, messageStr)
+          changeRecord, dispatchers, httpClient, logger,
+          DispatcherHandler(queue, logger, changeRecord.Id)
         );
       }
 
       await queue.Ack(cacheConfigs.ChangesQueueKey, messageId);
     }
-    catch (Exception e)
+    catch (Exception)
     {
-      await queue.Nack(cacheConfigs.ChangesQueueKey, messageId, 2);
-      Console.WriteLine(e);
-      Console.WriteLine(e.Message);
+      if (messageId != null)
+      {
+        await queue.Nack(
+          cacheConfigs.ChangesQueueKey, messageId, queueConfigs.DispatcherRetryCount
+        );
+      }
+      throw;
     }
   }
 
-  private static Action<bool> DispatcherHandler(IQueue queue, string messageStr)
+  private static Action<bool> DispatcherHandler(
+    IQueue queue, ILogger logger, string documentId
+  )
   {
     return (bool success) =>
     {
-      if (success == false)
+      if (success)
       {
-        // @TODO: call nack()
-        Console.WriteLine($"Dispatcher signaled a failure in dispatching the message: '{messageStr}'");
+        logger.Log(
+          Microsoft.Extensions.Logging.LogLevel.Information,
+          null,
+          $"Dispatcher sent notification successfully for document id: {documentId}"
+        );
+      }
+      else
+      {
+        // @TODO: enqueue into dispatcher retry queue
+        logger.Log(
+          Microsoft.Extensions.Logging.LogLevel.Error,
+          null,
+          $"Dispatcher failed send notification for document id: {documentId}"
+        );
       }
     };
   }
 
-  private static async Task HandleEntitiesMessage(ICache cache,
+  private static async Task HandleEntitiesMessage(ICache cache, ILogger logger,
     ChangeRecord changeRecord)
   {
     if (changeRecord.Document == null)
@@ -94,18 +119,22 @@ public static class Notify
 
     if (result == false)
     {
-      // @TODO: Log it
+      logger.Log(
+        Microsoft.Extensions.Logging.LogLevel.Error,
+        null,
+        $"Failed to store in cache the key: 'entity:{changeRecord.Document["name"]}|notif configs'"
+      );
     }
   }
 
   private static async Task HandleDataMessage(ICache cache, string entityName,
     DateTime changeTime, ChangeRecord changeRecord, IDispatchers dispatchers,
-    HttpClient httpClient, Action<bool> callback)
+    HttpClient httpClient, ILogger logger, Action<bool> callback)
   {
     var configsStr = await cache.GetString($"entity:{entityName}|notif configs");
     if (configsStr == null)
     {
-      configsStr = await GetEntityInformation(httpClient, cache, entityName);
+      configsStr = await GetEntityInformation(httpClient, cache, logger, entityName);
     }
 
     var notifConfigs = JsonConvert.DeserializeObject<NotifConfig[]>(configsStr);
@@ -144,15 +173,19 @@ public static class Notify
           callback
         );
       }
-      catch
+      catch (Exception ex)
       {
-        // @TODO: Log it
+        logger.Log(
+          Microsoft.Extensions.Logging.LogLevel.Warning,
+          ex,
+          ex.Message
+        );
       }
     }
   }
 
   private static async Task<string> GetEntityInformation(
-    HttpClient httpClient, ICache cache, string entityName)
+    HttpClient httpClient, ICache cache, ILogger logger, string entityName)
   {
     var response = await httpClient.GetAsync(
       "/v1/entities/?filter={\"name\":\"" + entityName + "\"}");
@@ -171,6 +204,7 @@ public static class Notify
 
     var _ = HandleEntitiesMessage(
       cache,
+      logger,
       new ChangeRecord
       {
         Id = "",

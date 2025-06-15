@@ -17,6 +17,7 @@ public class DbStreamTests : IDisposable
   private readonly Mock<IQueue> _queueMock;
   private readonly Mock<IMongodb> _mongodbMock;
   private readonly Mock<IFeatureFlags> _ffMock;
+  private readonly Mock<ILogger> _loggerMock;
 
   public DbStreamTests()
   {
@@ -33,6 +34,7 @@ public class DbStreamTests : IDisposable
     this._queueMock = new Mock<IQueue>(MockBehavior.Strict);
     this._mongodbMock = new Mock<IMongodb>(MockBehavior.Strict);
     this._ffMock = new Mock<IFeatureFlags>(MockBehavior.Strict);
+    this._loggerMock = new Mock<ILogger>(MockBehavior.Strict);
 
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(null));
@@ -48,6 +50,8 @@ public class DbStreamTests : IDisposable
     this._ffMock.Setup(s => s.GetBoolFlagValue(It.IsAny<string>()))
       .Returns(true);
     this._ffMock.Setup(s => s.SubscribeToValueChanges(It.IsAny<string>(), It.IsAny<Action<FlagValueChangeEvent>>()));
+
+    this._loggerMock.Setup(s => s.Log(It.IsAny<Microsoft.Extensions.Logging.LogLevel>(), It.IsAny<Exception?>(), It.IsAny<string>()));
   }
 
   public void Dispose()
@@ -65,26 +69,27 @@ public class DbStreamTests : IDisposable
     this._queueMock.Reset();
     this._mongodbMock.Reset();
     this._ffMock.Reset();
+    this._loggerMock.Reset();
   }
 
   [Fact]
   public async Task Watch_ItShouldCallGetOnTheICacheInstanceOnce()
   {
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     this._cacheMock.Verify(m => m.GetString("change_resume_data"), Times.Once());
   }
 
   [Fact]
   public async Task Watch_ItShouldCallGetBoolFlagValueOnTheIFeatureFlagsInstanceOnce()
   {
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     this._ffMock.Verify(s => s.GetBoolFlagValue("test flag key"), Times.Once());
   }
 
   [Fact]
   public async Task Watch_ItShouldCallSubscribeToValueChangesOnTheIFeatureFlagsInstanceOnce()
   {
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     this._ffMock.Verify(s => s.SubscribeToValueChanges("test flag key", It.IsAny<Action<FlagValueChangeEvent>>()), Times.Once());
   }
 
@@ -97,7 +102,7 @@ public class DbStreamTests : IDisposable
     this._ffMock.Setup(s => s.GetBoolFlagValue(It.IsAny<string>()))
       .Returns(false);
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     (this._ffMock.Invocations[1].Arguments[1] as Action<FlagValueChangeEvent>)(testEvent);
 
     this._cacheMock.Verify(m => m.GetString("change_resume_data"), Times.Once());
@@ -115,7 +120,7 @@ public class DbStreamTests : IDisposable
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(JsonConvert.SerializeObject(testResumeData)));
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     (this._ffMock.Invocations[1].Arguments[1] as Action<FlagValueChangeEvent>)(testEvent);
 
     this._mongodbMock.Verify(s => s.WatchDb("RefData", testResumeData, It.IsAny<CancellationToken>()), Times.Once());
@@ -128,7 +133,7 @@ public class DbStreamTests : IDisposable
     var newValue = LdValue.Of(false);
     var testEvent = new FlagValueChangeEvent("test flag key", oldValue, newValue);
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     var token = (CancellationToken)this._mongodbMock.Invocations[0].Arguments[2];
     (this._ffMock.Invocations[1].Arguments[1] as Action<FlagValueChangeEvent>)(testEvent);
 
@@ -138,7 +143,7 @@ public class DbStreamTests : IDisposable
   [Fact]
   public async Task Watch_ItShouldCallWatchOnTheIDbInstanceOnce()
   {
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     this._mongodbMock.Verify(s => s.WatchDb("RefData", null, It.IsAny<CancellationToken>()), Times.Once());
   }
 
@@ -149,7 +154,7 @@ public class DbStreamTests : IDisposable
     this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(JsonConvert.SerializeObject(testData)));
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     this._mongodbMock.Verify(s => s.WatchDb("RefData", testData, It.IsAny<CancellationToken>()), Times.Once());
   }
 
@@ -162,7 +167,7 @@ public class DbStreamTests : IDisposable
         new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
       }).ToAsyncEnumerable());
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>()), Times.Exactly(2));
   }
 
@@ -177,7 +182,7 @@ public class DbStreamTests : IDisposable
         new WatchData { ChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Insert, Id = "not the correct one" }, ChangeTime = testTime, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
       }).ToAsyncEnumerable());
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     Assert.Equal(
       new[] {
         JsonConvert.SerializeObject(new ChangeQueueItem{
@@ -201,7 +206,7 @@ public class DbStreamTests : IDisposable
         new WatchData { ChangeRecord = expectedChangeRecord, Source = new ChangeSource { DbName = "another test db name", CollName = "another test coll name" }, ChangeTime = testTime, ResumeData = new ResumeData{} },
       }).ToAsyncEnumerable());
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     Assert.Equal(
       new[] {
         JsonConvert.SerializeObject(new ChangeQueueItem{
@@ -223,7 +228,7 @@ public class DbStreamTests : IDisposable
         new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
       }).ToAsyncEnumerable());
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     this._cacheMock.Verify(m => m.Set("change_resume_data", It.IsAny<string>(), null), Times.Exactly(2));
   }
 
@@ -237,7 +242,7 @@ public class DbStreamTests : IDisposable
         new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
       }).ToAsyncEnumerable());
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     Assert.Equal(
       JsonConvert.SerializeObject(expectedResumeData),
       this._cacheMock.Invocations[1].Arguments[1]
@@ -254,7 +259,7 @@ public class DbStreamTests : IDisposable
         new WatchData { ResumeData = expectedResumeData, ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, Source = new ChangeSource {} },
       }).ToAsyncEnumerable());
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     Assert.Equal(
       JsonConvert.SerializeObject(expectedResumeData),
       this._cacheMock.Invocations[2].Arguments[1]
@@ -269,7 +274,7 @@ public class DbStreamTests : IDisposable
         new WatchData { ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
       }).ToAsyncEnumerable());
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>()), Times.Never);
   }
 
@@ -282,7 +287,7 @@ public class DbStreamTests : IDisposable
         new WatchData { ResumeData = expectedResumeData, ChangeTime = DateTime.Now, Source = new ChangeSource {} },
       }).ToAsyncEnumerable());
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
     Assert.Equal(
       JsonConvert.SerializeObject(expectedResumeData),
       this._cacheMock.Invocations[1].Arguments[1]
@@ -295,8 +300,59 @@ public class DbStreamTests : IDisposable
     this._ffMock.Setup(s => s.GetBoolFlagValue(It.IsAny<string>()))
       .Returns(false);
 
-    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object);
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
 
     this._mongodbMock.Verify(m => m.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>()), Times.Never());
+  }
+
+  [Fact]
+  public async Task Watch_IfTheDeserializingTheMongoChangeThrowsAnException_ItShouldLogTheErrorAndNotThrowException()
+  {
+    this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
+      .Returns(Task.FromResult<string?>(""));
+
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
+    this._loggerMock.Verify(m => m.Log(
+      Microsoft.Extensions.Logging.LogLevel.Error,
+      It.IsAny<Exception>(),
+      It.Is<string>(msg => msg.Contains("No JSON content found and type 'Toolkit.Types.ResumeData' is not nullable."))
+    ), Times.Once());
+  }
+
+  [Fact]
+  public async Task Watch_IfTheCallToGetOnTheICacheInstanceThrowsAnException_ItShouldLogTheErrorAndNotThrowException()
+  {
+    var testException = new Exception("Error message from test.");
+    this._cacheMock.Setup(s => s.GetString(It.IsAny<string>()))
+      .ThrowsAsync(testException);
+
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
+    this._loggerMock.Verify(m => m.Log(Microsoft.Extensions.Logging.LogLevel.Error, testException, "Error message from test."), Times.Once());
+  }
+
+  [Fact]
+  public async Task Watch_IfTheCallToEnqueueOnTheIQueueInstanceThrowsAnException_ItShouldLogTheErrorAndNotThrowException()
+  {
+    var testException = new Exception("Error message from test.");
+    this._queueMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>()))
+      .ThrowsAsync(testException);
+    this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>()))
+      .Returns((new[] {
+        new WatchData { ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {} },
+      }).ToAsyncEnumerable());
+
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
+    this._loggerMock.Verify(m => m.Log(Microsoft.Extensions.Logging.LogLevel.Error, testException, "Error message from test."), Times.Once());
+  }
+
+  [Fact]
+  public async Task Watch_IfTheCallToSetOnTheICacheInstanceThrowsAnException_ItShouldLogTheErrorAndNotThrowException()
+  {
+    var testException = new Exception("Error message from test.");
+    this._cacheMock.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan?>()))
+      .ThrowsAsync(testException);
+
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
+    this._loggerMock.Verify(m => m.Log(Microsoft.Extensions.Logging.LogLevel.Error, testException, "Error message from test."), Times.Once());
   }
 }

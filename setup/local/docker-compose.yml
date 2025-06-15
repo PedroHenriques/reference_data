@@ -38,12 +38,18 @@ services:
       - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
       - LD_NOTIFICATION_ACTIVE_KEY=ref-data-notification-send-notifications
       - PROJECT_NAME=${PROJECT_NAME:-myapp}
+      - LOG_DESTINATION_HOST=logstash
+      - LOG_DESTINATION_PORT=5080
+      - LOG_LEVEL=debug
+      - SERVICE_NAME=notification
+      - SERVICE_VERSION=local_test
     networks:
       - notification
       - notificationDb
       - dblistenerDb
       - api
       - kafka
+      - myapp_shared
 
   notification_db:
     image: redis:7-alpine
@@ -87,10 +93,17 @@ services:
       - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
       - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
       - LD_DBLISTENER_ACTIVE_KEY=ref-data-db-listener-sub-stream
+      - PROJECT_NAME=${PROJECT_NAME:-myapp}
+      - LOG_DESTINATION_HOST=logstash
+      - LOG_DESTINATION_PORT=5080
+      - LOG_LEVEL=debug
+      - SERVICE_NAME=dblistener
+      - SERVICE_VERSION=local_test
     networks:
       - dblistener
       - dblistenerDb
       - apiDb
+      - myapp_shared
 
   dblistener_db:
     image: redis:7-alpine
@@ -145,10 +158,18 @@ services:
       - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
       - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
       - LD_API_ACTIVE_KEY=ref-data-api-serve-requests
+      - PROJECT_NAME=${PROJECT_NAME:-myapp}
+      - LOG_DESTINATION_HOST=logstash
+      - LOG_DESTINATION_PORT=5080
+      - LOG_LEVEL=debug
+      - SERVICE_NAME=api
+      - SERVICE_VERSION=local_test
+      - TRACE_ID_REQ_HEADER=x-trace-id
     ports:
       - ${API_PORT:-10000}:10000
     networks:
       - api
+      - myapp_shared
 
   api_db:
     image: mongo:8-noble
@@ -297,3 +318,5 @@ networks:
   notification:
   notificationDb:
   kafka:
+  myapp_shared:
+    external: true

@@ -1,10 +1,12 @@
 using EntityModel = Api.Models.Entity;
 using Api.Routers;
 using DbConfigs = Api.Configs.Db;
+using LoggerConfigs = Api.Configs.Logger;
 using System.Diagnostics.CodeAnalysis;
 using Toolkit;
 using Toolkit.Types;
 using MongodbUtils = Toolkit.Utils.Mongodb;
+using LoggerUtils = Toolkit.Utils.Logger;
 using FFUtils = Toolkit.Utils.FeatureFlags;
 using FFConfigs = SharedLibs.Configs.FeatureFlags;
 using FFApiConfigs = Api.Configs.FeatureFlags;
@@ -17,6 +19,8 @@ internal class Program
   private static void Main(string[] args)
   {
     WebApplicationBuilder builder = WebApplication.CreateBuilder(args);
+
+    LoggerUtils.PrepareInputs(builder);
 
     builder.Services.AddEndpointsApiExplorer();
     builder.Services.AddSwaggerGen();
@@ -47,6 +51,9 @@ internal class Program
     WebApplication app = builder.Build();
 
     app.UseMiddleware<CheckApiActiveMiddleware>();
+    app.UseMiddleware<TraceIdMiddleware>(
+      LoggerConfigs.TraceIdReqHeader, "Api", "IncomingHttpRequest"
+    );
 
     if (app.Environment.IsDevelopment())
     {
