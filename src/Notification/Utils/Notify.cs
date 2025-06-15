@@ -91,7 +91,7 @@ public static class Notify
         logger.Log(
           Microsoft.Extensions.Logging.LogLevel.Error,
           null,
-          $"Dispatcher failed send notification for document id: {documentId}"
+          $"Dispatcher failed to send notification for document id: {documentId}"
         );
       }
     };

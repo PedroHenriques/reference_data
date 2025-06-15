@@ -621,7 +621,7 @@ public class NotifyTests : IDisposable
     var callback = this._kafkaDispatcherMock.Invocations[0].Arguments[2] as Action<bool>;
     callback(false);
 
-    this._loggerMock.Verify(m => m.Log(Microsoft.Extensions.Logging.LogLevel.Error, null, "Dispatcher failed send notification for document id: another test doc id"), Times.Once());
+    this._loggerMock.Verify(m => m.Log(Microsoft.Extensions.Logging.LogLevel.Error, null, "Dispatcher failed to send notification for document id: another test doc id"), Times.Once());
   }
 
   [Fact]
@@ -829,7 +829,7 @@ public class NotifyTests : IDisposable
     var callback = this._webhookDispatcherMock.Invocations[0].Arguments[2] as Action<bool>;
     callback(false);
 
-    this._loggerMock.Verify(m => m.Log(Microsoft.Extensions.Logging.LogLevel.Error, null, "Dispatcher failed send notification for document id: another test doc id"), Times.Once());
+    this._loggerMock.Verify(m => m.Log(Microsoft.Extensions.Logging.LogLevel.Error, null, "Dispatcher failed to send notification for document id: another test doc id"), Times.Once());
   }
 
   [Fact]
