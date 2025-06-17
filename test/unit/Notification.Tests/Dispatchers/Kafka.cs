@@ -28,6 +28,7 @@ public class KafkaTests : IDisposable
     Environment.SetEnvironmentVariable("API_BASE_URL", "a");
     Environment.SetEnvironmentVariable("API_PORT", "a");
     Environment.SetEnvironmentVariable("NUM_PROCESSES", "1");
+    Environment.SetEnvironmentVariable("NUM_PROCESSES_RETRY", "1");
     Environment.SetEnvironmentVariable("PROJECT_NAME", "test proj name");
 
     this._kafkaMock = new Mock<IKafka<NotifDataKafkaKey, NotifDataKafkaValue>>(MockBehavior.Strict);
@@ -54,6 +55,7 @@ public class KafkaTests : IDisposable
     Environment.SetEnvironmentVariable("API_BASE_URL", null);
     Environment.SetEnvironmentVariable("API_PORT", null);
     Environment.SetEnvironmentVariable("NUM_PROCESSES", null);
+    Environment.SetEnvironmentVariable("NUM_PROCESSES_RETRY", null);
     Environment.SetEnvironmentVariable("PROJECT_NAME", null);
 
     this._kafkaMock.Reset();

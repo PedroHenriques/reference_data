@@ -6,3 +6,5 @@ coverageReport/
 release/
 
 .env
+
+.vscode/

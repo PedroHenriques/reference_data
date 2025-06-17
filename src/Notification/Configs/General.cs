@@ -16,6 +16,11 @@ public static class General
     throw new Exception("Could not get the 'NUM_PROCESSES' environment variable")
   );
 
+  public static int NumberProcessesRetry = Int32.Parse(
+    Environment.GetEnvironmentVariable("NUM_PROCESSES_RETRY") ??
+    throw new Exception("Could not get the 'NUM_PROCESSES_RETRY' environment variable")
+  );
+
   public static string ProjectName = Environment.GetEnvironmentVariable("PROJECT_NAME")
     ?? throw new Exception("Could not get the 'PROJECT_NAME' environment variable");
 }

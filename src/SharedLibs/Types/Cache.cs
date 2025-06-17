@@ -7,4 +7,6 @@ public struct ChangeQueueItem
   public required string ChangeRecord { get; set; }
 
   public required string Source { get; set; }
+
+  public NotifConfig[]? NotifConfigs { get; set; }
 }
