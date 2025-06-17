@@ -22,7 +22,4 @@ public static class Cache
 
   public static string RedisPwQueue = Environment.GetEnvironmentVariable("REDIS_PW_QUEUE")
     ?? throw new Exception("Could not get the 'REDIS_PW_QUEUE' environment variable");
-
-  public static string ChangesQueueKey = Environment.GetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY")
-    ?? throw new Exception("Could not get the 'DBLISTENER_CACHE_CHANGES_QUEUE_KEY' environment variable");
 }

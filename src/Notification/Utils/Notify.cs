@@ -1,7 +1,6 @@
 using Newtonsoft.Json;
 using ffConfigs = Notification.Configs.FeatureFlags;
 using queueConfigs = Notification.Configs.Queue;
-using cacheConfigs = Notification.Configs.Cache;
 using dbConfigs = Notification.Configs.Db;
 using Notification.Types;
 using SharedLibs.Types;
@@ -10,14 +9,33 @@ using Toolkit;
 
 namespace Notification.Utils;
 
+public enum NotifyMode
+{
+  MongoChanges,
+  DispatcherRetry,
+}
+
 public static class Notify
 {
-  public static async Task ProcessMessage(IQueue queue, ICache cache,
-    IDispatchers dispatchers, HttpClient httpClient, ILogger logger,
-    string processId
+  public static async Task ProcessMessage(IQueue queueDblistener, ICache cacheNotif,
+    IQueue queueNotif, IDispatchers dispatchers, HttpClient httpClient,
+    ILogger logger, NotifyMode mode, string processId
   )
   {
-    if (FeatureFlags.GetCachedBoolFlagValue(ffConfigs.NotificationKeyActive) == false)
+    string queueName = queueConfigs.ChangesQueueKey;
+    string ffKey = ffConfigs.NotificationKeyActive;
+    int retryThreashold = queueConfigs.ChangesQueueRetryCount;
+    IQueue queue = queueDblistener;
+
+    if (mode == NotifyMode.DispatcherRetry)
+    {
+      queueName = queueConfigs.DispatcherRetryQueueKey;
+      ffKey = ffConfigs.RetryQueueKeyActive;
+      retryThreashold = queueConfigs.DispatcherRetryQueueRetryCount;
+      queue = queueNotif;
+    }
+
+    if (FeatureFlags.GetCachedBoolFlagValue(ffKey) == false)
     {
       return;
     }
@@ -26,7 +44,7 @@ public static class Notify
     try
     {
       var (id, messageStr) = await queue.Dequeue(
-        cacheConfigs.ChangesQueueKey, $"thread-{processId}"
+        queueName, $"thread-{mode}-{processId}"
       );
       if (String.IsNullOrEmpty(id) || String.IsNullOrEmpty(messageStr))
       {
@@ -46,39 +64,47 @@ public static class Notify
 
       if (changeSource.CollName == dbConfigs.ColName)
       {
-        await HandleEntitiesMessage(cache, logger, changeRecord);
+        await HandleEntitiesMessage(cacheNotif, logger, changeRecord);
       }
       else
       {
         await HandleDataMessage(
-          cache, changeSource.CollName, message.ChangeTime,
+          cacheNotif, changeSource.CollName, message.ChangeTime,
           changeRecord, dispatchers, httpClient, logger,
-          DispatcherHandler(queue, logger, changeRecord.Id)
+          DispatcherHandler(queueNotif, logger, mode, messageId, message, changeRecord.Id),
+          message.NotifConfigs
         );
       }
 
-      await queue.Ack(cacheConfigs.ChangesQueueKey, messageId);
+      if (mode == NotifyMode.MongoChanges)
+      {
+        await queue.Ack(queueName, messageId);
+      }
     }
     catch (Exception)
     {
       if (messageId != null)
       {
-        await queue.Nack(
-          cacheConfigs.ChangesQueueKey, messageId, queueConfigs.DispatcherRetryCount
-        );
+        await queue.Nack(queueName, messageId, retryThreashold);
       }
       throw;
     }
   }
 
-  private static Action<bool> DispatcherHandler(
-    IQueue queue, ILogger logger, string documentId
+  private static Func<NotifConfig, Action<bool>> DispatcherHandler(
+    IQueue queue, ILogger logger, NotifyMode mode, string messageId,
+    ChangeQueueItem message, string documentId
   )
   {
-    return (bool success) =>
+    return (NotifConfig notifConfig) => async (bool success) =>
     {
       if (success)
       {
+        if (mode == NotifyMode.DispatcherRetry)
+        {
+          await queue.Ack(queueConfigs.DispatcherRetryQueueKey, messageId);
+        }
+
         logger.Log(
           Microsoft.Extensions.Logging.LogLevel.Information,
           null,
@@ -87,12 +113,39 @@ public static class Notify
       }
       else
       {
-        // @TODO: enqueue into dispatcher retry queue
-        logger.Log(
-          Microsoft.Extensions.Logging.LogLevel.Error,
-          null,
-          $"Dispatcher failed to send notification for document id: {documentId}"
-        );
+        if (mode == NotifyMode.MongoChanges)
+        {
+          var retryMsg = new ChangeQueueItem
+          {
+            ChangeRecord = message.ChangeRecord,
+            ChangeTime = message.ChangeTime,
+            Source = message.Source,
+            NotifConfigs = [notifConfig],
+          };
+          var insertedIds = await queue.Enqueue(
+            queueConfigs.DispatcherRetryQueueKey,
+            [JsonConvert.SerializeObject(retryMsg)]
+          );
+
+          logger.Log(
+            Microsoft.Extensions.Logging.LogLevel.Error,
+            null,
+            $"Dispatcher failed to send notification for document id: '{documentId}' and dispatcher: '{notifConfig.Protocol}'. Sent to the retry queue with message id: {String.Join(" ", insertedIds)}"
+          );
+        }
+        else
+        {
+          await queue.Nack(
+            queueConfigs.DispatcherRetryQueueKey,
+            messageId, queueConfigs.DispatcherRetryQueueRetryCount
+          );
+
+          logger.Log(
+            Microsoft.Extensions.Logging.LogLevel.Error,
+            null,
+            $"Dispatcher failed to send notification for document id: '{documentId}' and dispatcher: '{notifConfig.Protocol}'. Nacked the message with id: {messageId}"
+          );
+        }
       }
     };
   }
@@ -129,18 +182,24 @@ public static class Notify
 
   private static async Task HandleDataMessage(ICache cache, string entityName,
     DateTime changeTime, ChangeRecord changeRecord, IDispatchers dispatchers,
-    HttpClient httpClient, ILogger logger, Action<bool> callback)
+    HttpClient httpClient, ILogger logger,
+    Func<NotifConfig, Action<bool>> callbackFactory, NotifConfig[]? notifConfigs
+  )
   {
-    var configsStr = await cache.GetString($"entity:{entityName}|notif configs");
-    if (configsStr == null)
-    {
-      configsStr = await GetEntityInformation(httpClient, cache, logger, entityName);
-    }
-
-    var notifConfigs = JsonConvert.DeserializeObject<NotifConfig[]>(configsStr);
     if (notifConfigs == null)
     {
-      return;
+      var configsStr = await cache.GetString($"entity:{entityName}|notif configs");
+      if (configsStr == null)
+      {
+        configsStr = await GetEntityInformation(httpClient, cache, logger, entityName);
+      }
+
+      var configs = JsonConvert.DeserializeObject<NotifConfig[]>(configsStr);
+      if (configs == null)
+      {
+        return;
+      }
+      notifConfigs = configs;
     }
 
     if (changeRecord.Document != null)
@@ -170,7 +229,7 @@ public static class Notify
             Document = changeRecord.Document,
           },
           notif.TargetURL,
-          callback
+          callbackFactory(notif)
         );
       }
       catch (Exception ex)

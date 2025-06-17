@@ -34,7 +34,7 @@ internal class Program
       AbortOnConnectFail = false,
     };
 
-    ConfigurationOptions redisQueueConOpts = new ConfigurationOptions
+    ConfigurationOptions redisQueueChangesConOpts = new ConfigurationOptions
     {
       EndPoints = { $"{CacheConfigs.RedisConHostQueue}:{CacheConfigs.RedisConPortQueue}" },
       Password = CacheConfigs.RedisPwQueue,
@@ -42,10 +42,11 @@ internal class Program
       AbortOnConnectFail = false,
     };
 
-    var cacheInputs = RedisUtils.PrepareInputs(redisConOpts, "notification-service");
-    var queueInputs = RedisUtils.PrepareInputs(redisQueueConOpts, "notification-service");
-    ICache cache = new Redis(cacheInputs);
-    IQueue queue = new Redis(queueInputs);
+    var notificationRedisInputs = RedisUtils.PrepareInputs(redisConOpts, "notification-service");
+    var dblistenerRedisInputs = RedisUtils.PrepareInputs(redisQueueChangesConOpts, "notification-service");
+    ICache cacheNotif = new Redis(notificationRedisInputs);
+    IQueue queueNotif = new Redis(notificationRedisInputs);
+    IQueue queueDblistener = new Redis(dblistenerRedisInputs);
 
     var schemaRegistryConfig = new SchemaRegistryConfig
     {
@@ -92,6 +93,8 @@ internal class Program
 
     featureFlags.GetBoolFlagValue(FFConfigs.NotificationKeyActive);
     featureFlags.SubscribeToValueChanges(FFConfigs.NotificationKeyActive);
+    featureFlags.GetBoolFlagValue(FFConfigs.RetryQueueKeyActive);
+    featureFlags.SubscribeToValueChanges(FFConfigs.RetryQueueKeyActive);
 
     HttpClient httpClient = new HttpClient();
     httpClient.BaseAddress = new Uri($"{GeneralConfigs.ApiBaseUrl}:{GeneralConfigs.ApiPort}");
@@ -103,7 +106,7 @@ internal class Program
       logger.Log(
         Microsoft.Extensions.Logging.LogLevel.Information,
         null,
-        $"Starting process with id: {threadId}"
+        $"Starting Mongo changes process with id: {threadId}"
       );
 
       tasks.Add(
@@ -114,7 +117,41 @@ internal class Program
             try
             {
               await Notify.ProcessMessage(
-                queue, cache, dispatchers, httpClient, logger, threadId
+                queueDblistener, cacheNotif, queueNotif, dispatchers, httpClient,
+                logger, NotifyMode.MongoChanges, threadId
+              );
+            }
+            catch (Exception ex)
+            {
+              logger.Log(
+                Microsoft.Extensions.Logging.LogLevel.Error,
+                ex, ex.Message
+              );
+            }
+          }
+        })
+      );
+    }
+
+    for (int i = 0; i < GeneralConfigs.NumberProcessesRetry; i++)
+    {
+      string threadId = $"{System.Environment.MachineName}_{i}";
+      logger.Log(
+        Microsoft.Extensions.Logging.LogLevel.Information,
+        null,
+        $"Starting retry queue process with id: {threadId}"
+      );
+
+      tasks.Add(
+        Task.Run(async () =>
+        {
+          while (true)
+          {
+            try
+            {
+              await Notify.ProcessMessage(
+                queueDblistener, cacheNotif, queueNotif, dispatchers, httpClient,
+                logger, NotifyMode.DispatcherRetry, threadId
               );
             }
             catch (Exception ex)
