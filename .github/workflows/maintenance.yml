@@ -10,7 +10,7 @@ defaults:
 
 jobs:
   maintenance:
-    uses: PedroHenriques/ci_cd_test_templates/.github/workflows/repo_maintenance.yml@main
+    uses: PedroHenriques/ci_cd_workflow_templates/.github/workflows/repo_maintenance.yml@main
     with:
       template_type: dotnet
       pr_reviewers: PedroHenriques
