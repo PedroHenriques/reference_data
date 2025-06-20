@@ -11,7 +11,7 @@ using FFUtils = Toolkit.Utils.FeatureFlags;
 using FFConfigs = SharedLibs.Configs.FeatureFlags;
 using FFApiConfigs = Api.Configs.FeatureFlags;
 using GeneralConfigs = SharedLibs.Configs.General;
-using Api.Middleware;
+using Toolkit.Asp.Middlewares;
 
 [ExcludeFromCodeCoverage(Justification = "Not unit testable due to instantiating classes for service setup.")]
 internal class Program
@@ -50,7 +50,7 @@ internal class Program
 
     WebApplication app = builder.Build();
 
-    app.UseMiddleware<CheckApiActiveMiddleware>();
+    app.UseMiddleware<CheckApiActiveMiddleware>(FFApiConfigs.ApiKeyActive);
     app.UseMiddleware<TraceIdMiddleware>(
       LoggerConfigs.TraceIdReqHeader, "Api", "IncomingHttpRequest"
     );
