@@ -55,12 +55,25 @@ public class Kafka : IDispatcher
     return Task.CompletedTask;
   }
 
-  private static Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>> PublishHandler(
+  private static Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>?, Exception?> PublishHandler(
     Action<bool> callback, ILogger logger
   )
   {
-    return result =>
+    return (result, ex) =>
     {
+      if (ex != null)
+      {
+        logger.Log(
+          Microsoft.Extensions.Logging.LogLevel.Error,
+          ex,
+          ex.Message
+        );
+        callback(false);
+        return;
+      }
+
+      if (result == null) { return; }
+
       bool persisted = result.Status != PersistenceStatus.NotPersisted;
 
       logger.Log(
