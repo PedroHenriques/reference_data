@@ -35,7 +35,7 @@ public class KafkaTests : IDisposable
     this._callbackMock = new Mock<Action<bool>>(MockBehavior.Strict);
     this._logger = new Mock<ILogger>(MockBehavior.Strict);
 
-    this._kafkaMock.Setup(s => s.Publish(It.IsAny<string>(), It.IsAny<Message<NotifDataKafkaKey, NotifDataKafkaValue>>(), It.IsAny<Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>>>()));
+    this._kafkaMock.Setup(s => s.Publish(It.IsAny<string>(), It.IsAny<Message<NotifDataKafkaKey, NotifDataKafkaValue>>(), It.IsAny<Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>?, Exception?>>()));
 
     this._callbackMock.Setup(s => s(It.IsAny<bool>()));
 
@@ -84,7 +84,7 @@ public class KafkaTests : IDisposable
 
     await sut.Dispatch(data, "test destination", this._callbackMock.Object);
 
-    this._kafkaMock.Verify(m => m.Publish("test destination", It.IsAny<Message<NotifDataKafkaKey, NotifDataKafkaValue>>(), It.IsAny<Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>>>()), Times.Once());
+    this._kafkaMock.Verify(m => m.Publish("test destination", It.IsAny<Message<NotifDataKafkaKey, NotifDataKafkaValue>>(), It.IsAny<Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>?, Exception?>>()), Times.Once());
   }
 
   [Fact]
@@ -170,7 +170,7 @@ public class KafkaTests : IDisposable
     };
 
     await sut.Dispatch(data, "test destination", this._callbackMock.Object);
-    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>>;
+    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>?, Exception?>;
 
     var dispatchRes = new DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>
     {
@@ -182,7 +182,7 @@ public class KafkaTests : IDisposable
         Key = new NotifDataKafkaKey { Id = "test data id" },
       },
     };
-    callback(dispatchRes);
+    callback(dispatchRes, null);
     this._callbackMock.Verify(m => m(true), Times.Once());
   }
 
@@ -200,7 +200,7 @@ public class KafkaTests : IDisposable
     };
 
     await sut.Dispatch(data, "test destination", this._callbackMock.Object);
-    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>>;
+    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>?, Exception?>;
 
     var dispatchRes = new DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>
     {
@@ -212,7 +212,7 @@ public class KafkaTests : IDisposable
         Key = new NotifDataKafkaKey { Id = "test data id" },
       },
     };
-    callback(dispatchRes);
+    callback(dispatchRes, null);
     this._callbackMock.Verify(m => m(false), Times.Once());
   }
 
@@ -230,7 +230,7 @@ public class KafkaTests : IDisposable
     };
 
     await sut.Dispatch(data, "test destination", this._callbackMock.Object);
-    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>>;
+    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>?, Exception?>;
 
     var dispatchRes = new DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>
     {
@@ -242,8 +242,89 @@ public class KafkaTests : IDisposable
         Key = new NotifDataKafkaKey { Id = "test data id" },
       },
     };
-    callback(dispatchRes);
+    callback(dispatchRes, null);
     this._logger.Verify(m => m.Log(Microsoft.Extensions.Logging.LogLevel.Error, null, "Kafka Dispatcher - publish event callback: Document id = test data id | Status = NotPersisted | Partition = [5] | Offset = 23"), Times.Once());
+  }
+
+  [Fact]
+  public async Task Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_IfAnExceptionIsPassedAsArgument_ItShouldCallTheCallbackOnceWithFalse()
+  {
+    var sut = new Kafka(this._kafkaMock.Object, this._logger.Object);
+    NotifData data = new NotifData
+    {
+      ChangeTime = DateTime.Now,
+      EventTime = DateTime.Now,
+      ChangeType = "insert",
+      Entity = "",
+      Id = "test data id",
+    };
+
+    await sut.Dispatch(data, "test destination", this._callbackMock.Object);
+    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>?, Exception?>;
+
+    callback(null, new Exception("test error msg from unit test"));
+    this._callbackMock.Verify(m => m(false), Times.Once());
+  }
+
+  [Fact]
+  public async Task Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_IfAnExceptionIsPassedAsArgument_ItShouldNotCallTheCallbackWithTrue()
+  {
+    var sut = new Kafka(this._kafkaMock.Object, this._logger.Object);
+    NotifData data = new NotifData
+    {
+      ChangeTime = DateTime.Now,
+      EventTime = DateTime.Now,
+      ChangeType = "insert",
+      Entity = "",
+      Id = "test data id",
+    };
+
+    await sut.Dispatch(data, "test destination", this._callbackMock.Object);
+    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>?, Exception?>;
+
+    callback(null, new Exception("test error msg from unit test"));
+    this._callbackMock.Verify(m => m(true), Times.Never());
+  }
+
+  [Fact]
+  public async Task Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_IfAnExceptionIsPassedAsArgument_ItShouldLogAnError()
+  {
+    var sut = new Kafka(this._kafkaMock.Object, this._logger.Object);
+    NotifData data = new NotifData
+    {
+      ChangeTime = DateTime.Now,
+      EventTime = DateTime.Now,
+      ChangeType = "insert",
+      Entity = "",
+      Id = "test data id",
+    };
+
+    await sut.Dispatch(data, "test destination", this._callbackMock.Object);
+    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>?, Exception?>;
+
+    var testEx = new Exception("test error msg from unit test");
+    callback(null, testEx);
+    this._logger.Verify(m => m.Log(Microsoft.Extensions.Logging.LogLevel.Error, testEx, testEx.Message), Times.Once());
+  }
+
+  [Fact]
+  public async Task Dispatch_ItShouldCallPublishFromTheIEventBusInstance_ExecutingTheFunctionPassedAsThirdArgument_IfNoDeliveryResultIsPassedAsArgument_ItShouldNotCallTheCallback()
+  {
+    var sut = new Kafka(this._kafkaMock.Object, this._logger.Object);
+    NotifData data = new NotifData
+    {
+      ChangeTime = DateTime.Now,
+      EventTime = DateTime.Now,
+      ChangeType = "insert",
+      Entity = "",
+      Id = "test data id",
+    };
+
+    await sut.Dispatch(data, "test destination", this._callbackMock.Object);
+    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>?, Exception?>;
+
+    callback(null, null);
+    this._callbackMock.Verify(m => m(It.IsAny<bool>()), Times.Never());
   }
 
   [Fact]
@@ -260,7 +341,7 @@ public class KafkaTests : IDisposable
     };
 
     await sut.Dispatch(data, "test destination", this._callbackMock.Object);
-    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>>;
+    var callback = this._kafkaMock.Invocations[0].Arguments[2] as Action<DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>?, Exception?>;
 
     var dispatchRes = new DeliveryResult<NotifDataKafkaKey, NotifDataKafkaValue>
     {
@@ -272,7 +353,7 @@ public class KafkaTests : IDisposable
         Key = new NotifDataKafkaKey { Id = "test data id" },
       },
     };
-    callback(dispatchRes);
+    callback(dispatchRes, null);
     this._callbackMock.Verify(m => m(true), Times.Once());
   }
 
