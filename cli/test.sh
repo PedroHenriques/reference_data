@@ -17,8 +17,8 @@ while [ "$#" -gt 0 ]; do
     --cicd) RUNNING_IN_PIPELINE=1; USE_DOCKER=1; shift 1;;
     --filter) FILTERS="--filter ${2}"; shift 2;;
     --unit) FILTERS="--filter Type=Unit"; TEST_TYPE="unit"; shift 1;;
-    --integration) FILTERS="--filter Type=Integration"; TEST_TYPE="integration"; RUN_LOCAL_ENV=1; shift 1;;
-    --e2e) FILTERS="--filter Type=E2E"; TEST_TYPE="e2e"; RUN_LOCAL_ENV=1; shift 1;;
+    --integration) FILTERS="--filter Type=Integration"; TEST_TYPE="integration"; RUN_LOCAL_ENV=1; USE_DOCKER=1; shift 1;;
+    --e2e) FILTERS="--filter Type=E2E"; TEST_TYPE="e2e"; RUN_LOCAL_ENV=1; USE_DOCKER=1; shift 1;;
     --coverage) COVERAGE="--collect:\"XPlat Code Coverage\""; FILTERS="--filter Type=Unit"; TEST_TYPE="unit"; shift 1;;
 
     -*) echo "unknown option: $1" >&2; exit 1;;
@@ -48,7 +48,38 @@ case "${TEST_TYPE}" in
 esac
 
 if [ $RUN_LOCAL_ENV -eq 1 ]; then
-  sh ./cli/start.sh;
+  sh ./cli/start.sh -d;
+
+  echo "Waiting for all Docker services to be healthy or up...";
+
+  MAX_RETRIES=30;
+  RETRY_DELAY=2;
+  ATTEMPTS=0;
+
+  COMPOSE_FILE="./setup/local/docker-compose.yml";
+  PROJECT_NAME="myapp";
+
+  while true; do
+    # Extract statuses
+    BAD_CONTAINERS=$(docker compose -f "${COMPOSE_FILE}" -p "${PROJECT_NAME}" ps --format json | jq -s . | jq -r '.[] | select(.State != "running" and .Health != "healthy") | "\(.Name): \(.State) (\(.Health // "no healthcheck"))"');
+
+    if [ -z "${BAD_CONTAINERS}" ]; then
+      echo "All services are up and (if defined) healthy!";
+      break;
+    fi
+
+    ATTEMPTS=$((ATTEMPTS+1));
+    if [ $ATTEMPTS -ge $MAX_RETRIES ]; then
+      echo "ERROR: Some services failed to become ready:";
+      echo "${BAD_CONTAINERS}";
+      docker compose -f "${COMPOSE_FILE}" -p "${PROJECT_NAME}" ps;
+      exit 1;
+    fi
+
+    sleep $RETRY_DELAY;
+  done
+else
+  docker network create myapp_shared || true;
 fi
 
 CMD="dotnet test ${FILTERS} ${COVERAGE} ${PROJ}";
@@ -67,7 +98,7 @@ if [ $USE_DOCKER -eq 1 ]; then
     INTERACTIVE_FLAGS="-i";
   fi
 
-  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
+  docker run --rm ${INTERACTIVE_FLAGS} --network=myapp_shared -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
 else
   eval "${CMD}";
 fi
