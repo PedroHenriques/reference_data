@@ -19,9 +19,9 @@ done
 
 if [ $START -eq 1 ]; then
   TEST_COVERAGE_PATH="${TEST_COVERAGE_DIR_PATH}/${TEST_COVERAGE_FILE_NAME}";
-  CMD="dotnet tool restore; dotnet-sonarscanner begin /k:"${SONAR_PROJ_KEY}" /o:"${SONAR_ORG}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.cs.opencover.reportsPaths="${TEST_COVERAGE_PATH}";";
+  CMD="dotnet tool restore; dotnet sonarscanner begin /k:"${SONAR_PROJ_KEY}" /o:"${SONAR_ORG}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.cs.opencover.reportsPaths="${TEST_COVERAGE_PATH}";";
 elif [ $END -eq 1 ]; then
-  CMD="dotnet tool restore; dotnet-sonarscanner end /d:sonar.token="${SONAR_TOKEN}"";
+  CMD="dotnet tool restore; dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"";
 fi
 
 
