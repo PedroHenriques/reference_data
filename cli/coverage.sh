@@ -22,12 +22,10 @@ if [ $RUNNING_IN_PIPELINE -eq 1 ]; then
   CICD_FLAG="--cicd";
 fi
 
-rm -rf ./coverageReport;
+rm -rf ./${TEST_COVERAGE_DIR_PATH};
 find . -type d -name "TestResults" -exec rm -rf {} +;
 
 sh ./cli/test.sh --coverage $DOCKER_FLAG $CICD_FLAG;
-
-CMD="dotnet tool restore; dotnet reportgenerator -reports:\"./test/**/coverage.cobertura.xml\" -targetdir:\"coverageReport\" -reporttypes:Html;";
 
 if [ $USE_DOCKER -eq 1 ]; then
   INTERACTIVE_FLAGS="-it";
@@ -35,7 +33,7 @@ if [ $USE_DOCKER -eq 1 ]; then
     INTERACTIVE_FLAGS="-i";
   fi
 
-  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
+  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "dotnet tool restore && dotnet reportgenerator -reports:./test/**/coverage.cobertura.xml -targetdir:${TEST_COVERAGE_DIR_PATH} -reporttypes:Html;OpenCover -fileName=${TEST_COVERAGE_FILE_NAME} -filefilters:+*.cs -historydir:coverage-history";
 else
-  eval "${CMD}";
+  eval "dotnet tool restore && dotnet reportgenerator -reports:./test/**/coverage.cobertura.xml -targetdir:${TEST_COVERAGE_DIR_PATH} -reporttypes:Html;OpenCover -fileName=${TEST_COVERAGE_FILE_NAME} -filefilters:+*.cs -historydir:coverage-history";
 fi
