@@ -24,8 +24,8 @@ fi
 
 rm -rf .sonarqube;
 
-TEST_COVERAGE_PATH="/app/${TEST_COVERAGE_DIR_PATH}/${TEST_COVERAGE_FILE_NAME}";
-CMD="dotnet tool restore && dotnet sonarscanner begin /k:"${SONAR_PROJ_KEY}" /o:"${SONAR_ORG}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.host.url="${SONAR_HOST}" /d:sonar.cs.cobertura.reportsPaths="${TEST_COVERAGE_PATH}" /d:sonar.projectBaseDir=/app && dotnet build && chmod +x ./cli/coverage.sh && ./cli/coverage.sh && dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"";
+TEST_COVERAGE_PATH="/app/test/**/${TEST_COVERAGE_FILE_NAME}";
+CMD="dotnet tool restore && dotnet sonarscanner begin /k:"${SONAR_PROJ_KEY}" /o:"${SONAR_ORG}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.host.url="${SONAR_HOST}" /d:sonar.cs.opencover.reportsPaths="${TEST_COVERAGE_PATH}" /d:sonar.projectBaseDir=/app && dotnet build && chmod +x ./cli/coverage.sh && ./cli/coverage.sh && dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"";
 echo "${CMD}";
 
 if [ $USE_DOCKER -eq 1 ]; then

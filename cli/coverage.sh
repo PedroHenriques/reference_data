@@ -5,7 +5,6 @@ USE_DOCKER=0;
 RUNNING_IN_PIPELINE=0;
 DOCKER_FLAG="";
 CICD_FLAG="";
-REPORT_FORMATS="Cobertura";
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -20,12 +19,13 @@ if [ $USE_DOCKER -eq 1 ]; then
   DOCKER_FLAG="--docker";
 fi
 if [ $RUNNING_IN_PIPELINE -eq 1 ]; then
+  echo "While in the pipeline, test coverage will be run from the sonar.sh script.";
+  exit 0;
   CICD_FLAG="--cicd";
 fi
 
 if [ $USE_DOCKER -eq 0 ]; then
   rm -rf ./${TEST_COVERAGE_DIR_PATH};
-  REPORT_FORMATS="Html;${REPORT_FORMATS}";
 fi
 
 find . -type d -name "TestResults" -exec rm -rf {} +;
@@ -38,7 +38,7 @@ if [ $USE_DOCKER -eq 1 ]; then
     INTERACTIVE_FLAGS="-i";
   fi
 
-  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "dotnet tool restore && dotnet reportgenerator -reports:./test/**/coverage.cobertura.xml -targetdir:${TEST_COVERAGE_DIR_PATH} -reporttypes:\"Html;Cobertura\" -filefilters:+*.cs -historydir:coverage-history";
+  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "dotnet tool restore && dotnet reportgenerator -reports:./test/**/coverage.cobertura.xml -targetdir:${TEST_COVERAGE_DIR_PATH} -reporttypes:Html -filefilters:+*.cs -historydir:coverage-history";
 else
-  eval "dotnet tool restore && dotnet reportgenerator -reports:./test/**/coverage.cobertura.xml -targetdir:${TEST_COVERAGE_DIR_PATH} -reporttypes:\"Html;Cobertura\" -filefilters:+*.cs -historydir:coverage-history";
+  eval "dotnet tool restore && dotnet reportgenerator -reports:./test/**/coverage.cobertura.xml -targetdir:${TEST_COVERAGE_DIR_PATH} -reporttypes:\"Html\" -filefilters:+*.cs -historydir:coverage-history";
 fi
