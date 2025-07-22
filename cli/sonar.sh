@@ -1,6 +1,8 @@
 #!/bin/sh
 set -e;
 
+printenv | grep -i sonar
+
 USE_DOCKER=0;
 RUNNING_IN_PIPELINE=0;
 START=0;
