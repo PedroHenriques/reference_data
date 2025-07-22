@@ -22,7 +22,7 @@ if [ $RUNNING_IN_PIPELINE -eq 1 ]; then
   CICD_FLAG="--cicd";
 fi
 
-rm -rf ./${TEST_COVERAGE_DIR_PATH};
+# rm -rf ./${TEST_COVERAGE_DIR_PATH};
 find . -type d -name "TestResults" -exec rm -rf {} +;
 
 sh ./cli/test.sh --coverage $DOCKER_FLAG $CICD_FLAG;
