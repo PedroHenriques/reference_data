@@ -5,6 +5,7 @@ USE_DOCKER=0;
 RUNNING_IN_PIPELINE=0;
 DOCKER_FLAG="";
 CICD_FLAG="";
+REPORT_FORMATS="Cobertura";
 
 while [ "$#" -gt 0 ]; do
   case "$1" in
@@ -24,6 +25,7 @@ fi
 
 if [ $USE_DOCKER -eq 0 ]; then
   rm -rf ./${TEST_COVERAGE_DIR_PATH};
+  REPORT_FORMATS="Html;${REPORT_FORMATS}";
 fi
 
 find . -type d -name "TestResults" -exec rm -rf {} +;

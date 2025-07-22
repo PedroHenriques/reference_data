@@ -33,6 +33,7 @@ if [ $USE_DOCKER -eq 1 ]; then
   fi
 
   docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" -e TEST_COVERAGE_DIR_PATH mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
+  head -n 10 coverageReport/Cobertura.xml;
 else
   eval "${CMD}";
 fi
