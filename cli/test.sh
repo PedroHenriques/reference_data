@@ -82,6 +82,13 @@ else
   docker network create myapp_shared || true;
 fi
 
+if [ -z "$PROJ" ]; then
+  PROJ="";
+  for proj in $(find ./test/${TEST_TYPE} -type f -name "*.csproj"); do
+    PROJ="${PROJ} ${proj}";
+  done
+fi
+
 CMD="dotnet test ${FILTERS} ${COVERAGE} ${PROJ}";
 
 if [ $WATCH -eq 1 ]; then
