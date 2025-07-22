@@ -82,14 +82,15 @@ else
   docker network create myapp_shared || true;
 fi
 
-if [ -z "$PROJ" ]; then
-  PROJ="";
+if [ -n "$PROJ" ]; then
+  CMD="dotnet test ${FILTERS} ${COVERAGE} ${PROJ}";
+else
+  CMD=""; # We will build the command as a loop
   for proj in $(find ./test/${TEST_TYPE} -type f -name "*.csproj"); do
-    PROJ="${PROJ} ${proj}";
+    CMD="${CMD} && dotnet test ${proj} ${FILTERS} ${COVERAGE}";
   done
+  CMD=${CMD# && }; # Remove leading &&
 fi
-
-CMD="dotnet test ${FILTERS} ${COVERAGE} ${PROJ}";
 
 if [ $WATCH -eq 1 ]; then
   if [ -z "$PROJ" ]; then
