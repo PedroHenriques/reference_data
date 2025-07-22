@@ -17,13 +17,12 @@ while [ "$#" -gt 0 ]; do
   esac
 done
 
-TEST_COVERAGE_PATH="${TEST_COVERAGE_DIR_PATH}/${TEST_COVERAGE_FILE_NAME}";
-# if [ $START -eq 1 ]; then
-#   CMD="dotnet tool restore && dotnet sonarscanner begin /k:"${SONAR_PROJ_KEY}" /o:"${SONAR_ORG}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.host.url="${SONAR_HOST}" /d:sonar.cs.opencover.reportsPaths="${TEST_COVERAGE_PATH}";";
-# elif [ $END -eq 1 ]; then
-#   CMD="dotnet tool restore && dotnet build && dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"";
-# fi
+if [ $START -eq 1 ]; then
+  echo "No processing needs to be done.";
+  exit 0;
+fi
 
+TEST_COVERAGE_PATH="${TEST_COVERAGE_DIR_PATH}/${TEST_COVERAGE_FILE_NAME}";
 CMD="dotnet tool restore && dotnet sonarscanner begin /k:"${SONAR_PROJ_KEY}" /o:"${SONAR_ORG}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.host.url="${SONAR_HOST}" /d:sonar.cs.opencover.reportsPaths="${TEST_COVERAGE_PATH}" && dotnet build && chmod +x ./cli/coverage.sh && ./cli/coverage.sh && dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"";
 
 if [ $USE_DOCKER -eq 1 ]; then
@@ -32,7 +31,7 @@ if [ $USE_DOCKER -eq 1 ]; then
     INTERACTIVE_FLAGS="-i";
   fi
 
-  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" -e TEST_COVERAGE_DIR_PATH mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
+  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" -e TEST_COVERAGE_DIR_PATH mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "echo ${CMD} && ${CMD}";
 else
   eval "${CMD}";
 fi
