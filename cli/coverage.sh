@@ -38,7 +38,7 @@ if [ $USE_DOCKER -eq 1 ]; then
     INTERACTIVE_FLAGS="-i";
   fi
 
-  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "dotnet tool restore && dotnet reportgenerator -reports:./test/**/coverage.cobertura.xml -targetdir:${TEST_COVERAGE_DIR_PATH} -reporttypes:Html -filefilters:+*.cs -historydir:coverage-history";
+  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "dotnet tool restore && dotnet reportgenerator -reports:./test/**/${TEST_COVERAGE_FILE_NAME} -targetdir:${TEST_COVERAGE_DIR_PATH} -reporttypes:Html -filefilters:+*.cs -historydir:coverage-history";
 else
-  eval "dotnet tool restore && dotnet reportgenerator -reports:./test/**/coverage.cobertura.xml -targetdir:${TEST_COVERAGE_DIR_PATH} -reporttypes:\"Html\" -filefilters:+*.cs -historydir:coverage-history";
+  eval "dotnet tool restore && dotnet reportgenerator -reports:./test/**/${TEST_COVERAGE_FILE_NAME} -targetdir:${TEST_COVERAGE_DIR_PATH} -reporttypes:\"Html\" -filefilters:+*.cs -historydir:coverage-history";
 fi

@@ -34,7 +34,7 @@ if [ $USE_DOCKER -eq 1 ]; then
     INTERACTIVE_FLAGS="-i";
   fi
 
-  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" -e TEST_COVERAGE_DIR_PATH mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
+  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" -e TEST_COVERAGE_DIR_PATH -e TEST_COVERAGE_FILE_NAME mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
 else
   eval "${CMD}";
 fi
