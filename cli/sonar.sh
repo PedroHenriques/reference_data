@@ -24,8 +24,8 @@ fi
 
 rm -rf .sonarqube;
 
-TEST_COVERAGE_PATH="./test/coverage/${TEST_COVERAGE_FILE_NAME}";
-CMD="dotnet tool restore && dotnet sonarscanner begin /k:"${SONAR_PROJ_KEY}" /o:"${SONAR_ORG}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.host.url="${SONAR_HOST}" /d:sonar.cs.opencover.reportsPaths="${TEST_COVERAGE_PATH}" /d:sonar.projectBaseDir=/app && dotnet build && chmod +x ./cli/coverage.sh && ./cli/coverage.sh && dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"";
+TEST_COVERAGE_PATH="./test/**/${TEST_COVERAGE_FILE_NAME}";
+CMD="dotnet tool restore && dotnet sonarscanner begin /k:"${SONAR_PROJ_KEY}" /o:"${SONAR_ORG}" /d:sonar.token="${SONAR_TOKEN}" /d:sonar.host.url="${SONAR_HOST}" /d:sonar.cs.opencover.reportsPaths="${TEST_COVERAGE_PATH}" /d:sonar.projectBaseDir=/app && dotnet build && chmod +x ./cli/test.sh && ./cli/test.sh --coverage && dotnet sonarscanner end /d:sonar.token="${SONAR_TOKEN}"";
 echo "${CMD}";
 
 if [ $USE_DOCKER -eq 1 ]; then
@@ -34,7 +34,7 @@ if [ $USE_DOCKER -eq 1 ]; then
     INTERACTIVE_FLAGS="-i";
   fi
 
-  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" -e TEST_COVERAGE_DIR_PATH -e TEST_COVERAGE_FILE_NAME mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
+  docker run --rm ${INTERACTIVE_FLAGS} -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
 else
   eval "${CMD}";
 fi
