@@ -4,6 +4,7 @@ obj/
 TestResults/
 coverageReport/
 release/
+.sonarqube/
 
 .env
 

@@ -22,12 +22,15 @@ if [ $RUNNING_IN_PIPELINE -eq 1 ]; then
   CICD_FLAG="--cicd";
 fi
 
-rm -rf ./coverageReport;
+if [ $USE_DOCKER -eq 0 ]; then
+  rm -rf ./${TEST_COVERAGE_DIR_PATH};
+fi
+
 find . -type d -name "TestResults" -exec rm -rf {} +;
 
 sh ./cli/test.sh --coverage $DOCKER_FLAG $CICD_FLAG;
 
-CMD="dotnet tool restore; dotnet reportgenerator -reports:\"./test/**/coverage.cobertura.xml\" -targetdir:\"coverageReport\" -reporttypes:Html;";
+CMD="dotnet tool restore; dotnet reportgenerator -reports:\"./test/**/${TEST_COVERAGE_FILE_NAME}\" -targetdir:\"${TEST_COVERAGE_DIR_PATH}\" -reporttypes:Html;";
 
 if [ $USE_DOCKER -eq 1 ]; then
   INTERACTIVE_FLAGS="-it";
