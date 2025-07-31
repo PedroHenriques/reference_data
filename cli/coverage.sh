@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e;
 
+: "${TEST_COVERAGE_DIR_PATH:=coverageReport}";
+: "${TEST_COVERAGE_FILE_NAME:=coverage.opencover.xml}";
+
 USE_DOCKER=0;
 RUNNING_IN_PIPELINE=0;
 DOCKER_FLAG="";
