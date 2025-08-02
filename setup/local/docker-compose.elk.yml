@@ -14,22 +14,6 @@ services:
     networks:
       - elk
 
-  logstash:
-    image: docker.elastic.co/logstash/logstash:9.1.0-597b6f20-SNAPSHOT
-    container_name: logstash
-    volumes:
-      - ./logstash/pipeline:/usr/share/logstash/pipeline
-    depends_on:
-      - elasticsearch
-    healthcheck:
-      test: ["CMD-SHELL", "echo > /dev/tcp/localhost/5080 && exit 0 || exit 1"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-    networks:
-      - elk
-      - myapp_shared
-
   kibana:
     image: docker.elastic.co/kibana/kibana:9.1.0-597b6f20-SNAPSHOT
     container_name: kibana
@@ -41,6 +25,20 @@ services:
       - elasticsearch
     networks:
       - elk
+
+  otel_collector:
+    image: otel/opentelemetry-collector-contrib:latest
+    container_name: otel_collector
+    command: ["--config=/etc/otel-collector-config.yaml"]
+    volumes:
+      - ./otelCollector/otel-collector-config.yaml:/etc/otel-collector-config.yaml:ro
+    ports:
+      - "4317:4317"
+    depends_on:
+      - elasticsearch
+    networks:
+      - elk
+      - myapp_shared
 
 networks:
   elk:
