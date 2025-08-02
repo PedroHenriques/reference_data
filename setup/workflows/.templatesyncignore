@@ -1,6 +1,5 @@
 src/
 test/
-setup/local/
 documentation/app_arch.png
 *.sln
 *.md
