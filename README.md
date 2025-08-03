@@ -1,5 +1,5 @@
-# Reference Data
-An application that simplifies managing reference data, regardless of the data schema.
+# Your application name
+Your application brief description.
 
 ## Main functionalities
 - Store data in the schema you want
@@ -38,12 +38,6 @@ This repository contains a local development environment, fully containerised, t
 **NOTE:** Use of a unix command line environment is recommended.
 
 ### Run the local environment
-**Required setup:**
-The local environment requires the following environment variables to be configured ([more information](#configure-the-local-environment)):
-- LD_ENV_SDK_KEY
-- LD_CONTEXT_API_KEY
-- LD_CONTEXT_NAME
-
 To run the local environment follow these steps:
 
 1. From the root of the project run the command
@@ -65,21 +59,41 @@ The available services are declared in the local environment Docker compose proj
 This will run a Docker compose project and start several networked Docker containers will all the services and necessary tools to use the application.
 
 The following services will be running in the containers:
-- RefData API Service
-- RefData DbListener Service
-- RefData Notification Service
-- MongoDb 1 node replica set
-- 2 Redis single node instances (used by the DbListener and Notification services)
+- List your services here
 - Confluent community edition Kafka Broker
 - Confluent Schema Registry
 - A GUI for MongoDb
 - A GUI for Redis
 - A GUI for Kafka
-- A mock webhook server
 
 There will also be a stopped container named `db_init` which sets up the MongoDb replica set and exits.
 
-2. Interact with the local environment via the following URLs:
+2. **[OPTIONAL]** From the root of the project run the command
+```sh
+sh cli/start_elk.sh [services]
+```
+Where:
+
+**services:**<br>
+Whitespace separated list of services to run.<br>
+The available services are declared in the local environment ELK Docker compose project at `setup/local/docker-compose.elk.yml`.<br>
+**NOTE:** If no services are provided, all services will be started.
+
+This will run a Docker compose project and start several networked Docker containers will all the services and necessary tools to use an ELK stack.
+
+The following services will be running in the containers:
+- 1 Elasticsearch instance
+- 1 Kibana instance
+- 1 OTEL Collector instance
+
+**NOTE:** Elasticsearch takes a few minutes to start and be ready to receive information, which means if you send logs before it is ready then those logs will be lost.<br>
+In order to confirm if the ELK stack is ready run the command
+```sh
+docker ps -a
+```
+And check if the `elasticsearch` service is `healthy`.
+
+3. Interact with the local environment via the following URLs:
 
 `MongoDb GUI`: [http://localhost:9000](http://localhost:9000) (user: appUser | pw: appPw)
 
@@ -89,18 +103,19 @@ Accept the T&C and submit to enter.
 ![alt text](documentation/redis_tec.png)
 
 Add the following databases:<br>
-`redis://default@dblistener_db:6379`<br>
-`redis://default@notification_db:6379`
+`redis://default@api_redis:6379`<br>
 
 `Kafka GUI`: [http://localhost:9002](http://localhost:9002)<br>
 **NOTES:**<br>
-Add a topic with the name `refdata` with, at least, 1 partition.<br>
-Add a schema with the subject `refdata-value`, the content of the file `setup/local/kafka_schema_json.json` and the type `JSON`.
+Add a topic with the name `myTestTopic` with, at least, 1 partition.<br>
+Add a schema with the subject `myTestTopic-value`, the content of the file `setup/local/kafka_schema_json.json` and the type `JSON`.
 
-`RefData API`: [http://localhost:10000](http://localhost:10000)<br>
-Use the Postman collection at `setup/local/Ref Data.postman_collection` to interact with the application.
+`Kibana`: [http://localhost:9003](http://localhost:9003)
 
-`RefData API Swagger UI`: [http://localhost:10000/swagger](http://localhost:10000/swagger)
+`API`: [http://localhost:10000](http://localhost:10000)<br>
+Use the Postman collection at `setup/local/XPTO.postman_collection` to interact with the application.
+
+`API Swagger UI`: [http://localhost:10000/swagger](http://localhost:10000/swagger)
 
 ### Stop the local environment
 From the root of the project run the command
@@ -134,6 +149,10 @@ Where:
 
 **projects:**<br>
 Whitespace separated list of test `.csproj` to run.
+
+**NOTES:**<br>
+- When running the tests with the flags `--docker` or `--cicd`, the tests will run inside a Docker container that will be in the `myapp_shared` network.
+- When running the script with the flags ``--integration` or `--e2e` the flag `--docker` is assumed as well, which means the tests will run inside a Docker container.
 
 ### Generating test coverage reports
 To generate unit test coverage reports, including an HTML report, from the root of the project run the command
