@@ -79,7 +79,32 @@ The following services will be running in the containers:
 
 There will also be a stopped container named `db_init` which sets up the MongoDb replica set and exits.
 
-2. Interact with the local environment via the following URLs:
+2. **[OPTIONAL]** From the root of the project run the command
+```sh
+sh cli/start_elk.sh [services]
+```
+Where:
+
+**services:**<br>
+Whitespace separated list of services to run.<br>
+The available services are declared in the local environment ELK Docker compose project at `setup/local/docker-compose.elk.yml`.<br>
+**NOTE:** If no services are provided, all services will be started.
+
+This will run a Docker compose project and start several networked Docker containers will all the services and necessary tools to use an ELK stack.
+
+The following services will be running in the containers:
+- 1 Elasticsearch instance
+- 1 Kibana instance
+- 1 OTEL Collector instance
+
+**NOTE:** Elasticsearch takes a few minutes to start and be ready to receive information, which means if you send logs before it is ready then those logs will be lost.<br>
+In order to confirm if the ELK stack is ready run the command
+```sh
+docker ps -a
+```
+And check if the `elasticsearch` service is `healthy`.
+
+3. Interact with the local environment via the following URLs:
 
 `MongoDb GUI`: [http://localhost:9000](http://localhost:9000) (user: appUser | pw: appPw)
 
@@ -96,6 +121,8 @@ Add the following databases:<br>
 **NOTES:**<br>
 Add a topic with the name `refdata` with, at least, 1 partition.<br>
 Add a schema with the subject `refdata-value`, the content of the file `setup/local/kafka_schema_json.json` and the type `JSON`.
+
+`Kibana`: [http://localhost:9003](http://localhost:9003)
 
 `RefData API`: [http://localhost:10000](http://localhost:10000)<br>
 Use the Postman collection at `setup/local/Ref Data.postman_collection` to interact with the application.
@@ -134,6 +161,10 @@ Where:
 
 **projects:**<br>
 Whitespace separated list of test `.csproj` to run.
+
+**NOTES:**<br>
+- When running the tests with the flags `--docker` or `--cicd`, the tests will run inside a Docker container that will be in the `myapp_shared` network.
+- When running the script with the flags ``--integration` or `--e2e` the flag `--docker` is assumed as well, which means the tests will run inside a Docker container.
 
 ### Generating test coverage reports
 To generate unit test coverage reports, including an HTML report, from the root of the project run the command
