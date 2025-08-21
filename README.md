@@ -1,5 +1,5 @@
-# Your application name
-Your application brief description.
+# Reference Data
+An application that simplifies managing reference data, regardless of the data schema.
 
 ## Main functionalities
 - Store data in the schema you want
@@ -38,6 +38,12 @@ This repository contains a local development environment, fully containerised, t
 **NOTE:** Use of a unix command line environment is recommended.
 
 ### Run the local environment
+**Required setup:**
+The local environment requires the following environment variables to be configured ([more information](#configure-the-local-environment)):
+- LD_ENV_SDK_KEY
+- LD_CONTEXT_API_KEY
+- LD_CONTEXT_NAME
+
 To run the local environment follow these steps:
 
 1. From the root of the project run the command
@@ -59,12 +65,17 @@ The available services are declared in the local environment Docker compose proj
 This will run a Docker compose project and start several networked Docker containers will all the services and necessary tools to use the application.
 
 The following services will be running in the containers:
-- List your services here
+- RefData API Service
+- RefData DbListener Service
+- RefData Notification Service
+- MongoDb 1 node replica set
+- 2 Redis single node instances (used by the DbListener and Notification services)
 - Confluent community edition Kafka Broker
 - Confluent Schema Registry
 - A GUI for MongoDb
 - A GUI for Redis
 - A GUI for Kafka
+- A mock webhook server
 
 There will also be a stopped container named `db_init` which sets up the MongoDb replica set and exits.
 
@@ -103,19 +114,20 @@ Accept the T&C and submit to enter.
 ![alt text](documentation/redis_tec.png)
 
 Add the following databases:<br>
-`redis://default@api_redis:6379`<br>
+`redis://default@dblistener_db:6379`<br>
+`redis://default@notification_db:6379`
 
 `Kafka GUI`: [http://localhost:9002](http://localhost:9002)<br>
 **NOTES:**<br>
-Add a topic with the name `myTestTopic` with, at least, 1 partition.<br>
-Add a schema with the subject `myTestTopic-value`, the content of the file `setup/local/kafka_schema_json.json` and the type `JSON`.
+Add a topic with the name `refdata` with, at least, 1 partition.<br>
+Add a schema with the subject `refdata-value`, the content of the file `setup/local/kafka_schema_json.json` and the type `JSON`.
 
 `Kibana`: [http://localhost:9003](http://localhost:9003)
 
-`API`: [http://localhost:10000](http://localhost:10000)<br>
-Use the Postman collection at `setup/local/XPTO.postman_collection` to interact with the application.
+`RefData API`: [http://localhost:10000](http://localhost:10000)<br>
+Use the Postman collection at `setup/local/Ref Data.postman_collection` to interact with the application.
 
-`API Swagger UI`: [http://localhost:10000/swagger](http://localhost:10000/swagger)
+`RefData API Swagger UI`: [http://localhost:10000/swagger](http://localhost:10000/swagger)
 
 ### Stop the local environment
 From the root of the project run the command
