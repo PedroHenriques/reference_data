@@ -64,6 +64,7 @@ if [ $RUN_LOCAL_ENV -eq 1 ]; then
     BAD_CONTAINERS=$(docker compose -f "${COMPOSE_FILE}" -p "${PROJECT_NAME}" ps --format json | jq -s . | jq -r '.[] | select(.State != "running" and .Health != "healthy") | "\(.Name): \(.State) (\(.Health // "no healthcheck"))"');
 
     if [ -z "${BAD_CONTAINERS}" ]; then
+      sh ./cli/start.sh -d;
       echo "All services are up and (if defined) healthy!";
       break;
     fi
@@ -99,6 +100,10 @@ if [ $USE_DOCKER -eq 1 ]; then
   fi
 
   docker run --rm ${INTERACTIVE_FLAGS} --network=myapp_shared -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
+
+  if [ $RUNNING_IN_PIPELINE -eq 0 ]; then
+    dotnet restore;
+  fi
 else
   eval "${CMD}";
 fi
