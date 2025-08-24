@@ -59,21 +59,37 @@ if [ $RUN_LOCAL_ENV -eq 1 ]; then
   COMPOSE_FILE="./setup/local/docker-compose.yml";
   PROJECT_NAME="myapp";
 
-  while true; do
-    # Extract statuses
-    BAD_CONTAINERS=$(docker compose -f "${COMPOSE_FILE}" -p "${PROJECT_NAME}" ps --format json | jq -s . | jq -r '.[] | select(.State != "running" and .Health != "healthy") | "\(.Name): \(.State) (\(.Health // "no healthcheck"))"');
+  while : ; do
+    # List any containers that are not ready yet.
+    # Rule: OK if .State == "running" and (no healthcheck OR Health == "healthy").
+    # Ignore the one-shot db_init service.
+    BAD_CONTAINERS=$(
+      docker compose -f "${COMPOSE_FILE}" -p "${PROJECT_NAME}" ps --format '{{json .}}' \
+      | jq -r '
+          # ignore one-shot
+          select((.Service // .Name) != "db_init")
+          # not running OR (has healthcheck and not healthy)
+          | select(
+              (.State != "running")
+              or
+              ((.Health? // "") as $h | ($h != "" and $h != "healthy"))
+            )
+          | "\((.Service // .Name)): \(.State) (\(.Health // "no healthcheck"))"
+        '
+    );
 
     if [ -z "${BAD_CONTAINERS}" ]; then
-      sh ./cli/start.sh -d;
       echo "All services are up and (if defined) healthy!";
+      docker compose -f "${COMPOSE_FILE}" -p "${PROJECT_NAME}" ps;
       break;
     fi
 
     ATTEMPTS=$((ATTEMPTS+1));
-    if [ $ATTEMPTS -ge $MAX_RETRIES ]; then
+    if [ ${ATTEMPTS} -ge ${MAX_RETRIES} ]; then
       echo "ERROR: Some services failed to become ready:";
       echo "${BAD_CONTAINERS}";
-      docker compose -f "${COMPOSE_FILE}" -p "${PROJECT_NAME}" ps;
+      echo "Recent logs (last 200 lines each):";
+      docker compose -f "${COMPOSE_FILE}" -p "${PROJECT_NAME}" logs --tail=200;
       exit 1;
     fi
 
@@ -99,7 +115,7 @@ if [ $USE_DOCKER -eq 1 ]; then
     INTERACTIVE_FLAGS="-i";
   fi
 
-  docker run --rm ${INTERACTIVE_FLAGS} --network=myapp_shared -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -c "${CMD}";
+  docker run --rm ${INTERACTIVE_FLAGS} --name myapp_test_runner --network=myapp_shared -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -lc "${CMD}";
 
   if [ $RUNNING_IN_PIPELINE -eq 0 ]; then
     dotnet restore;
