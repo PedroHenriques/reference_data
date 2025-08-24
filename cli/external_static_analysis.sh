@@ -1,6 +1,9 @@
 #!/bin/sh
 set -e;
 
+: "${SONAR_QG_WAIT:=true}"
+: "${SONAR_QG_TIMEOUT_SEC:=600}"
+
 USE_DOCKER=0;
 RUNNING_IN_PIPELINE=0;
 
@@ -16,7 +19,7 @@ done
 rm -rf .sonarqube;
 
 TEST_COVERAGE_PATH="./test/**/${TEST_COVERAGE_FILE_NAME}";
-CMD="dotnet tool restore && dotnet sonarscanner begin /k:"${EXTERNAL_STATIC_ANALYSIS_PROJ_KEY}" /o:"${EXTERNAL_STATIC_ANALYSIS_ORG}" /d:sonar.token="${EXTERNAL_STATIC_ANALYSIS_TOKEN}" /d:sonar.host.url="${EXTERNAL_STATIC_ANALYSIS_HOST}" /d:sonar.cs.opencover.reportsPaths="${TEST_COVERAGE_PATH}" /d:sonar.projectBaseDir=/app /d:sonar.exclusions=**/bin/**,**/obj/**,setup/**,app/setup/** /d:sonar.coverage.exclusions=setup/**,app/setup/** && dotnet build && chmod +x ./cli/test.sh && ./cli/test.sh --coverage && dotnet sonarscanner end /d:sonar.token="${EXTERNAL_STATIC_ANALYSIS_TOKEN}"";
+CMD="dotnet tool restore && dotnet sonarscanner begin /k:"${EXTERNAL_STATIC_ANALYSIS_PROJ_KEY}" /o:"${EXTERNAL_STATIC_ANALYSIS_ORG}" /d:sonar.token="${EXTERNAL_STATIC_ANALYSIS_TOKEN}" /d:sonar.host.url="${EXTERNAL_STATIC_ANALYSIS_HOST}" /d:sonar.cs.opencover.reportsPaths="${TEST_COVERAGE_PATH}" /d:sonar.projectBaseDir=/app /d:sonar.exclusions=**/bin/**,**/obj/**,setup/**,app/setup/** /d:sonar.coverage.exclusions=setup/**,app/setup/** /d:sonar.qualitygate.wait=${SONAR_QG_WAIT} /d:sonar.qualitygate.timeout=${SONAR_QG_TIMEOUT_SEC} && dotnet build && chmod +x ./cli/test.sh && ./cli/test.sh --coverage && dotnet sonarscanner end /d:sonar.token="${EXTERNAL_STATIC_ANALYSIS_TOKEN}"";
 
 if [ $USE_DOCKER -eq 1 ]; then
   INTERACTIVE_FLAGS="-it";
