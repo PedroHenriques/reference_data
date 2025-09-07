@@ -2,6 +2,7 @@ using EntityModel = Api.Models.Entity;
 using MongoDB.Bson;
 using Api.Configs;
 using Toolkit.Types;
+using SharedLibs.Configs;
 
 namespace Api.Handlers;
 
@@ -123,7 +124,7 @@ public class EntityData
         "$and",
         new BsonArray {
           findMatch,
-          new BsonDocument { { "deleted_at", BsonNull.Value } },
+          new BsonDocument { { General.DeletedAtPropName, BsonNull.Value } },
         }
       }
     };

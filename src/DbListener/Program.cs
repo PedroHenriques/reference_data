@@ -20,7 +20,9 @@ internal class Program
     var loggerInputs = LoggerUtils.PrepareInputs("DbListener", "Program.cs", "Main thread");
     ILogger logger = new Logger(loggerInputs);
 
-    var mongodbInputs = MongodbUtils.PrepareInputs(DbConfigs.MongoConStr);
+    var mongodbInputs = MongodbUtils.PrepareInputs(
+      DbConfigs.MongoConStr, GeneralConfigs.DeletedAtPropName
+    );
     IMongodb db = new Mongodb(mongodbInputs);
 
     ConfigurationOptions redisConOpts = new ConfigurationOptions

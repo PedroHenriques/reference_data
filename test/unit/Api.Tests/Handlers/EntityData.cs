@@ -60,7 +60,7 @@ public class EntityDataTests : IDisposable
             "$and",
             new BsonArray {
               new BsonDocument { { "_id", testDocId } },
-              new BsonDocument { { "deleted_at", BsonNull.Value } },
+              new BsonDocument { { "deletedAt", BsonNull.Value } },
             }
           }
         },
@@ -157,7 +157,7 @@ public class EntityDataTests : IDisposable
             "$and",
             new BsonArray {
               new BsonDocument { { "_id", testEntityId } },
-              new BsonDocument { { "deleted_at", BsonNull.Value } },
+              new BsonDocument { { "deletedAt", BsonNull.Value } },
             }
           }
         },
@@ -241,7 +241,7 @@ public class EntityDataTests : IDisposable
             "$and",
             new BsonArray {
               new BsonDocument { { "_id", testEntityId } },
-              new BsonDocument { { "deleted_at", BsonNull.Value } },
+              new BsonDocument { { "deletedAt", BsonNull.Value } },
             }
           }
         },
@@ -310,7 +310,7 @@ public class EntityDataTests : IDisposable
             "$and",
             new BsonArray {
               new BsonDocument { { "_id", testEntityId } },
-              new BsonDocument { { "deleted_at", BsonNull.Value } },
+              new BsonDocument { { "deletedAt", BsonNull.Value } },
             }
           }
         },
@@ -337,7 +337,7 @@ public class EntityDataTests : IDisposable
             "$and",
             new BsonArray {
               new BsonDocument { { "name", testEntityName } },
-              new BsonDocument { { "deleted_at", BsonNull.Value } },
+              new BsonDocument { { "deletedAt", BsonNull.Value } },
             }
           }
         },
