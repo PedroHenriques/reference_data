@@ -1,35 +1,117 @@
 services:
-  api:
-    image: ${PROJECT_NAME:-myapp}_api:${IMAGE_TAG:-latest}
+  notification:
+    image: ${PROJECT_NAME:-myapp}_notification:${IMAGE_TAG:-latest}
     build:
       context: ../../
-      dockerfile: ./src/Api/Dockerfile
-    container_name: "api"
+      dockerfile: ./src/Notification/Dockerfile
+    container_name: "notification"
     restart: on-failure
     depends_on:
-      api_db:
+      notification_db:
         condition: service_healthy
-      api_redis:
+      dblistener_db:
         condition: service_healthy
     environment:
+      - DEPLOYMENT_ENV=local
       - DOTNET_ENVIRONMENT=Development
-      - ASPNETCORE_HTTP_PORTS=10000
-      - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
-      - REDIS_CON_STR=api_redis:6379
+      - NUM_PROCESSES=2
+      - NUM_PROCESSES_RETRY=2
+      - REDIS_CON_HOST=notification_db
+      - REDIS_CON_PORT=6379
+      - REDIS_PW=other password
+      - REDIS_CON_HOST_QUEUE=dblistener_db
+      - REDIS_CON_PORT_QUEUE=6379
+      - REDIS_PW_QUEUE=password
+      - API_BASE_URL=http://api
+      - API_PORT=${API_PORT:-10000}
+      - KAFKA_BOOTSTRAP_SERVERS=broker:29092
       - KAFKA_SCHEMA_REGISTRY_URL=http://schema-registry:8081
-      - KAFKA_CON_STR=broker:29092
-    ports:
-      - ${API_PORT:-10000}:10000
+      - KAFKA_SCHEMA_SUBJECT=${KAFKA_SCHEMA_SUBJECT:-refdata-value}
+      - KAFKA_SCHEMA_VERSION=${KAFKA_SCHEMA_VERSION:-1}
+      - KAFKA_BROKER_SASL_USERNAME=user
+      - KAFKA_BROKER_SASL_PW=pw
+      - KAFKA_SCHEMA_REGISTRY_SASL_USERNAME=user
+      - KAFKA_SCHEMA_REGISTRY_SASL_PW=pw
+      - DBLISTENER_CHANGES_QUEUE_KEY=${DBLISTENER_CHANGES_QUEUE_KEY:-mongo_changes}
+      - DISPATCHER_RETRY_QUEUE_KEY=${DISPATCHER_RETRY_QUEUE_KEY:-dispatcher_retry_queue}
+      - CHANGES_QUEUE_RETRY_COUNT=${CHANGES_QUEUE_RETRY_COUNT:-10}
+      - DISPATCHER_RETRY_COUNT=${DISPATCHER_RETRY_COUNT:-50}
+      - MONGO_COL_NAME=${MONGO_COL_NAME:-entities}
+      - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
+      - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
+      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
+      - LD_NOTIFICATION_ACTIVE_KEY=ref-data-notification-send-notifications
+      - LD_NOTIFICATION_RETRY_ACTIVE_KEY=ref-data-notification-process-retry-queue
+      - PROJECT_NAME=${PROJECT_NAME:-myapp}
+      - LOG_DESTINATION_URI=http://otel_collector:4317
+      - LOG_LEVEL=debug
+      - SERVICE_NAME=notification
+      - SERVICE_VERSION=local_test
     networks:
+      - notification
+      - notificationDb
+      - dblistenerDb
       - api
-      - apiDb
-      - apiRedis
       - kafka
       - myapp_shared
 
-  api_redis:
+  notification_db:
     image: redis:7-alpine
-    container_name: "api_redis"
+    container_name: "notification_db"
+    restart: on-failure
+    command:
+      - /bin/sh
+      - -c
+      - redis-server --requirepass 'other password'
+    healthcheck:
+      test: [ "CMD-SHELL", "redis-cli -a 'other password' ping | grep PONG" ]
+      interval: 1s
+      timeout: 3s
+      retries: 5
+    networks:
+      - notificationDb
+      - myapp_shared
+
+  dblistener:
+    image: ${PROJECT_NAME:-myapp}_dblistener:${IMAGE_TAG:-latest}
+    build:
+      context: ../../
+      dockerfile: ./src/DbListener/Dockerfile
+    container_name: "dblistener"
+    restart: on-failure
+    depends_on:
+      dblistener_db:
+        condition: service_healthy
+      api_db:
+        condition: service_healthy
+    environment:
+      - DEPLOYMENT_ENV=local
+      - DOTNET_ENVIRONMENT=Development
+      - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
+      - REDIS_CON_HOST=dblistener_db
+      - REDIS_CON_PORT=6379
+      - REDIS_PW=password
+      - MONGO_DB_NAME=${MONGO_DB_NAME:-referenceData}
+      - DBLISTENER_CACHE_CHANGE_DATA_KEY=${DBLISTENER_CACHE_CHANGE_DATA_KEY:-change_resume_data}
+      - DBLISTENER_CACHE_CHANGES_QUEUE_KEY=${DBLISTENER_CACHE_CHANGES_QUEUE_KEY:-mongo_changes}
+      - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
+      - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
+      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
+      - LD_DBLISTENER_ACTIVE_KEY=ref-data-db-listener-sub-stream
+      - PROJECT_NAME=${PROJECT_NAME:-myapp}
+      - LOG_DESTINATION_URI=http://otel_collector:4317
+      - LOG_LEVEL=debug
+      - SERVICE_NAME=dblistener
+      - SERVICE_VERSION=local_test
+    networks:
+      - dblistener
+      - dblistenerDb
+      - apiDb
+      - myapp_shared
+
+  dblistener_db:
+    image: redis:7-alpine
+    container_name: "dblistener_db"
     restart: on-failure
     command:
       - /bin/sh
@@ -41,7 +123,8 @@ services:
       timeout: 3s
       retries: 5
     networks:
-      - apiRedis
+      - dblistener
+      - dblistenerDb
       - myapp_shared
 
   redis_gui:
@@ -50,12 +133,48 @@ services:
     profiles: ["only_if_not_cicd"]
     restart: on-failure
     depends_on:
-      api_redis:
+      dblistener_db:
+        condition: service_healthy
+      notification_db:
         condition: service_healthy
     ports:
       - ${REDIS_GUI_PORT:-9001}:5540
     networks:
-      - apiRedis
+      - dblistenerDb
+      - notificationDb
+
+  api:
+    image: ${PROJECT_NAME:-myapp}_api:${IMAGE_TAG:-latest}
+    build:
+      context: ../../
+      dockerfile: ./src/Api/Dockerfile
+    container_name: "api"
+    restart: on-failure
+    depends_on:
+      api_db:
+        condition: service_healthy
+    environment:
+      - DEPLOYMENT_ENV=local
+      - DOTNET_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=10000
+      - MONGO_CON_STR=mongodb://${API_DB_ADMIN_USER:-admin}:${API_DB_ADMIN_PW:-pw}@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0
+      - MONGO_DB_NAME=${MONGO_DB_NAME:-referenceData}
+      - MONGO_COL_NAME=${MONGO_COL_NAME:-entities}
+      - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
+      - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
+      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
+      - LD_API_ACTIVE_KEY=ref-data-api-serve-requests
+      - PROJECT_NAME=${PROJECT_NAME:-myapp}
+      - LOG_DESTINATION_URI=http://otel_collector:4317
+      - LOG_LEVEL=debug
+      - SERVICE_NAME=api
+      - SERVICE_VERSION=local_test
+      - TRACE_ID_REQ_HEADER=x-trace-id
+    ports:
+      - ${API_PORT:-10000}:10000
+    networks:
+      - api
+      - myapp_shared
 
   api_db:
     image: mongo:8-noble
@@ -81,8 +200,9 @@ services:
     environment:
       - MONGO_INITDB_ROOT_USERNAME=${API_DB_ADMIN_USER:-admin}
       - MONGO_INITDB_ROOT_PASSWORD=${API_DB_ADMIN_PW:-pw}
-      - MONGO_INITDB_DATABASE=RefData
+      - MONGO_INITDB_DATABASE=${MONGO_INITDB_DATABASE:-referenceData}
     networks:
+      - api
       - apiDb
       - myapp_shared
 
@@ -126,6 +246,20 @@ services:
     networks:
       - apiDb
   
+  webhook_server:
+    build:
+      context: ../../
+      dockerfile: ./setup/local/webhook/Dockerfile
+    container_name: "webhook_server"
+    restart: on-failure
+    environment:
+      - DOTNET_ENVIRONMENT=Development
+      - ASPNETCORE_HTTP_PORTS=10000
+    ports:
+      - ${WEBHOOK_API_PORT:-10001}:10000
+    networks:
+      - notification
+
   broker:
     image: confluentinc/cp-kafka:latest
     container_name: broker
@@ -204,7 +338,10 @@ services:
 networks:
   api:
   apiDb:
-  apiRedis:
+  dblistener:
+  dblistenerDb:
+  notification:
+  notificationDb:
   kafka:
   myapp_shared:
     external: true
