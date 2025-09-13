@@ -1,6 +1,10 @@
 # Reference Data
 An application that simplifies managing reference data, regardless of the data schema.
 
+## Applications wiki
+
+[Link to applications wiki](https://wiki.com/something)
+
 ## Main functionalities
 - Store data in the schema you want
 - API to create, update and delete entities and their data
@@ -14,7 +18,7 @@ An application that simplifies managing reference data, regardless of the data s
     - HTTP(S) webhook
 
 # Application Architecture
-![alt text](documentation/app_arch.png)
+[more information here](/documentation/architecture.md)
 
 # Technical information
 ## Stack
@@ -33,7 +37,9 @@ To develop in this application you will need, at a minimum, to have installed in
 - [AVX](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions) support in your system ![alt text](documentation/mongodb_avx.png)
 
 ## Local development environment
-This repository contains a local development environment, fully containerised, that can be used to run the application on your machine and test it.
+This repository contains a local development environment, fully containerised, that can be used to run the application on your machine and test it.<br><br>
+The services available in the local development environment are configured at `setup/local/docker-compose.yml` and `setup/local/docker-compose.elk.yml`.<br>
+**NOTE:** Any service assigned with the profile `only_if_not_cicd` will not be started in a **CICD** environment.<br><br>
 
 **NOTE:** Use of a unix command line environment is recommended.
 
@@ -193,18 +199,9 @@ Where:
 
 If the update flag is not provided, the script will print the report with all the dependencies that are outdated, but will not update any of them.
 
-## CI/CD lifecycle
-This project uses the reusable pipeline templates for Docker build artifacts located at `https://github.com/PedroHenriques/ci_cd_workflow_templates` and follows the work flow below.
-![alt text](documentation/ci_cd_tbd_workflow.drawio.png)
+## Security & Compliance Notes
 
-The CI/CD pipeline has the following triggers:
+[more information here](/documentation/security.md)
 
-`Pull request`
-- `opened`, `edited`, `reopened` and `synchronize` will trigger:
-  - CI workflow's static code analysis and automated tests
-- `closed` with a merge to the `main` branch will trigger:
-  - CI workflow's static code analysis and automated tests
-  - CI workflow's build of the Docker images and push to the remote container registry
-  - CD workflow's build of the manifest files for the `dev` environment and open a PR on the IDP's dev repo
-  - CD workflow's build of the manifest files for the `qua` environment and open a PR on the IDP's qua repo
-  - CD workflow's build of the manifest files for the `prd` environment and open a PR on the IDP's prd repo
+## CI/CD
+[more information here](/documentation/cicd.md)
