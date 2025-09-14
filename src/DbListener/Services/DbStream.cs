@@ -73,13 +73,17 @@ public static class DbStream
       {
         if (change.ChangeRecord != null)
         {
-          await queue.Enqueue(Cache.ChangesQueueKey, new[] {
-            JsonConvert.SerializeObject(new ChangeQueueItem{
-              ChangeTime = change.ChangeTime,
-              ChangeRecord = JsonConvert.SerializeObject(change.ChangeRecord),
-              Source = JsonConvert.SerializeObject(change.Source),
-            }),
-          });
+          await queue.Enqueue(
+            Cache.ChangesQueueKey,
+            new[] {
+              JsonConvert.SerializeObject(new ChangeQueueItem{
+                ChangeTime = change.ChangeTime,
+                ChangeRecord = JsonConvert.SerializeObject(change.ChangeRecord),
+                Source = JsonConvert.SerializeObject(change.Source),
+              }),
+            },
+            Cache.ChangesQueueTtl
+          );
         }
 
         await cache.Set(Cache.ChangeResumeDataKey,

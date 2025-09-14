@@ -78,7 +78,7 @@ public static class Notify
 
       if (mode == NotifyMode.MongoChanges)
       {
-        await queue.Ack(queueName, messageId);
+        await queue.Ack(queueName, messageId, false);
       }
     }
     catch (Exception)
