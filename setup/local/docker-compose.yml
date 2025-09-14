@@ -125,6 +125,7 @@ services:
     networks:
       - dblistener
       - dblistenerDb
+      - myapp_shared
 
   redis_gui:
     image: redislabs/redisinsight:latest
