@@ -61,7 +61,7 @@ public class NotifyTests : IDisposable
 
     this._queueDblistenerMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
       .Returns(Task.FromResult(("some id", JsonConvert.SerializeObject(new ChangeQueueItem { ChangeRecord = JsonConvert.SerializeObject(new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Insert }), ChangeTime = DateTime.Now, Source = JsonConvert.SerializeObject(new ChangeSource { }) }))));
-    this._queueDblistenerMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>()))
+    this._queueDblistenerMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<TimeSpan?>()))
       .Returns(Task.FromResult<string[]>([""]));
     this._queueDblistenerMock.Setup(s => s.Ack(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
       .Returns(Task.FromResult(true));
@@ -70,7 +70,7 @@ public class NotifyTests : IDisposable
 
     this._queueNotifMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
       .Returns(Task.FromResult(("some other id", JsonConvert.SerializeObject(new ChangeQueueItem { ChangeRecord = JsonConvert.SerializeObject(new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Insert }), ChangeTime = DateTime.Now, Source = JsonConvert.SerializeObject(new ChangeSource { }), NotifConfigs = new NotifConfig[] { } }))));
-    this._queueNotifMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>()))
+    this._queueNotifMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<TimeSpan?>()))
       .Returns(Task.FromResult<string[]>([""]));
     this._queueNotifMock.Setup(s => s.Ack(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<bool>()))
       .Returns(Task.FromResult(true));
@@ -623,7 +623,7 @@ public class NotifyTests : IDisposable
     };
     this._queueDblistenerMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
       .Returns(Task.FromResult(("ab", JsonConvert.SerializeObject(change))));
-    this._queueNotifMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>()))
+    this._queueNotifMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<TimeSpan?>()))
       .Returns(Task.FromResult<string[]>(["inserted message id"]));
     this._cacheNotifMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(notifConfigsStr));
@@ -820,7 +820,7 @@ public class NotifyTests : IDisposable
     };
     this._queueDblistenerMock.Setup(s => s.Dequeue(It.IsAny<string>(), It.IsAny<string>()))
       .Returns(Task.FromResult(("ab", JsonConvert.SerializeObject(change))));
-    this._queueNotifMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>()))
+    this._queueNotifMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<TimeSpan?>()))
       .Returns(Task.FromResult<string[]>(["some id"]));
     this._cacheNotifMock.Setup(s => s.GetString(It.IsAny<string>()))
       .Returns(Task.FromResult<string?>(notifConfigsStr));
@@ -1355,7 +1355,7 @@ public class NotifyTests : IDisposable
       ],
     };
 
-    this._queueNotifMock.Verify(m => m.Enqueue("some queue key", new string[] { JsonConvert.SerializeObject(expectedItem) }), Times.Once());
+    this._queueNotifMock.Verify(m => m.Enqueue("some queue key", new string[] { JsonConvert.SerializeObject(expectedItem) }, null), Times.Once());
   }
 
   [Fact]
@@ -1403,7 +1403,7 @@ public class NotifyTests : IDisposable
       ],
     };
 
-    this._queueDblistenerMock.Verify(m => m.Enqueue(It.IsAny<string>(), It.IsAny<string[]>()), Times.Never());
+    this._queueDblistenerMock.Verify(m => m.Enqueue(It.IsAny<string>(), It.IsAny<string[]>(), null), Times.Never());
   }
 
   [Fact]
