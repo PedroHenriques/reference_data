@@ -123,6 +123,7 @@ if [ $USE_DOCKER -eq 1 ]; then
   docker run --rm ${INTERACTIVE_FLAGS} --name myapp_test_runner --network=myapp_shared -v "./:/app/" -w "/app/" mcr.microsoft.com/dotnet/sdk:8.0-noble /bin/sh -lc "${CMD}";
 
   if [ $RUNNING_IN_PIPELINE -eq 0 ]; then
+    find src test -type d \( -name bin -o -name obj \) -prune -exec rm -rf {} \;
     dotnet restore;
   fi
 else
