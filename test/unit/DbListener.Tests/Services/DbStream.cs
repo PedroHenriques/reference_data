@@ -41,7 +41,7 @@ public class DbStreamTests : IDisposable
     this._cacheMock.Setup(s => s.Set(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<TimeSpan?>()))
       .Returns(Task.FromResult(true));
 
-    this._queueMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>()))
+    this._queueMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<TimeSpan?>()))
       .Returns(Task.FromResult(new string[] { }));
 
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>()))
@@ -168,7 +168,7 @@ public class DbStreamTests : IDisposable
       }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
-    this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>()), Times.Exactly(2));
+    this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>(), null), Times.Exactly(2));
   }
 
   [Fact]
@@ -275,7 +275,7 @@ public class DbStreamTests : IDisposable
       }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
-    this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>()), Times.Never);
+    this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>(), null), Times.Never);
   }
 
   [Fact]
@@ -334,7 +334,7 @@ public class DbStreamTests : IDisposable
   public async Task Watch_IfTheCallToEnqueueOnTheIQueueInstanceThrowsAnException_ItShouldLogTheErrorAndNotThrowException()
   {
     var testException = new Exception("Error message from test.");
-    this._queueMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>()))
+    this._queueMock.Setup(s => s.Enqueue(It.IsAny<string>(), It.IsAny<string[]>(), It.IsAny<TimeSpan?>()))
       .ThrowsAsync(testException);
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>()))
       .Returns((new[] {
