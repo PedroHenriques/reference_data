@@ -72,8 +72,7 @@ internal class Program
     }
 
     var kafkaInputs = KafkaUtils.PrepareInputs(
-      schemaRegistryConfig, KafkaConfigs.SchemaSubject,
-      int.Parse(KafkaConfigs.SchemaVersion), kafkaProducerConfig
+      schemaRegistryConfig, kafkaProducerConfig
     );
     IKafka<NotifDataKafkaKey, NotifDataKafkaValue> kafka = new Kafka<NotifDataKafkaKey, NotifDataKafkaValue>(kafkaInputs);
 
