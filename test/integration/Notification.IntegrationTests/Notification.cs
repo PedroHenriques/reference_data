@@ -11,7 +11,7 @@ using Newtonsoft.Json;
 using StackExchange.Redis;
 using Toolkit;
 using Toolkit.Types;
-using TkKafkaUtils = Toolkit.Utils.Kafka<Notification.Tests.Integration.TestKey, Notification.Tests.Integration.TestValue>;
+using TkKafkaUtils = Toolkit.Utils.Kafka<Notification.Tests.Integration.NotifDataKafkaKey, Notification.Tests.Integration.NotifDataKafkaValue>;
 using TkRedisUtils = Toolkit.Utils.Redis;
 
 namespace Notification.Tests.Integration;
@@ -20,14 +20,14 @@ namespace Notification.Tests.Integration;
 public class NotificationTests : IDisposable, IAsyncLifetime
 {
   private const string TOPIC_NAME = "TestTopic";
-  private const string HTTP_SERVER_URL = "http://localhost:11000/";
+  private const string HTTP_SERVER_URL = "http://myapp_test_runner:11000/";
   private readonly IAdminClient _adminClient;
   private readonly DbFixtures.DbFixtures _redisDblistenerDbFixtures;
   private readonly DbFixtures.DbFixtures _redisNotificationDbFixtures;
   private readonly DbFixtures.DbFixtures _kafkaDbFixtures;
   private readonly IQueue _redisDblistener;
   private readonly ICache _redisNotification;
-  private readonly IKafka<TestKey, TestValue> _kafka;
+  private readonly IKafka<NotifDataKafkaKey, NotifDataKafkaValue> _kafka;
   private readonly HttpListener _listener;
 
   public NotificationTests()
@@ -84,7 +84,7 @@ public class NotificationTests : IDisposable, IAsyncLifetime
         EnableAutoCommit = false,
       }
     );
-    this._kafka = new Kafka<TestKey, TestValue>(kafkaInputs);
+    this._kafka = new Kafka<NotifDataKafkaKey, NotifDataKafkaValue>(kafkaInputs);
 
     this._adminClient = new AdminClientBuilder(
       new AdminClientConfig { BootstrapServers = "broker:29092" }
@@ -101,16 +101,16 @@ public class NotificationTests : IDisposable, IAsyncLifetime
     {
       AutoRegisterSchemas = true,
     };
-    var fixtureKafkaProducer = new ProducerBuilder<TestKey, TestValue>(
+    var fixtureKafkaProducer = new ProducerBuilder<NotifDataKafkaKey, NotifDataKafkaValue>(
       new ProducerConfig
       {
         BootstrapServers = "broker:29092",
       }
     )
-    .SetKeySerializer(new JsonSerializer<TestKey>(kafkaInputs.SchemaRegistry, jsonSerializerConfig))
-    .SetValueSerializer(new JsonSerializer<TestValue>(kafkaInputs.SchemaRegistry, jsonSerializerConfig))
+    .SetKeySerializer(new JsonSerializer<NotifDataKafkaKey>(kafkaInputs.SchemaRegistry, jsonSerializerConfig))
+    .SetValueSerializer(new JsonSerializer<NotifDataKafkaValue>(kafkaInputs.SchemaRegistry, jsonSerializerConfig))
     .Build();
-    var kafkaDriver = new KafkaDriver<TestKey, TestValue>(this._adminClient, fixtureKafkaConsumer, fixtureKafkaProducer);
+    var kafkaDriver = new KafkaDriver<NotifDataKafkaKey, NotifDataKafkaValue>(this._adminClient, fixtureKafkaConsumer, fixtureKafkaProducer);
     this._kafkaDbFixtures = new DbFixtures.DbFixtures([kafkaDriver]);
 
     this._listener = new HttpListener();
@@ -172,19 +172,19 @@ public class NotificationTests : IDisposable, IAsyncLifetime
       res.Close();
     });
 
-    Message<TestKey, TestValue>[] expectedKafkaEvents = [
-      new Message<TestKey, TestValue>
+    Message<NotifDataKafkaKey, NotifDataKafkaValue>[] expectedKafkaEvents = [
+      new Message<NotifDataKafkaKey, NotifDataKafkaValue>
       {
-        Key = new TestKey { Id = "seed id 1" },
-        Value = new TestValue {
-          Metadata = new TestValueMetadata {
+        Key = new NotifDataKafkaKey { Id = "seed id 1" },
+        Value = new NotifDataKafkaValue {
+          Metadata = new NotifDataKafkaValueMetadata {
             Action = "seed insert",
             ActionDatetime = DateTime.Now,
             CorrelationId = "seed insert correlation id",
             EventDatetime = DateTime.Now,
             Source = "integration test",
           },
-          Data = new TestValueData {
+          Data = new NotifDataKafkaValueData {
             Id = "68c0072634336093835452c0",
             Entity = "myname1",
             Document = new Dictionary<string, dynamic?> {
@@ -195,9 +195,9 @@ public class NotificationTests : IDisposable, IAsyncLifetime
       },
     ];
 
-    await this._kafkaDbFixtures.InsertFixtures<Message<TestKey, TestValue>>(
+    await this._kafkaDbFixtures.InsertFixtures<Message<NotifDataKafkaKey, NotifDataKafkaValue>>(
       [TOPIC_NAME],
-      new Dictionary<string, Message<TestKey, TestValue>[]>
+      new Dictionary<string, Message<NotifDataKafkaKey, NotifDataKafkaValue>[]>
       {
         { TOPIC_NAME, [ expectedKafkaEvents[0] ] },
       }
@@ -229,33 +229,29 @@ public class NotificationTests : IDisposable, IAsyncLifetime
           [
             new Dictionary<string, string> {
               {
-                "ChangeTime",
-                "2025-09-18T13:32:40Z"
-              },
-              {
-                "ChangeRecord",
+                "data",
                 JsonConvert.SerializeObject(new {
-                  id = "68cc09f86533312d1c9d4863",
-                  changeType = new {
-                    Id = 1,
-                    Name = "insert",
-                  },
-                  document = new {
-                    _id = "68cc09f86533312d1c9d4863",
-                    key1 = true,
-                    key2 = "some content",
-                    key3 = 349857,
-                  },
+                  ChangeTime = "2025-09-18T13:32:40Z",
+                  ChangeRecord = JsonConvert.SerializeObject(new {
+                    id = "68cc09f86533312d1c9d4863",
+                    changeType = new {
+                      Id = 1,
+                      Name = "insert",
+                    },
+                    document = new {
+                      _id = "68cc09f86533312d1c9d4863",
+                      key1 = true,
+                      key2 = "some content",
+                      key3 = 349857,
+                    },
+                  }),
+                  Source = JsonConvert.SerializeObject(new {
+                    dbName = "test db name",
+                    collName = "myname1",
+                  }),
+                  NotifConfigs = (object?)null,
                 })
-              },
-              {
-                "Source",
-                JsonConvert.SerializeObject(new {
-                  dbName = "test db name",
-                  collName = "myname1",
-                })
-              },
-              { "NotifConfigs", JsonConvert.SerializeObject(null) },
+              }
             },
           ]
         },
@@ -268,25 +264,25 @@ public class NotificationTests : IDisposable, IAsyncLifetime
   }
 }
 
-public class TestKey
+public class NotifDataKafkaKey
 {
   [JsonPropertyName("id")]
   [JsonProperty("id")]
   public required string Id { get; set; }
 }
 
-public class TestValue
+public class NotifDataKafkaValue
 {
   [JsonPropertyName("metadata")]
   [JsonProperty("metadata")]
-  public required TestValueMetadata Metadata { get; set; }
+  public required NotifDataKafkaValueMetadata Metadata { get; set; }
 
   [JsonPropertyName("data")]
   [JsonProperty("data")]
-  public required TestValueData Data { get; set; }
+  public required NotifDataKafkaValueData Data { get; set; }
 }
 
-public class TestValueMetadata
+public class NotifDataKafkaValueMetadata
 {
   [JsonPropertyName("action")]
   [JsonProperty("action")]
@@ -309,7 +305,7 @@ public class TestValueMetadata
   public required string Source { get; set; }
 }
 
-public class TestValueData
+public class NotifDataKafkaValueData
 {
   [JsonPropertyName("document")]
   [JsonProperty("document")]
