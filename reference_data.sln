@@ -21,6 +21,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Api.IntegrationTests", "tes
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "DbListener.IntegrationTests", "test\integration\DbListener.IntegrationTests\DbListener.IntegrationTests.csproj", "{C959AE23-FB51-4B92-90F3-389C5AC6D2F9}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Notification.IntegrationTests", "test\integration\Notification.IntegrationTests\Notification.IntegrationTests.csproj", "{BC13C6B0-A868-4BF1-8719-D6A370CADE8F}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -66,5 +68,9 @@ Global
 		{C959AE23-FB51-4B92-90F3-389C5AC6D2F9}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{C959AE23-FB51-4B92-90F3-389C5AC6D2F9}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{C959AE23-FB51-4B92-90F3-389C5AC6D2F9}.Release|Any CPU.Build.0 = Release|Any CPU
+		{BC13C6B0-A868-4BF1-8719-D6A370CADE8F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{BC13C6B0-A868-4BF1-8719-D6A370CADE8F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{BC13C6B0-A868-4BF1-8719-D6A370CADE8F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{BC13C6B0-A868-4BF1-8719-D6A370CADE8F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
