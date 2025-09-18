@@ -39,7 +39,7 @@ services:
       - MONGO_COL_NAME=${MONGO_COL_NAME:-entities}
       - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
       - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
-      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
+      - LD_CONTEXT_NAME=Ref Data - LOCAL
       - LD_NOTIFICATION_ACTIVE_KEY=ref-data-notification-send-notifications
       - LD_NOTIFICATION_RETRY_ACTIVE_KEY=ref-data-notification-process-retry-queue
       - PROJECT_NAME=${PROJECT_NAME:-myapp}
@@ -97,7 +97,7 @@ services:
       - DBLISTENER_CACHE_CHANGES_QUEUE_TTL_DAYS=1
       - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
       - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
-      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
+      - LD_CONTEXT_NAME=Ref Data - LOCAL
       - LD_DBLISTENER_ACTIVE_KEY=ref-data-db-listener-sub-stream
       - PROJECT_NAME=${PROJECT_NAME:-myapp}
       - LOG_DESTINATION_URI=http://otel_collector:4317
@@ -163,7 +163,7 @@ services:
       - MONGO_COL_NAME=${MONGO_COL_NAME:-entities}
       - LD_ENV_SDK_KEY=${LD_ENV_SDK_KEY}
       - LD_CONTEXT_API_KEY=${LD_CONTEXT_API_KEY}
-      - LD_CONTEXT_NAME=${LD_CONTEXT_NAME}
+      - LD_CONTEXT_NAME=Ref Data - LOCAL
       - LD_API_ACTIVE_KEY=ref-data-api-serve-requests
       - PROJECT_NAME=${PROJECT_NAME:-myapp}
       - LOG_DESTINATION_URI=http://otel_collector:4317
