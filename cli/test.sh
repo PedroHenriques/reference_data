@@ -48,7 +48,12 @@ case "${TEST_TYPE}" in
 esac
 
 if [ $RUN_LOCAL_ENV -eq 1 ]; then
-  sh ./cli/start.sh -d;
+  START_ARGS="-d";
+  if [ $RUNNING_IN_PIPELINE -eq 1 ]; then
+    START_ARGS="${START_ARGS} --cicd";
+  fi
+
+  sh ./cli/start.sh $START_ARGS;
 
   echo "Waiting for all Docker services to be healthy or up...";
 
