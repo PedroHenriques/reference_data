@@ -252,6 +252,7 @@ services:
       context: ../../
       dockerfile: ./setup/local/webhook/Dockerfile
     container_name: "webhook_server"
+    profiles: ["only_if_not_cicd"]
     restart: on-failure
     environment:
       - DOTNET_ENVIRONMENT=Development
