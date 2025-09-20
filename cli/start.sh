@@ -26,6 +26,8 @@ else
   fi
 fi
 
+export COMPOSE_PROFILES;
+
 docker network create myapp_shared || true;
 
 sh ./cli/build.sh;
