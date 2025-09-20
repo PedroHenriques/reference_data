@@ -17,6 +17,7 @@ using TkRedisUtils = Toolkit.Utils.Redis;
 namespace Notification.Tests.Integration;
 
 [Trait("Type", "Integration")]
+[Collection("IntegrationTests")]
 public class NotificationTests : IDisposable, IAsyncLifetime
 {
   private const string TOPIC_NAME = "TestTopic";

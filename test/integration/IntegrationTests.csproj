@@ -13,6 +13,7 @@
     <PackageReference Include="coverlet.collector" Version="6.0.0" />
     <PackageReference Include="DbFixtures" Version="1.0.3" />
     <PackageReference Include="DbFixtures.Kafka" Version="1.0.3" />
+    <PackageReference Include="DbFixtures.Mongodb" Version="1.0.4" />
     <PackageReference Include="DbFixtures.Redis" Version="1.0.3" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="17.8.0" />
     <PackageReference Include="PJHToolkit" Version="6.1.1" />

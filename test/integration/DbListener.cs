@@ -10,6 +10,7 @@ using StackExchange.Redis;
 namespace DbListener.Tests.Integration;
 
 [Trait("Type", "Integration")]
+[Collection("IntegrationTests")]
 public class DbListenerTests : IDisposable
 {
   private const string DB_NAME = "referenceData";
@@ -90,6 +91,8 @@ public class DbListenerTests : IDisposable
       }
     );
     var endTs = DateTimeOffset.FromUnixTimeSeconds(DateTimeOffset.UtcNow.ToUnixTimeSeconds()).UtcDateTime;
+
+    await Task.Delay(5000);
 
     var streamMsgs = this._redisDb.StreamRange("mongo_changes");
     var actualMsgs = streamMsgs.Select(msg => msg.Values).ToArray();

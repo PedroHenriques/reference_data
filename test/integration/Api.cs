@@ -9,6 +9,7 @@ using Newtonsoft.Json;
 namespace Api.Tests.Integration;
 
 [Trait("Type", "Integration")]
+[Collection("IntegrationTests")]
 public class ApiTests : IDisposable
 {
   private const string DB_NAME = "referenceData";
