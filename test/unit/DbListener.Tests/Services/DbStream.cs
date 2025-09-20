@@ -170,7 +170,7 @@ public class DbStreamTests : IDisposable
       }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
-    this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>(), null), Times.Exactly(2));
+    this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>(), TimeSpan.FromDays(1)), Times.Exactly(2));
   }
 
   [Fact]

@@ -21,9 +21,9 @@ public class EntityDataTests : IDisposable
 
     this._mongodbMock = new Mock<IMongodb>(MockBehavior.Strict);
 
-    this._mongodbMock.Setup(s => s.Find<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument?>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<dynamic> { Data = Array.Empty<dynamic>() }));
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument?>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "" } } }));
     this._mongodbMock.Setup(s => s.InsertMany<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<object[]>()))
       .Returns(Task.Delay(1));
@@ -64,7 +64,8 @@ public class EntityDataTests : IDisposable
             }
           }
         },
-        false
+        false,
+        null
       ),
       Times.Once()
     );
@@ -73,7 +74,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Create_ItShouldCallInsertManyFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument?>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "rng entity name" } } }));
 
     object[] data = new[] { new ExpandoObject(), new ExpandoObject() };
@@ -111,7 +112,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Create_IfThereIsNoActiveEntityWithProvidedName_ItShouldNotCallInsertOneFromTheProvidedDbClient()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument?>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
 
     try
@@ -129,7 +130,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Create_IfThereIsNoActiveEntityWithProvidedName_ItShouldThrowAnException()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument?>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
 
     string testDocId = ObjectId.GenerateNewId().ToString();
@@ -161,7 +162,8 @@ public class EntityDataTests : IDisposable
             }
           }
         },
-        false
+        false,
+        null
       ),
       Times.Once()
     );
@@ -170,7 +172,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Replace_ItShouldCallReplaceOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument?>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "test entity name" } } }));
 
     ObjectId testEntityId = ObjectId.GenerateNewId();
@@ -197,7 +199,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Replace_IfThereIsNoActiveEntityWithProvidedName_ItShouldNotCallInsertOneFromTheProvidedDbClient()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument?>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
 
     try
@@ -214,7 +216,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Replace_IfThereIsNoActiveEntityWithProvidedName_ItShouldThrowAnException()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument?>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
@@ -245,7 +247,8 @@ public class EntityDataTests : IDisposable
             }
           }
         },
-        false
+        false,
+        null
       ),
       Times.Once()
     );
@@ -254,7 +257,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Delete_ItShouldCallDeleteOneFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "rng test entity name" } } }));
 
     ObjectId testEntityId = ObjectId.GenerateNewId();
@@ -267,7 +270,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Delete_IfThereIsNoActiveEntityWithProvidedName_ItShouldNotCallInsertOneFromTheProvidedDbClient()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
 
     try
@@ -284,7 +287,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Delete_IfThereIsNoActiveEntityWithProvidedName_ItShouldThrowAnException()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
@@ -314,7 +317,8 @@ public class EntityDataTests : IDisposable
             }
           }
         },
-        false
+        false,
+        null
       ),
       Times.Once()
     );
@@ -341,7 +345,8 @@ public class EntityDataTests : IDisposable
             }
           }
         },
-        false
+        false,
+        null
       ),
       Times.Once()
     );
@@ -357,19 +362,19 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Select_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "some test entity name" } } }));
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
 
     await EntityData.Select(this._mongodbMock.Object, testEntityId);
-    this._mongodbMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, null, false), Times.Once());
+    this._mongodbMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, null, false, null), Times.Once());
   }
 
   [Fact]
   public async Task Select_IfAValueForTheDocIdArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "some test entity name" } } }));
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
@@ -379,13 +384,13 @@ public class EntityDataTests : IDisposable
     };
 
     await EntityData.Select(this._mongodbMock.Object, testEntityId, null, testDocId.ToString());
-    this._mongodbMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false), Times.Once());
+    this._mongodbMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false, null), Times.Once());
   }
 
   [Fact]
   public async Task Select_IfAValueForTheMatchArgumentIsProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "some test entity name" } } }));
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
@@ -395,13 +400,13 @@ public class EntityDataTests : IDisposable
     };
 
     await EntityData.Select(this._mongodbMock.Object, testEntityId, null, null, null, null, expectedMatch.ToString());
-    this._mongodbMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false), Times.Once());
+    this._mongodbMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false, null), Times.Once());
   }
 
   [Fact]
   public async Task Select_IfAValueForTheDocIdAndTheMatchArgumentsAreProvided_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "some test entity name" } } }));
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
@@ -418,16 +423,16 @@ public class EntityDataTests : IDisposable
     };
 
     await EntityData.Select(this._mongodbMock.Object, testEntityId, null, testDocId.ToString(), null, null, testMatch.ToString());
-    this._mongodbMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false), Times.Once());
+    this._mongodbMock.Verify(m => m.Find<dynamic>("RefData", "some test entity name", 1, 50, expectedMatch, false, null), Times.Once());
   }
 
   [Fact]
   public async Task Select_ItShouldReturnTheResultOfCallingFindFromTheProvidedDbClient()
   {
     var expectedResult = new FindResult<dynamic> { Metadata = new FindResultMetadata { Page = 6 }, Data = Array.Empty<dynamic>() };
-    this._mongodbMock.Setup(s => s.Find<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<dynamic>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(expectedResult));
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 1 }, Data = new[] { new EntityModel { Name = "" } } }));
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
@@ -438,7 +443,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Select_IfThereIsNoActiveEntityWithProvidedId_ItShouldThrowAnException()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
 
     string testEntityId = ObjectId.GenerateNewId().ToString();
@@ -450,7 +455,7 @@ public class EntityDataTests : IDisposable
   [Fact]
   public async Task Select_IfThereIsNoActiveEntityWithProvidedName_ItShouldThrowAnException()
   {
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { Metadata = new FindResultMetadata { TotalCount = 0 } }));
 
     string testEntityName = "test name";
