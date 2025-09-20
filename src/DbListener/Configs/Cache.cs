@@ -19,4 +19,6 @@ public static class Cache
 
   public static string ChangesQueueKey = Environment.GetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY")
     ?? throw new Exception("Could not get the 'DBLISTENER_CACHE_CHANGES_QUEUE_KEY' environment variable");
+
+  public static TimeSpan ChangesQueueTtl = TimeSpan.FromDays(Int16.Parse(Environment.GetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_TTL_DAYS") ?? "7"));
 }

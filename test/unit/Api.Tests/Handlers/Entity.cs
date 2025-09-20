@@ -26,7 +26,7 @@ public class EntityTests : IDisposable
       .Returns(Task.Delay(1));
     this._mongodbMock.Setup(s => s.DeleteOne<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<string>()))
       .Returns(Task.Delay(1));
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument?>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(new FindResult<EntityModel> { }));
   }
 
@@ -91,14 +91,14 @@ public class EntityTests : IDisposable
   public async Task Select_ItShouldCallFindFromTheProvidedDbClientOnceWithTheExpectedArguments()
   {
     await Entity.Select(this._mongodbMock.Object);
-    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 1, 50, null, false), Times.Once());
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 1, 50, null, false, null), Times.Once());
   }
 
   [Fact]
   public async Task Select_ItShouldReturnTheResultOfCallingFindFromTheProvidedDbClient()
   {
     var expectedResult = new FindResult<EntityModel> { };
-    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument>(), It.IsAny<bool>()))
+    this._mongodbMock.Setup(s => s.Find<EntityModel>(It.IsAny<string>(), It.IsAny<string>(), It.IsAny<int>(), It.IsAny<int>(), It.IsAny<BsonDocument?>(), It.IsAny<bool>(), It.IsAny<BsonDocument?>()))
       .Returns(Task.FromResult(expectedResult));
 
     Assert.Equal(expectedResult, await Entity.Select(this._mongodbMock.Object));
@@ -110,7 +110,7 @@ public class EntityTests : IDisposable
     int page = 456;
 
     await Entity.Select(this._mongodbMock.Object, page);
-    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", page, 50, null, false), Times.Once());
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", page, 50, null, false, null), Times.Once());
   }
 
   [Fact]
@@ -119,7 +119,7 @@ public class EntityTests : IDisposable
     int size = 987;
 
     await Entity.Select(this._mongodbMock.Object, null, size);
-    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 1, size, null, false), Times.Once());
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 1, size, null, false, null), Times.Once());
   }
 
   [Fact]
@@ -131,7 +131,7 @@ public class EntityTests : IDisposable
     };
 
     await Entity.Select(this._mongodbMock.Object, 73, 9410, testId.ToString());
-    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false, null), Times.Once());
   }
 
   [Fact]
@@ -142,7 +142,7 @@ public class EntityTests : IDisposable
       { "something", true },
     };
     await Entity.Select(this._mongodbMock.Object, 73, 9410, null, expectedMatch.ToString());
-    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false, null), Times.Once());
   }
 
   [Fact]
@@ -161,6 +161,6 @@ public class EntityTests : IDisposable
     };
 
     await Entity.Select(this._mongodbMock.Object, 73, 9410, testId.ToString(), testMatch.ToString());
-    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false), Times.Once());
+    this._mongodbMock.Verify(m => m.Find<EntityModel>("RefData", "Entities", 73, 9410, expectedMatch, false, null), Times.Once());
   }
 }

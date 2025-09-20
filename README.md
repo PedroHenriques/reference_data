@@ -48,7 +48,6 @@ The services available in the local development environment are configured at `s
 The local environment requires the following environment variables to be configured ([more information](#configure-the-local-environment)):
 - LD_ENV_SDK_KEY
 - LD_CONTEXT_API_KEY
-- LD_CONTEXT_NAME
 
 To run the local environment follow these steps:
 

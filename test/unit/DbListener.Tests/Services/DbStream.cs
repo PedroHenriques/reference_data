@@ -26,6 +26,7 @@ public class DbStreamTests : IDisposable
     Environment.SetEnvironmentVariable("REDIS_PW", "test redis pw");
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGE_DATA_KEY", "change_resume_data");
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", "mongo_changes");
+    Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_TTL_DAYS", "1");
     Environment.SetEnvironmentVariable("MONGO_CON_STR", "test mongo con str");
     Environment.SetEnvironmentVariable("MONGO_DB_NAME", "RefData");
     Environment.SetEnvironmentVariable("LD_DBLISTENER_ACTIVE_KEY", "test flag key");
@@ -61,6 +62,7 @@ public class DbStreamTests : IDisposable
     Environment.SetEnvironmentVariable("REDIS_PW", null);
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGE_DATA_KEY", null);
     Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_KEY", null);
+    Environment.SetEnvironmentVariable("DBLISTENER_CACHE_CHANGES_QUEUE_TTL_DAYS", null);
     Environment.SetEnvironmentVariable("MONGO_CON_STR", null);
     Environment.SetEnvironmentVariable("MONGO_DB_NAME", null);
     Environment.SetEnvironmentVariable("LD_DBLISTENER_ACTIVE_KEY", null);
@@ -168,7 +170,7 @@ public class DbStreamTests : IDisposable
       }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
-    this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>(), null), Times.Exactly(2));
+    this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>(), TimeSpan.FromDays(1)), Times.Exactly(2));
   }
 
   [Fact]

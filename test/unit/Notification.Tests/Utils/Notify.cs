@@ -239,7 +239,7 @@ public class NotifyTests : IDisposable
       .Returns(Task.FromResult(("hello", changeStr)));
 
     await Notify.ProcessMessage(this._queueDblistenerMock.Object, this._cacheNotifMock.Object, this._queueNotifMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), this._loggerMock.Object, NotifyMode.MongoChanges, "");
-    this._queueDblistenerMock.Verify(m => m.Ack("hello world", "hello", true), Times.Once());
+    this._queueDblistenerMock.Verify(m => m.Ack("hello world", "hello", false), Times.Once());
   }
 
   [Fact]
@@ -887,7 +887,7 @@ public class NotifyTests : IDisposable
       Document = changeRecord.Document,
     };
     await Notify.ProcessMessage(this._queueDblistenerMock.Object, this._cacheNotifMock.Object, this._queueNotifMock.Object, this._dispatchersMock.Object, new HttpClient(this._httpClientMock.Object), this._loggerMock.Object, NotifyMode.MongoChanges, "");
-    this._queueDblistenerMock.Setup(s => s.Ack("hello world", JsonConvert.SerializeObject(change), true));
+    this._queueDblistenerMock.Verify(m => m.Ack("hello world", "auiyf", false), Times.Once());
   }
 
   [Fact]

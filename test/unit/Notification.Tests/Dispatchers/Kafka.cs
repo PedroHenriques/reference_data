@@ -18,8 +18,6 @@ public class KafkaTests : IDisposable
   public KafkaTests()
   {
     Environment.SetEnvironmentVariable("KAFKA_SCHEMA_REGISTRY_URL", "a");
-    Environment.SetEnvironmentVariable("KAFKA_SCHEMA_SUBJECT", "a");
-    Environment.SetEnvironmentVariable("KAFKA_SCHEMA_VERSION", "a");
     Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", "a");
     Environment.SetEnvironmentVariable("KAFKA_BROKER_SASL_USERNAME", "a");
     Environment.SetEnvironmentVariable("KAFKA_BROKER_SASL_PW", "a");
@@ -45,8 +43,6 @@ public class KafkaTests : IDisposable
   public void Dispose()
   {
     Environment.SetEnvironmentVariable("KAFKA_SCHEMA_REGISTRY_URL", null);
-    Environment.SetEnvironmentVariable("KAFKA_SCHEMA_SUBJECT", null);
-    Environment.SetEnvironmentVariable("KAFKA_SCHEMA_VERSION", null);
     Environment.SetEnvironmentVariable("KAFKA_BOOTSTRAP_SERVERS", null);
     Environment.SetEnvironmentVariable("KAFKA_BROKER_SASL_USERNAME", null);
     Environment.SetEnvironmentVariable("KAFKA_BROKER_SASL_PW", null);
