@@ -3,9 +3,12 @@ using DbFixtures.Mongodb;
 using DbFixtures.Redis;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Driver;
 using Newtonsoft.Json;
 using StackExchange.Redis;
+using Toolkit;
+using Toolkit.Types;
+using TkMongodbUtils = Toolkit.Utils.Mongodb;
+using TkRedisUtils = Toolkit.Utils.Redis;
 
 namespace DbListener.Tests.Integration;
 
@@ -14,30 +17,30 @@ namespace DbListener.Tests.Integration;
 public class DbListenerTests : IDisposable
 {
   private const string DB_NAME = "referenceData";
-  private readonly IMongoClient _mongoClient;
   private readonly DbFixtures.DbFixtures _mongoDbFixtures;
-  private readonly IConnectionMultiplexer _redisClient;
+  private readonly IQueue _redis;
   private readonly DbFixtures.DbFixtures _redisDbFixtures;
-  private readonly IDatabase _redisDb;
 
   public DbListenerTests()
   {
-    string connStr = "mongodb://admin:pw@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0";
-    this._mongoClient = new MongoClient(connStr);
-    var mongoDriver = new MongodbDriver(this._mongoClient, DB_NAME);
+    var mongoInputs = TkMongodbUtils.PrepareInputs("mongodb://admin:pw@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0", "deletedAt");
+
+    var mongoDriver = new MongodbDriver(mongoInputs.Client, DB_NAME);
     this._mongoDbFixtures = new DbFixtures.DbFixtures([mongoDriver]);
 
-    this._redisClient = ConnectionMultiplexer.Connect(
+    var redisInputs = TkRedisUtils.PrepareInputs(
       new ConfigurationOptions
       {
         EndPoints = { "dblistener_db:6379" },
         Password = "password",
         AbortOnConnectFail = false,
-      }
+      },
+      "test-cg"
     );
-    this._redisDb = this._redisClient.GetDatabase(0);
+    this._redis = new Redis(redisInputs);
+
     var redisDriver = new RedisDriver(
-      this._redisClient, this._redisDb,
+      redisInputs.Client, redisInputs.Client.GetDatabase(0),
       new Dictionary<string, DbFixtures.Redis.Types.KeyTypes>
       {
         { "change_resume_data", DbFixtures.Redis.Types.KeyTypes.String },
@@ -94,54 +97,41 @@ public class DbListenerTests : IDisposable
 
     await Task.Delay(5000);
 
-    var streamMsgs = this._redisDb.StreamRange("mongo_changes");
-    var actualMsgs = streamMsgs.Select(msg => msg.Values).ToArray();
+    var (_, msg1Msg) = await this._redis.Dequeue("mongo_changes", "test-cg-0");
+    var (_, msg2Msg) = await this._redis.Dequeue("mongo_changes", "test-cg-0");
+    var (_, msg3Msg) = await this._redis.Dequeue("mongo_changes", "test-cg-0");
 
-    var msg1ChangeTime = DateTimeOffset.Parse((string)JsonConvert.DeserializeObject<dynamic>(actualMsgs[0][0].Value).ChangeTime).ToUniversalTime();
-    var msg2ChangeTime = DateTimeOffset.Parse((string)JsonConvert.DeserializeObject<dynamic>(actualMsgs[1][0].Value).ChangeTime).ToUniversalTime();
+    var msg1ChangeTime = DateTimeOffset.Parse((string)JsonConvert.DeserializeObject<dynamic>(msg1Msg).ChangeTime).ToUniversalTime();
+    var msg2ChangeTime = DateTimeOffset.Parse((string)JsonConvert.DeserializeObject<dynamic>(msg2Msg).ChangeTime).ToUniversalTime();
 
     Assert.InRange(msg1ChangeTime, startTs, endTs);
     Assert.InRange(msg2ChangeTime, startTs, endTs);
 
-    NameValueEntry[][] expectedMsgs = [
-      [
-        new NameValueEntry(
-          "data",
-          JsonConvert.SerializeObject(new {
-            ChangeTime = msg2ChangeTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"),
-            ChangeRecord = JsonConvert.SerializeObject(new {
-              id = "68c0072634336093835452c4",
-              changeType = new { Id = 1, Name = "insert" },
-              document = new { _id = "68c0072634336093835452c4", name = "test data 1", description = (string?)null, deletedAt = (DateTime?)null },
-            }),
-            Source = JsonConvert.SerializeObject(new { dbName = "referenceData", collName = "some coll" }),
-            NotifConfigs = (object?)null,
-          })
-        ),
-        new NameValueEntry("retries", "0"),
-      ],
-      [
-        new NameValueEntry(
-          "data",
-          JsonConvert.SerializeObject(new {
-            ChangeTime = msg1ChangeTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"),
-            ChangeRecord = JsonConvert.SerializeObject(new {
-              id = "68c0072234336093835452c3",
-              changeType = new { Id = 1, Name = "insert" },
-              document = new { _id = "68c0072234336093835452c3", name = "test data 2", description = (string?)null, deletedAt = (DateTime?)null },
-            }),
-            Source = JsonConvert.SerializeObject(new { dbName = "referenceData", collName = "some coll" }),
-            NotifConfigs = (object?)null,
-          })
-        ),
-        new NameValueEntry("retries", "0"),
-      ],
+    string?[] expectedMsgs = [
+      JsonConvert.SerializeObject(new {
+        ChangeTime = msg2ChangeTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"),
+        ChangeRecord = JsonConvert.SerializeObject(new {
+          id = "68c0072634336093835452c4",
+          changeType = new { Id = 1, Name = "insert" },
+          document = new { _id = "68c0072634336093835452c4", name = "test data 1", description = (string?)null, deletedAt = (DateTime?)null },
+        }),
+        Source = JsonConvert.SerializeObject(new { dbName = "referenceData", collName = "some coll" }),
+        NotifConfigs = (object?)null,
+      }),
+      JsonConvert.SerializeObject(new {
+        ChangeTime = msg1ChangeTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"),
+        ChangeRecord = JsonConvert.SerializeObject(new {
+          id = "68c0072234336093835452c3",
+          changeType = new { Id = 1, Name = "insert" },
+          document = new { _id = "68c0072234336093835452c3", name = "test data 2", description = (string?)null, deletedAt = (DateTime?)null },
+        }),
+        Source = JsonConvert.SerializeObject(new { dbName = "referenceData", collName = "some coll" }),
+        NotifConfigs = (object?)null,
+      }),
+      null
     ];
 
-    Assert.Equal(
-      JsonConvert.SerializeObject(expectedMsgs),
-      JsonConvert.SerializeObject(actualMsgs)
-    );
+    Assert.Equal(expectedMsgs, new string?[] { msg1Msg, msg2Msg, msg3Msg });
   }
 }
 

@@ -3,8 +3,10 @@ using System.Text.Json.Serialization;
 using DbFixtures.Mongodb;
 using MongoDB.Bson;
 using MongoDB.Bson.Serialization.Attributes;
-using MongoDB.Driver;
 using Newtonsoft.Json;
+using Toolkit;
+using Toolkit.Types;
+using MongodbUtils = Toolkit.Utils.Mongodb;
 
 namespace Api.Tests.Integration;
 
@@ -15,16 +17,17 @@ public class ApiTests : IDisposable
   private const string DB_NAME = "referenceData";
   private const string ENTITIES_COLL_NAME = "entities";
   private readonly HttpClient _httpClient;
-  private readonly IMongoClient _client;
+  private readonly IMongodb _mongodb;
   private readonly DbFixtures.DbFixtures _dbFixtures;
 
   public ApiTests()
   {
     this._httpClient = new HttpClient();
 
-    string connStr = "mongodb://admin:pw@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0";
-    this._client = new MongoClient(connStr);
-    var driver = new MongodbDriver(this._client, DB_NAME);
+    var mongoInputs = MongodbUtils.PrepareInputs("mongodb://admin:pw@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0", "deletedAt");
+    this._mongodb = new Mongodb(mongoInputs);
+
+    var driver = new MongodbDriver(mongoInputs.Client, DB_NAME);
     this._dbFixtures = new DbFixtures.DbFixtures([driver]);
   }
 
@@ -78,10 +81,10 @@ public class ApiTests : IDisposable
 
     Assert.True(result.IsSuccessStatusCode, body);
 
-    var docs = await this._client.GetDatabase(DB_NAME).GetCollection<Entity>(ENTITIES_COLL_NAME)
-      .Find<Entity>(FilterDefinition<Entity>.Empty).ToListAsync();
+    var findRes = await this._mongodb.Find<Entity>(DB_NAME, ENTITIES_COLL_NAME, 1, 10, null, false, new BsonDocument { { "name", 1 } });
+    var docs = findRes.Data;
 
-    Assert.Equal(4, docs.Count);
+    Assert.Equal(4, docs.Length);
     Assert.Equal(JsonConvert.SerializeObject(seedData[0]), JsonConvert.SerializeObject(docs[0]));
     seedData[1].Id = docs[1].Id;
     Assert.Equal(JsonConvert.SerializeObject(seedData[1]), JsonConvert.SerializeObject(docs[1]));
@@ -130,10 +133,10 @@ public class ApiTests : IDisposable
 
     Assert.True(result.IsSuccessStatusCode, body);
 
-    var docs = await this._client.GetDatabase(DB_NAME).GetCollection<Entity>(ENTITIES_COLL_NAME)
-      .Find<Entity>(FilterDefinition<Entity>.Empty).ToListAsync();
+    var findRes = await this._mongodb.Find<Entity>(DB_NAME, ENTITIES_COLL_NAME, 1, 10, null, false, new BsonDocument { { "name", 1 } });
+    var docs = findRes.Data;
 
-    Assert.Equal(2, docs.Count);
+    Assert.Equal(2, docs.Length);
     Assert.Equal(docStr, JsonConvert.SerializeObject(docs[0]));
     Assert.Equal(JsonConvert.SerializeObject(seedData[1]), JsonConvert.SerializeObject(docs[1]));
 
@@ -168,15 +171,15 @@ public class ApiTests : IDisposable
 
     Assert.True(result.IsSuccessStatusCode);
 
-    var docs = await this._client.GetDatabase(DB_NAME).GetCollection<Entity>(ENTITIES_COLL_NAME)
-      .Find<Entity>(FilterDefinition<Entity>.Empty).ToListAsync();
+    var findRes = await this._mongodb.Find<Entity>(DB_NAME, ENTITIES_COLL_NAME, 1, 10, null, true, new BsonDocument { { "name", 1 } });
+    var docs = findRes.Data;
 
     seedData[0].DeletedAt = docs[0].DeletedAt;
     var docStr = JsonConvert.SerializeObject(seedData[0]);
 
-    Assert.Equal(2, docs.Count);
+    Assert.Equal(2, docs.Length);
     Assert.NotNull(docs[0].DeletedAt);
-    Assert.InRange<DateTime>((DateTime)(docs[0].DeletedAt), startTs, endTs);
+    Assert.InRange((DateTime)(docs[0].DeletedAt), startTs, endTs);
     Assert.Equal(docStr, JsonConvert.SerializeObject(docs[0]));
     Assert.Equal(JsonConvert.SerializeObject(seedData[1]), JsonConvert.SerializeObject(docs[1]));
   }
@@ -295,10 +298,10 @@ public class ApiTests : IDisposable
 
     Assert.True(result.IsSuccessStatusCode, body);
 
-    var docs = await this._client.GetDatabase(DB_NAME).GetCollection<TestData>(entitiesSeedData[0].Name)
-      .Find<TestData>(FilterDefinition<TestData>.Empty).ToListAsync();
+    var findRes = await this._mongodb.Find<TestData>(DB_NAME, entitiesSeedData[0].Name, 1, 10, null, false, new BsonDocument { { "name", 1 } });
+    var docs = findRes.Data;
 
-    Assert.Equal(4, docs.Count);
+    Assert.Equal(4, docs.Length);
     entityDataSeedData[0].Id = docs[0].Id;
     Assert.Equal(JsonConvert.SerializeObject(entityDataSeedData[0]), JsonConvert.SerializeObject(docs[0]));
     Assert.Equal(JsonConvert.SerializeObject(entityDataSeedData[1]), JsonConvert.SerializeObject(docs[1]));
@@ -358,10 +361,10 @@ public class ApiTests : IDisposable
 
     Assert.True(result.IsSuccessStatusCode, body);
 
-    var docs = await this._client.GetDatabase(DB_NAME).GetCollection<TestData>("doc 1")
-      .Find<TestData>(FilterDefinition<TestData>.Empty).ToListAsync();
+    var findRes = await this._mongodb.Find<TestData>(DB_NAME, "doc 1", 1, 10, null, false, new BsonDocument { { "name", 1 } });
+    var docs = findRes.Data;
 
-    Assert.Equal(2, docs.Count);
+    Assert.Equal(2, docs.Length);
     entityDataSeedData[0].Id = docs[0].Id;
     Assert.Equal(JsonConvert.SerializeObject(entityDataSeedData[0]), JsonConvert.SerializeObject(docs[0]));
     entityDataSeedData[1].Id = docId;
@@ -414,13 +417,13 @@ public class ApiTests : IDisposable
 
     Assert.True(result.IsSuccessStatusCode);
 
-    var docs = await this._client.GetDatabase(DB_NAME).GetCollection<TestData>("doc 1")
-      .Find<TestData>(FilterDefinition<TestData>.Empty).ToListAsync();
+    var findRes = await this._mongodb.Find<TestData>(DB_NAME, "doc 1", 1, 10, null, true, new BsonDocument { { "name", 1 } });
+    var docs = findRes.Data;
 
     entityDataSeedData[1].DeletedAt = docs[1].DeletedAt;
     var docStr = JsonConvert.SerializeObject(entityDataSeedData[1]);
 
-    Assert.Equal(2, docs.Count);
+    Assert.Equal(2, docs.Length);
     Assert.Equal(JsonConvert.SerializeObject(entityDataSeedData[0]), JsonConvert.SerializeObject(docs[0]));
     Assert.NotNull(docs[1].DeletedAt);
     Assert.InRange<DateTime>((DateTime)(docs[1].DeletedAt), startTs, endTs);
