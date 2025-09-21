@@ -35,7 +35,7 @@ public class DbListenerTests : IDisposable
         Password = "password",
         AbortOnConnectFail = false,
       },
-      "test-cg"
+      "test-dblistener-cg-integration"
     );
     this._redis = new Redis(redisInputs);
 
@@ -97,9 +97,9 @@ public class DbListenerTests : IDisposable
 
     await Task.Delay(5000);
 
-    var (_, msg1Msg) = await this._redis.Dequeue("mongo_changes", "test-cg-0");
-    var (_, msg2Msg) = await this._redis.Dequeue("mongo_changes", "test-cg-0");
-    var (_, msg3Msg) = await this._redis.Dequeue("mongo_changes", "test-cg-0");
+    var (_, msg1Msg) = await this._redis.Dequeue("mongo_changes", "test-dblistener-cg-integration-0");
+    var (_, msg2Msg) = await this._redis.Dequeue("mongo_changes", "test-dblistener-cg-integration-0");
+    var (_, msg3Msg) = await this._redis.Dequeue("mongo_changes", "test-dblistener-cg-integration-0");
 
     var msg1ChangeTime = DateTimeOffset.Parse((string)JsonConvert.DeserializeObject<dynamic>(msg1Msg).ChangeTime).ToUniversalTime();
     var msg2ChangeTime = DateTimeOffset.Parse((string)JsonConvert.DeserializeObject<dynamic>(msg2Msg).ChangeTime).ToUniversalTime();

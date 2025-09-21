@@ -41,7 +41,7 @@ public class NotificationTests : IDisposable, IAsyncLifetime
         Password = "password",
         AbortOnConnectFail = false,
       },
-      "test-dblistener-cg"
+      "test-notification-dblistener-cg-integration"
     );
     var redisDblistenerDriver = new RedisDriver(
       redisDblistenerInputs.Client, redisDblistenerInputs.Client.GetDatabase(0),
@@ -59,7 +59,7 @@ public class NotificationTests : IDisposable, IAsyncLifetime
         Password = "other password",
         AbortOnConnectFail = false,
       },
-      "test-notification-cg"
+      "test-notification-cg-integration"
     );
     this._redisNotification = new Redis(redisNotificationInputs);
 
@@ -80,7 +80,7 @@ public class NotificationTests : IDisposable, IAsyncLifetime
       new ConsumerConfig
       {
         BootstrapServers = "broker:29092",
-        GroupId = "real-group-1",
+        GroupId = "real-group-1-notification-integration",
         AutoOffsetReset = AutoOffsetReset.Earliest,
         EnableAutoCommit = false,
       }
@@ -92,7 +92,7 @@ public class NotificationTests : IDisposable, IAsyncLifetime
       new ConsumerConfig
       {
         BootstrapServers = "broker:29092",
-        GroupId = "real-group-2",
+        GroupId = "real-group-2-notification-integration",
         AutoOffsetReset = AutoOffsetReset.Earliest,
         EnableAutoCommit = false,
       }
@@ -106,7 +106,7 @@ public class NotificationTests : IDisposable, IAsyncLifetime
       new ConsumerConfig
       {
         BootstrapServers = "broker:29092",
-        GroupId = "cleanup-group",
+        GroupId = "cleanup-group-notification-integration",
         AutoOffsetReset = AutoOffsetReset.Latest
       }
     ).Build();
