@@ -20,14 +20,16 @@ namespace Notification.Tests.Integration;
 [Collection("IntegrationTests")]
 public class NotificationTests : IDisposable, IAsyncLifetime
 {
-  private const string TOPIC_NAME = "TestTopic";
+  private const string TOPIC_NAME_1 = "TestTopic";
+  private const string TOPIC_NAME_2 = "TestTopic2";
   private const string HTTP_SERVER_URL = "http://myapp_test_runner:11000/";
   private readonly IAdminClient _adminClient;
   private readonly DbFixtures.DbFixtures _redisDblistenerDbFixtures;
   private readonly DbFixtures.DbFixtures _redisNotificationDbFixtures;
   private readonly DbFixtures.DbFixtures _kafkaDbFixtures;
   private readonly IQueue _redisNotification;
-  private readonly IKafka<NotifDataKafkaKey, NotifDataKafkaValue> _kafka;
+  private readonly IKafka<NotifDataKafkaKey, NotifDataKafkaValue> _kafka1;
+  private readonly IKafka<NotifDataKafkaKey, NotifDataKafkaValue> _kafka2;
   private readonly HttpListener _listener;
 
   public NotificationTests()
@@ -72,18 +74,30 @@ public class NotificationTests : IDisposable, IAsyncLifetime
     this._redisNotificationDbFixtures = new DbFixtures.DbFixtures([redisNotificationDriver]);
 
     SchemaRegistryConfig schemaRegistryConfig = new SchemaRegistryConfig { Url = "http://schema-registry:8081" };
-    var kafkaInputs = TkKafkaUtils.PrepareInputs(
+    var kafkaInputs1 = TkKafkaUtils.PrepareInputs(
       schemaRegistryConfig,
       null,
       new ConsumerConfig
       {
         BootstrapServers = "broker:29092",
-        GroupId = "real-group",
+        GroupId = "real-group-1",
         AutoOffsetReset = AutoOffsetReset.Earliest,
         EnableAutoCommit = false,
       }
     );
-    this._kafka = new Kafka<NotifDataKafkaKey, NotifDataKafkaValue>(kafkaInputs);
+    this._kafka1 = new Kafka<NotifDataKafkaKey, NotifDataKafkaValue>(kafkaInputs1);
+    var kafkaInputs2 = TkKafkaUtils.PrepareInputs(
+      schemaRegistryConfig,
+      null,
+      new ConsumerConfig
+      {
+        BootstrapServers = "broker:29092",
+        GroupId = "real-group-2",
+        AutoOffsetReset = AutoOffsetReset.Earliest,
+        EnableAutoCommit = false,
+      }
+    );
+    this._kafka2 = new Kafka<NotifDataKafkaKey, NotifDataKafkaValue>(kafkaInputs2);
 
     this._adminClient = new AdminClientBuilder(
       new AdminClientConfig { BootstrapServers = "broker:29092" }
@@ -106,8 +120,8 @@ public class NotificationTests : IDisposable, IAsyncLifetime
         BootstrapServers = "broker:29092",
       }
     )
-    .SetKeySerializer(new JsonSerializer<NotifDataKafkaKey>(kafkaInputs.SchemaRegistry, jsonSerializerConfig))
-    .SetValueSerializer(new JsonSerializer<NotifDataKafkaValue>(kafkaInputs.SchemaRegistry, jsonSerializerConfig))
+    .SetKeySerializer(new JsonSerializer<NotifDataKafkaKey>(kafkaInputs1.SchemaRegistry, jsonSerializerConfig))
+    .SetValueSerializer(new JsonSerializer<NotifDataKafkaValue>(kafkaInputs1.SchemaRegistry, jsonSerializerConfig))
     .Build();
     var kafkaDriver = new KafkaDriver<NotifDataKafkaKey, NotifDataKafkaValue>(this._adminClient, fixtureKafkaConsumer, fixtureKafkaProducer);
     this._kafkaDbFixtures = new DbFixtures.DbFixtures([kafkaDriver]);
@@ -135,17 +149,141 @@ public class NotificationTests : IDisposable, IAsyncLifetime
     {
       await _adminClient.CreateTopicsAsync(new[]
       {
-        new TopicSpecification { Name = TOPIC_NAME, NumPartitions = 1, ReplicationFactor = 1 },
+        new TopicSpecification { Name = TOPIC_NAME_1, NumPartitions = 1, ReplicationFactor = 1 },
+        new TopicSpecification { Name = TOPIC_NAME_2, NumPartitions = 1, ReplicationFactor = 1 },
       });
     }
-    catch (CreateTopicsException ex)
-    {
-      if (ex.Results.Any(r => r.Error.Code != ErrorCode.TopicAlreadyExists)) { throw; }
-    }
+    catch (CreateTopicsException ex) when (
+      ex.Results.All(r => r.Error.IsError == false || r.Error.Code == ErrorCode.TopicAlreadyExists)
+    )
+    { }
   }
 
   [Fact]
-  public async Task Notification_ItShouldConsumeMessageFromRedisAndDispatchNotificationToHttpAndKafka()
+  public async Task Notification_IfMessageIsForEntity_ItShouldCacheTheEntityNotifConfigurationAndNotDispatchNotifications()
+  {
+    this._listener.Start();
+
+    var listenerCallCount = 0;
+    var _ = Task.Run(async () =>
+    {
+      var ctx = await this._listener.GetContextAsync();
+      var req = ctx.Request;
+      var res = ctx.Response;
+
+      var reader = new StreamReader(
+        req.InputStream,
+        Encoding.UTF8,
+        detectEncodingFromByteOrderMarks: true,
+        bufferSize: 1024,
+        leaveOpen: true
+      );
+
+      listenerCallCount++;
+
+      res.StatusCode = (int)HttpStatusCode.OK;
+      await res.OutputStream.FlushAsync();
+      res.Close();
+    });
+
+    await this._kafkaDbFixtures.InsertFixtures<Message<NotifDataKafkaKey, NotifDataKafkaValue>>(
+      [TOPIC_NAME_1, TOPIC_NAME_2],
+      new Dictionary<string, Message<NotifDataKafkaKey, NotifDataKafkaValue>[]>
+      {
+        { TOPIC_NAME_1, [] },
+        { TOPIC_NAME_2, [] },
+      }
+    );
+
+    var cts = new CancellationTokenSource();
+    List<dynamic> actualKafkaEvents = new List<dynamic> { };
+    this._kafka1.Subscribe(
+      [TOPIC_NAME_1],
+      (message, ex) =>
+      {
+        if (ex != null) { throw ex; }
+        if (message == null) { return; }
+        actualKafkaEvents.Add(new
+        {
+          Key = message.Message.Key,
+          Value = message.Message.Value,
+        });
+        this._kafka1.Commit(message);
+      },
+      cts
+    );
+
+    await this._redisNotificationDbFixtures.InsertFixtures<string>(
+      ["entity:myname1|notif configs", "dispatcher_retry_queue"],
+      new Dictionary<string, string[]>
+      {
+        { "dispatcher_retry_queue", [] },
+        { "entity:myname1|notif configs", [] },
+      }
+    );
+
+    var notifConfig = new object[] {
+      new { protocol = "webhook", targetUrl = HTTP_SERVER_URL },
+      new { protocol = "event", targetUrl = TOPIC_NAME_1 },
+    };
+    var notifConfigStr = JsonConvert.SerializeObject(notifConfig);
+
+    await this._redisDblistenerDbFixtures.InsertFixtures<Dictionary<string, string>>(
+      ["mongo_changes"],
+      new Dictionary<string, Dictionary<string, string>[]>
+      {
+        {
+          "mongo_changes",
+          [
+            new Dictionary<string, string> {
+              {
+                "data",
+                JsonConvert.SerializeObject(new {
+                  ChangeTime = "2025-09-18T13:32:40Z",
+                  ChangeRecord = JsonConvert.SerializeObject(new {
+                    id = "68cc09f86533312d1c9d4863",
+                    changeType = new {
+                      Id = 1,
+                      Name = "insert",
+                    },
+                    document = new
+                    {
+                      _id = "68cc09f86533312d1c9d4863",
+                      name = "myname1",
+                      description = "some content",
+                      notifConfigs = notifConfig,
+                    },
+                  }),
+                  Source = JsonConvert.SerializeObject(new {
+                    dbName = "test db name",
+                    collName = "entities",
+                  }),
+                  NotifConfigs = (object?)null,
+                })
+              }
+            },
+          ]
+        },
+      }
+    );
+
+    await Task.Delay(5000);
+
+    var cachedNotifConfig = await ((ICache)this._redisNotification).GetString("entity:myname1|notif configs");
+    Assert.Equal(notifConfigStr, cachedNotifConfig);
+
+    var (retryId, retryMsg) = await this._redisNotification.Dequeue("dispatcher_retry_queue", "verify_cg");
+    Assert.Null(retryId);
+    Assert.Null(retryMsg);
+
+    Assert.Equal(0, listenerCallCount);
+
+    cts.Cancel();
+    Assert.Empty(actualKafkaEvents);
+  }
+
+  [Fact]
+  public async Task Notification_IfMessageIsForEntityData_ItShouldDispatchNotificationToHttpAndKafka()
   {
     this._listener.Start();
 
@@ -171,24 +309,6 @@ public class NotificationTests : IDisposable, IAsyncLifetime
       res.Close();
     });
 
-    var cts = new CancellationTokenSource();
-    List<dynamic> actualKafkaEvents = new List<dynamic> { };
-    this._kafka.Subscribe(
-      [TOPIC_NAME],
-      (message, ex) =>
-      {
-        if (ex != null) { throw ex; }
-        if (message == null) { return; }
-        actualKafkaEvents.Add(new
-        {
-          Key = message.Message.Key,
-          Value = message.Message.Value,
-        });
-        this._kafka.Commit(message);
-      },
-      cts
-    );
-
     List<Message<NotifDataKafkaKey, NotifDataKafkaValue>> expectedKafkaEvents = new List<Message<NotifDataKafkaKey, NotifDataKafkaValue>> {
       new Message<NotifDataKafkaKey, NotifDataKafkaValue>
       {
@@ -213,11 +333,30 @@ public class NotificationTests : IDisposable, IAsyncLifetime
     };
 
     await this._kafkaDbFixtures.InsertFixtures<Message<NotifDataKafkaKey, NotifDataKafkaValue>>(
-      [TOPIC_NAME],
+      [TOPIC_NAME_1, TOPIC_NAME_2],
       new Dictionary<string, Message<NotifDataKafkaKey, NotifDataKafkaValue>[]>
       {
-        { TOPIC_NAME, [ expectedKafkaEvents[0] ] },
+        { TOPIC_NAME_1, [] },
+        { TOPIC_NAME_2, [ expectedKafkaEvents[0] ] },
       }
+    );
+
+    var cts = new CancellationTokenSource();
+    List<dynamic> actualKafkaEvents = new List<dynamic> { };
+    this._kafka2.Subscribe(
+      [TOPIC_NAME_2],
+      (message, ex) =>
+      {
+        if (ex != null) { throw ex; }
+        if (message == null) { return; }
+        actualKafkaEvents.Add(new
+        {
+          Key = message.Message.Key,
+          Value = message.Message.Value,
+        });
+        this._kafka2.Commit(message);
+      },
+      cts
     );
 
     await this._redisNotificationDbFixtures.InsertFixtures<string>(
@@ -230,7 +369,7 @@ public class NotificationTests : IDisposable, IAsyncLifetime
           [
             JsonConvert.SerializeObject(new object[] {
               new { protocol = "webhook", targetUrl = HTTP_SERVER_URL },
-              new { protocol = "event", targetUrl = TOPIC_NAME },
+              new { protocol = "event", targetUrl = TOPIC_NAME_2 },
             }),
           ]
         },
