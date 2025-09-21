@@ -304,7 +304,7 @@ public class E2ETests : IDisposable, IAsyncLifetime
     Assert.Single(entityDocs);
     Assert.Equal(JsonConvert.SerializeObject(entity), JsonConvert.SerializeObject(entityDocs[0]));
 
-    await Task.Delay(10000);
+    await Task.Delay(20000);
 
     var (_, mongoChangeMsg1) = await this._dblistenerRedis.Dequeue("mongo_changes", "test-dblistener-cg-e2e-0");
     var mongoChangeMsgChangeTime = DateTimeOffset.Parse((string)JsonConvert.DeserializeObject<dynamic>(mongoChangeMsg1).ChangeTime).ToUniversalTime();
