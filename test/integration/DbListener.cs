@@ -7,8 +7,8 @@ using Newtonsoft.Json;
 using StackExchange.Redis;
 using Toolkit;
 using Toolkit.Types;
-using TkMongodbUtils = Toolkit.Utils.Mongodb;
-using TkRedisUtils = Toolkit.Utils.Redis;
+using MongodbUtils = Toolkit.Utils.Mongodb;
+using RedisUtils = Toolkit.Utils.Redis;
 
 namespace DbListener.Tests.Integration;
 
@@ -23,12 +23,12 @@ public class DbListenerTests : IDisposable
 
   public DbListenerTests()
   {
-    var mongoInputs = TkMongodbUtils.PrepareInputs("mongodb://admin:pw@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0", "deletedAt");
+    var mongoInputs = MongodbUtils.PrepareInputs("mongodb://admin:pw@api_db:27017/admin?authMechanism=SCRAM-SHA-256&replicaSet=rs0", "deletedAt");
 
     var mongoDriver = new MongodbDriver(mongoInputs.Client, DB_NAME);
     this._mongoDbFixtures = new DbFixtures.DbFixtures([mongoDriver]);
 
-    var redisInputs = TkRedisUtils.PrepareInputs(
+    var redisInputs = RedisUtils.PrepareInputs(
       new ConfigurationOptions
       {
         EndPoints = { "dblistener_db:6379" },

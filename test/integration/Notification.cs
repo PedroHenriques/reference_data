@@ -145,7 +145,7 @@ public class NotificationTests : IDisposable, IAsyncLifetime
   }
 
   [Fact]
-  public async Task Notification_ItShould()
+  public async Task Notification_ItShouldConsumeMessageFromRedisAndDispatchNotificationToHttpAndKafka()
   {
     this._listener.Start();
 
