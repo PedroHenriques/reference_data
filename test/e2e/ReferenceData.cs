@@ -56,7 +56,7 @@ public class E2ETests : IDisposable, IAsyncLifetime
         Password = "password",
         AbortOnConnectFail = false,
       },
-      "test-dblistener-cg"
+      "test-dblistener-cg-e2e"
     );
     this._dblistenerRedis = new Redis(dblistenerRedisInputs);
 
@@ -77,7 +77,7 @@ public class E2ETests : IDisposable, IAsyncLifetime
         Password = "other password",
         AbortOnConnectFail = false,
       },
-      "test-notification-cg"
+      "test-notification-cg-e2e"
     );
     this._notificationRedis = new Redis(notificationRedisInputs);
 
@@ -85,7 +85,7 @@ public class E2ETests : IDisposable, IAsyncLifetime
       notificationRedisInputs.Client, notificationRedisInputs.Client.GetDatabase(0),
       new Dictionary<string, DbFixtures.Redis.Types.KeyTypes>
       {
-        { "entity:myname1|notif configs", DbFixtures.Redis.Types.KeyTypes.String },
+        { "entity:my entity|notif configs", DbFixtures.Redis.Types.KeyTypes.String },
         { "dispatcher_retry_queue", DbFixtures.Redis.Types.KeyTypes.Stream },
       }
     );
@@ -98,7 +98,7 @@ public class E2ETests : IDisposable, IAsyncLifetime
       new ConsumerConfig
       {
         BootstrapServers = "broker:29092",
-        GroupId = "real-group",
+        GroupId = "real-group-e2e",
         AutoOffsetReset = AutoOffsetReset.Earliest,
         EnableAutoCommit = false,
       }
@@ -112,7 +112,7 @@ public class E2ETests : IDisposable, IAsyncLifetime
       new ConsumerConfig
       {
         BootstrapServers = "broker:29092",
-        GroupId = "cleanup-group",
+        GroupId = "cleanup-group-e2e",
         AutoOffsetReset = AutoOffsetReset.Latest
       }
     ).Build();
@@ -177,10 +177,10 @@ public class E2ETests : IDisposable, IAsyncLifetime
       }
     );
     await this._mongodbFixtures.InsertFixtures(
-      ["doc 1"],
+      ["my entity"],
       new Dictionary<string, TestData[]>
       {
-        { "doc 1", [] },
+        { "my entity", [] },
       }
     );
     await this._dblistenerRedisFixtures.InsertFixtures<string>(
@@ -199,19 +199,42 @@ public class E2ETests : IDisposable, IAsyncLifetime
     );
 
     await this._notificationRedisFixtures.InsertFixtures<string>(
-      ["entity:myname1|notif configs", "dispatcher_retry_queue"],
+      ["entity:my entity|notif configs", "dispatcher_retry_queue"],
       new Dictionary<string, string[]>
       {
         { "dispatcher_retry_queue", [] },
-        { "entity:myname1|notif configs", [] },
+        { "entity:my entity|notif configs", [] },
       }
     );
 
+    var seedKafkaEvent = new Message<NotifDataKafkaKey, NotifDataKafkaValue>
+    {
+      Key = new NotifDataKafkaKey { Id = "seed id 1" },
+      Value = new NotifDataKafkaValue
+      {
+        Metadata = new NotifDataKafkaValueMetadata
+        {
+          Action = "seed insert",
+          ActionDatetime = DateTime.Now,
+          CorrelationId = "seed insert correlation id",
+          EventDatetime = DateTime.Now,
+          Source = "integration test",
+        },
+        Data = new NotifDataKafkaValueData
+        {
+          Id = "68c0072634336093835452c0",
+          Entity = "myname1",
+          Document = new Dictionary<string, dynamic?> {
+              { "name", "seed data 1" },
+            },
+        },
+      },
+    };
     await this._kafkaFixtures.InsertFixtures<Message<NotifDataKafkaKey, NotifDataKafkaValue>>(
       [TOPIC_NAME],
       new Dictionary<string, Message<NotifDataKafkaKey, NotifDataKafkaValue>[]>
       {
-        { TOPIC_NAME, [] },
+        { TOPIC_NAME, [ seedKafkaEvent ] },
       }
     );
 
@@ -255,6 +278,150 @@ public class E2ETests : IDisposable, IAsyncLifetime
         this._kafka.Commit(message);
       },
       cts
+    );
+
+    Entity entity = new Entity
+    {
+      Id = ObjectId.GenerateNewId().ToString(),
+      Name = "my entity",
+      NotifConfigs = [
+        new NotifConfig { Protocol = "webhook", TargetURL = HTTP_SERVER_URL },
+        new NotifConfig { Protocol = "event", TargetURL = TOPIC_NAME },
+      ]
+    };
+
+    HttpContent content = new StringContent(JsonConvert.SerializeObject(new Entity[] { entity }), Encoding.UTF8, "application/json");
+
+    var result = await this._httpClient.PostAsync("http://api:10000/v1/entities/", content);
+    string body = await result.Content.ReadAsStringAsync();
+
+    Assert.True(result.IsSuccessStatusCode, body);
+    Assert.Equal(JsonConvert.SerializeObject(new Entity[] { entity }), body);
+
+    var entityFindRes = await this._mongodb.Find<Entity>(DB_NAME, ENTITIES_COLL_NAME, 1, 10, null, false, new BsonDocument { { "name", 1 } });
+    var entityDocs = entityFindRes.Data;
+
+    Assert.Single(entityDocs);
+    Assert.Equal(JsonConvert.SerializeObject(entity), JsonConvert.SerializeObject(entityDocs[0]));
+
+    await Task.Delay(10000);
+
+    var (_, mongoChangeMsg1) = await this._dblistenerRedis.Dequeue("mongo_changes", "test-dblistener-cg-e2e-0");
+    var mongoChangeMsgChangeTime = DateTimeOffset.Parse((string)JsonConvert.DeserializeObject<dynamic>(mongoChangeMsg1).ChangeTime).ToUniversalTime();
+    Assert.Equal(
+      JsonConvert.SerializeObject(new
+      {
+        ChangeTime = mongoChangeMsgChangeTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"), // Not relevant for this test
+        ChangeRecord = JsonConvert.SerializeObject(new
+        {
+          id = entity.Id,
+          changeType = new { Id = 1, Name = "insert" },
+          document = new { _id = entity.Id, name = entity.Name, description = entity.Desc, deletedAt = entity.DeletedAt, notifConfigs = entity.NotifConfigs },
+        }),
+        Source = JsonConvert.SerializeObject(new { dbName = "referenceData", collName = "entities" }),
+        NotifConfigs = (object?)null,
+      }),
+      mongoChangeMsg1
+    );
+
+    var cachedNotifConfig = await ((ICache)this._notificationRedis).GetString("entity:my entity|notif configs");
+    Assert.Equal(JsonConvert.SerializeObject(entity.NotifConfigs), cachedNotifConfig);
+
+
+    TestData entityData = new TestData
+    {
+      Name = "test doc 1",
+      Desc = null,
+      DeletedAt = null,
+    };
+    content = new StringContent(JsonConvert.SerializeObject(new TestData[] { entityData }), Encoding.UTF8, "application/json");
+
+    result = await this._httpClient.PostAsync($"http://api:10000/v1/data/{entity.Id}", content);
+    body = await result.Content.ReadAsStringAsync();
+    TestData[] bodyEntity = JsonConvert.DeserializeObject<TestData[]>(body);
+
+    Assert.True(result.IsSuccessStatusCode, body);
+    entityData.Id = bodyEntity[0].Id;
+    // I'm deserializing and then serializing the body to make sure the properties are in the same order as in data, since the API is returning
+    // them in swapped order
+    Assert.Equal(JsonConvert.SerializeObject(new TestData[] { entityData }), JsonConvert.SerializeObject(bodyEntity));
+
+    var entityDataFindRes = await this._mongodb.Find<TestData>(DB_NAME, entity.Name, 1, 10, null, false, new BsonDocument { { "name", 1 } });
+    var entityDataDocs = entityDataFindRes.Data;
+
+    Assert.Equal(JsonConvert.SerializeObject(new TestData[] { entityData }), JsonConvert.SerializeObject(entityDataDocs));
+
+    var (_, mongoChangeMsg2) = await this._dblistenerRedis.Dequeue("mongo_changes", "test-dblistener-cg-e2e-0");
+    var mongoChangeMsg2ChangeTime = DateTimeOffset.Parse((string)JsonConvert.DeserializeObject<dynamic>(mongoChangeMsg2).ChangeTime).ToUniversalTime();
+    Assert.Equal(
+      JsonConvert.SerializeObject(new
+      {
+        ChangeTime = mongoChangeMsg2ChangeTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"), // Not relevant for this test
+        ChangeRecord = JsonConvert.SerializeObject(new
+        {
+          id = entityData.Id,
+          changeType = new { Id = 1, Name = "insert" },
+          document = new { _id = entityData.Id, name = entityData.Name, description = entityData.Desc, deletedAt = entityData.DeletedAt },
+        }),
+        Source = JsonConvert.SerializeObject(new { dbName = "referenceData", collName = entity.Name }),
+        NotifConfigs = (object?)null,
+      }),
+      mongoChangeMsg2
+    );
+
+    var webhookMessageStr = await receivedBodyTcs.Task;
+    var webhookMessage = JsonConvert.DeserializeObject<dynamic>(webhookMessageStr);
+    Assert.Equal(
+      JsonConvert.SerializeObject(new
+      {
+        eventTime = webhookMessage.eventTime, // Not relevant for this test
+        changeTime = mongoChangeMsg2ChangeTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'"),
+        id = entityData.Id,
+        changeType = "insert",
+        entity = entity.Name,
+        document = new
+        {
+          name = entityData.Name,
+          description = entityData.Desc,
+          deletedAt = entityData.DeletedAt,
+          id = entityData.Id
+        },
+      }),
+      webhookMessageStr
+    );
+
+    cts.Cancel();
+    Assert.Equal(2, actualKafkaEvents.Count);
+    Assert.Equal(JsonConvert.SerializeObject(seedKafkaEvent.Key), JsonConvert.SerializeObject(actualKafkaEvents[0].Key));
+    Assert.Equal(JsonConvert.SerializeObject(seedKafkaEvent.Value), JsonConvert.SerializeObject(actualKafkaEvents[0].Value));
+    Assert.Equal(
+      JsonConvert.SerializeObject(new NotifDataKafkaKey { Id = entityData.Id }),
+      JsonConvert.SerializeObject(actualKafkaEvents[1].Key)
+    );
+    Assert.Equal(
+      JsonConvert.SerializeObject(new NotifDataKafkaValue
+      {
+        Metadata = new NotifDataKafkaValueMetadata
+        {
+          Action = "CREATE",
+          ActionDatetime = DateTimeOffset.Parse(mongoChangeMsg2ChangeTime.ToString("yyyy-MM-dd'T'HH:mm:ss'Z'")).UtcDateTime,
+          CorrelationId = actualKafkaEvents[1].Value.Metadata.CorrelationId, // Not relevant for this test
+          EventDatetime = actualKafkaEvents[1].Value.Metadata.EventDatetime, // Not relevant for this test
+          Source = "myapp",
+        },
+        Data = new NotifDataKafkaValueData
+        {
+          Id = entityData.Id,
+          Entity = entity.Name,
+          Document = new Dictionary<string, dynamic?> {
+            { "name", entityData.Name },
+            { "description", entityData.Desc },
+            { "deletedAt", entityData.DeletedAt },
+            { "id", entityData.Id },
+          },
+        },
+      }),
+      JsonConvert.SerializeObject(actualKafkaEvents[1].Value)
     );
   }
 }
