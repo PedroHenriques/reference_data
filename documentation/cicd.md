@@ -1,6 +1,6 @@
 # CI/CD
 
-This project uses the reusable pipeline templates for Docker build artifacts located at [https://github.com/CorreiosPortugal/pt.technology.pipeline-templates.actions](https://github.com/CorreiosPortugal/pt.technology.pipeline-templates.actions) and follows the work flow below.
+This project uses the reusable pipeline templates for Docker build artifacts located at [https://github.com/PedroHenriques/ci_cd_workflow_templates](https://github.com/PedroHenriques/ci_cd_workflow_templates) and follows the work flow below.
 
 ![alt text](ci_cd_tbd_workflow.drawio.png)
 
