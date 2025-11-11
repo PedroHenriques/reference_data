@@ -85,7 +85,9 @@ public static class Notify
     {
       if (messageId != null)
       {
-        await queue.Nack(queueName, messageId, retryThreashold);
+        await queue.Nack(
+          queueName, messageId, retryThreashold, queueConfigs.ChangesQueueConsumerName
+        );
       }
       throw;
     }
@@ -137,7 +139,8 @@ public static class Notify
         {
           await queue.Nack(
             queueConfigs.DispatcherRetryQueueKey,
-            messageId, queueConfigs.DispatcherRetryQueueRetryCount
+            messageId, queueConfigs.DispatcherRetryQueueRetryCount,
+            queueConfigs.ChangesQueueConsumerName
           );
 
           logger.Log(

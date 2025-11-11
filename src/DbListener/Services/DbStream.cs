@@ -77,7 +77,7 @@ public static class DbStream
             Cache.ChangesQueueKey,
             new[] {
               JsonConvert.SerializeObject(new ChangeQueueItem{
-                ChangeTime = change.ChangeTime,
+                ChangeTime = change.ChangeTime ?? DateTime.Now,
                 ChangeRecord = JsonConvert.SerializeObject(change.ChangeRecord),
                 Source = JsonConvert.SerializeObject(change.Source),
               }),
