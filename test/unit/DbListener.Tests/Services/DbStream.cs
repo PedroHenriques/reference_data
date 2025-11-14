@@ -268,8 +268,26 @@ public class DbStreamTests : IDisposable
     );
   }
 
+  [Theory]
+  [InlineData(WatchKind.Error)]
+  [InlineData(WatchKind.Heartbeat)]
+  [InlineData(WatchKind.Resumed)]
+  [InlineData(WatchKind.Started)]
+  [InlineData(WatchKind.Stopped)]
+  [InlineData(WatchKind.Data)]
+  public async Task Watch_IfTheItemReceivedFromTheDbWatchHasNoResumeData_ItShouldNotCallSetOnTheICacheInstanceToSetAResumeData(WatchKind watchKind)
+  {
+    this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>(), It.IsAny<int>()))
+      .Returns((new[] {
+        new WatchData { Kind = watchKind, ChangeRecord = new ChangeRecord { Id = "", ChangeType = ChangeRecordTypes.Delete }, ChangeTime = DateTime.Now, Source = new ChangeSource {} },
+      }).ToAsyncEnumerable());
+
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
+    this._cacheMock.Verify(m => m.Set("change_resume_data", It.IsAny<string>(), It.IsAny<TimeSpan>()), Times.Never);
+  }
+
   [Fact]
-  public async Task Watch_IfTheItemReceivedFromTheDbWatchHasANullChangeRecord_ItShouldNotCallEnqueueOnTheICacheInstance()
+  public async Task Watch_IfTheItemReceivedFromTheDbWatchHasAKinfOfDataAndANullChangeRecord_ItShouldNotCallEnqueueOnTheICacheInstance()
   {
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>(), It.IsAny<int>()))
       .Returns((new[] {
@@ -277,11 +295,11 @@ public class DbStreamTests : IDisposable
       }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
-    this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>(), null), Times.Never);
+    this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>(), It.IsAny<TimeSpan>()), Times.Never);
   }
 
   [Fact]
-  public async Task Watch_IfTheItemReceivedFromTheDbWatchHasANullChangeTime_ItShouldCallEnqueueOnTheICacheInstanceWithTheCurrentTimestamp()
+  public async Task Watch_IfTheItemReceivedFromTheDbWatchHasAKinfOfDataAndANullChangeTime_ItShouldCallEnqueueOnTheICacheInstanceWithTheCurrentTimestamp()
   {
     var expectedChangeRecord = new ChangeRecord { ChangeType = ChangeRecordTypes.Updated, Id = "test change record" };
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>(), It.IsAny<int>()))
@@ -314,12 +332,110 @@ public class DbStreamTests : IDisposable
   }
 
   [Fact]
-  public async Task Watch_IfTheItemReceivedFromTheDbWatchHasANullChangeRecord_ItShouldCallSetOnTheICacheInstanceWithTheExpectedValue()
+  public async Task Watch_IfTheItemReceivedFromTheDbWatchHasAKinfOfDataAndANullChangeRecord_ItShouldCallSetOnTheICacheInstanceWithTheExpectedValue()
   {
     ResumeData expectedResumeData = new ResumeData { ResumeToken = "another test resume token", ClusterTime = "another test cluster time" };
     this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>(), It.IsAny<int>()))
       .Returns((new[] {
         new WatchData { Kind = WatchKind.Data, ResumeData = expectedResumeData, ChangeTime = DateTime.Now, Source = new ChangeSource {} },
+      }).ToAsyncEnumerable());
+
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
+    Assert.Equal(
+      JsonConvert.SerializeObject(expectedResumeData),
+      this._cacheMock.Invocations[1].Arguments[1]
+    );
+  }
+
+  [Theory]
+  [InlineData(WatchKind.Error)]
+  [InlineData(WatchKind.Heartbeat)]
+  [InlineData(WatchKind.Resumed)]
+  [InlineData(WatchKind.Started)]
+  [InlineData(WatchKind.Stopped)]
+  public async Task Watch_IfTheItemReceivedFromTheDbWatchHasAKindOtherThanData_ItShouldNotCallEnqueueOnTheICacheInstance(WatchKind watchKind)
+  {
+    this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>(), It.IsAny<int>()))
+      .Returns((new[] {
+        new WatchData { Kind = watchKind, ChangeTime = DateTime.Now, ResumeData = new ResumeData{}, Source = new ChangeSource {}, ChangeRecord = new ChangeRecord{ Id = "", ChangeType = ChangeRecordTypes.Replace } },
+      }).ToAsyncEnumerable());
+
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
+    this._queueMock.Verify(m => m.Enqueue("mongo_changes", It.IsAny<string[]>(), It.IsAny<TimeSpan>()), Times.Never);
+  }
+
+  [Theory]
+  [InlineData(WatchKind.Error, Microsoft.Extensions.Logging.LogLevel.Error)]
+  [InlineData(WatchKind.Heartbeat, Microsoft.Extensions.Logging.LogLevel.Debug)]
+  [InlineData(WatchKind.Resumed, Microsoft.Extensions.Logging.LogLevel.Information)]
+  [InlineData(WatchKind.Started, Microsoft.Extensions.Logging.LogLevel.Information)]
+  [InlineData(WatchKind.Stopped, Microsoft.Extensions.Logging.LogLevel.Information)]
+  [InlineData(WatchKind.Data, Microsoft.Extensions.Logging.LogLevel.Information)]
+  public async Task Watch_ItShouldGenerateALogWithTheCorrectLevel(WatchKind watchKind, Microsoft.Extensions.Logging.LogLevel logLevel)
+  {
+    ResumeData expectedResumeData = new ResumeData { ResumeToken = "another test resume token", ClusterTime = "another test cluster time" };
+    var expectedChangeTime = DateTime.Now;
+    var expectedSource = new ChangeSource { };
+    var expectedHealth = new StreamHealth { };
+    this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>(), It.IsAny<int>()))
+      .Returns((new[] {
+        new WatchData { Kind = watchKind, ResumeData = expectedResumeData, ChangeTime = expectedChangeTime, Source = expectedSource, Health = expectedHealth },
+      }).ToAsyncEnumerable());
+
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
+    this._loggerMock.Verify(
+      m => m.Log(
+        logLevel,
+        null,
+        $"Received Mongo Stream event of type '{watchKind}' with change time '{expectedChangeTime}', resume data '{JsonConvert.SerializeObject(expectedResumeData)}', source '{JsonConvert.SerializeObject(expectedSource)}' and health '{JsonConvert.SerializeObject(expectedHealth)}'."
+      ),
+      Times.Once
+    );
+  }
+
+  [Theory]
+  [InlineData(WatchKind.Error, Microsoft.Extensions.Logging.LogLevel.Error, "test msg 1")]
+  [InlineData(WatchKind.Heartbeat, Microsoft.Extensions.Logging.LogLevel.Debug, "test msg 2")]
+  [InlineData(WatchKind.Resumed, Microsoft.Extensions.Logging.LogLevel.Information, "test msg 3")]
+  [InlineData(WatchKind.Started, Microsoft.Extensions.Logging.LogLevel.Information, "test msg 4")]
+  [InlineData(WatchKind.Stopped, Microsoft.Extensions.Logging.LogLevel.Information, "test msg 5")]
+  [InlineData(WatchKind.Data, Microsoft.Extensions.Logging.LogLevel.Information, "test msg 6")]
+  public async Task Watch_IfTheExceptionPropertyOfTheChangeIsNotNull_ItShouldGenerateALogWithTheCorrectLevel(WatchKind watchKind, Microsoft.Extensions.Logging.LogLevel logLevel, string exMsg)
+  {
+    var testEx = new Exception(exMsg);
+
+    ResumeData expectedResumeData = new ResumeData { ResumeToken = "another test resume token", ClusterTime = "another test cluster time" };
+    var expectedChangeTime = DateTime.Now;
+    var expectedSource = new ChangeSource { };
+    var expectedHealth = new StreamHealth { };
+    this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>(), It.IsAny<int>()))
+      .Returns((new[] {
+        new WatchData { Kind = watchKind, ResumeData = expectedResumeData, ChangeTime = expectedChangeTime, Source = expectedSource, Health = expectedHealth, Exception = testEx },
+      }).ToAsyncEnumerable());
+
+    await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
+    this._loggerMock.Verify(
+      m => m.Log(
+        logLevel,
+        testEx,
+        $"Received Mongo Stream event of type '{watchKind}' with change time '{expectedChangeTime}', resume data '{JsonConvert.SerializeObject(expectedResumeData)}', source '{JsonConvert.SerializeObject(expectedSource)}' and health '{JsonConvert.SerializeObject(expectedHealth)}'."
+      ),
+      Times.Once
+    );
+  }
+
+  [Theory]
+  [InlineData(WatchKind.Error)]
+  [InlineData(WatchKind.Heartbeat)]
+  [InlineData(WatchKind.Resumed)]
+  [InlineData(WatchKind.Started)]
+  [InlineData(WatchKind.Stopped)]
+  public async Task Watch_IfTheItemReceivedFromTheDbWatchHasAKindOtherThanData_ItShouldCallSetOnTheICacheInstanceWithTheExpectedValue(WatchKind watchKind)
+  {
+    ResumeData expectedResumeData = new ResumeData { ResumeToken = "another test resume token", ClusterTime = "another test cluster time" };
+    this._mongodbMock.Setup(s => s.WatchDb(It.IsAny<string>(), It.IsAny<ResumeData?>(), It.IsAny<CancellationToken>(), It.IsAny<int>()))
+      .Returns((new[] {
+        new WatchData { Kind = watchKind, ResumeData = expectedResumeData, ChangeTime = DateTime.Now, Source = new ChangeSource {} },
       }).ToAsyncEnumerable());
 
     await DbStream.Watch(this._cacheMock.Object, this._queueMock.Object, this._mongodbMock.Object, this._ffMock.Object, this._loggerMock.Object);
