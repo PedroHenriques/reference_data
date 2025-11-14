@@ -71,13 +71,25 @@ public static class DbStream
 
       await foreach (WatchData change in db.WatchDb(Db.DbName, resumeData, token))
       {
-        if (change.ChangeRecord != null)
+        Microsoft.Extensions.Logging.LogLevel logLevel;
+        if (Log.WatchKindLogLevels.TryGetValue(change.Kind, out logLevel) == false)
+        {
+          logLevel = Microsoft.Extensions.Logging.LogLevel.Information;
+        }
+
+        logger.Log(
+          logLevel,
+          change.Exception,
+          $"Received Mongo Stream event of type '{change.Kind}' with change time '{change.ChangeTime}', resume data '{JsonConvert.SerializeObject(change.ResumeData)}', source '{JsonConvert.SerializeObject(change.Source)}' and health '{JsonConvert.SerializeObject(change.Health)}'."
+        );
+
+        if (change.Kind == WatchKind.Data && change.ChangeRecord != null)
         {
           await queue.Enqueue(
             Cache.ChangesQueueKey,
             new[] {
               JsonConvert.SerializeObject(new ChangeQueueItem{
-                ChangeTime = change.ChangeTime,
+                ChangeTime = change.ChangeTime ?? DateTime.Now,
                 ChangeRecord = JsonConvert.SerializeObject(change.ChangeRecord),
                 Source = JsonConvert.SerializeObject(change.Source),
               }),
@@ -86,8 +98,13 @@ public static class DbStream
           );
         }
 
-        await cache.Set(Cache.ChangeResumeDataKey,
-          JsonConvert.SerializeObject(change.ResumeData));
+        if (change.ResumeData != null)
+        {
+          await cache.Set(
+            Cache.ChangeResumeDataKey,
+            JsonConvert.SerializeObject(change.ResumeData)
+          );
+        }
       }
     }
     catch (Exception ex)

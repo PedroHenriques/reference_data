@@ -31,6 +31,7 @@ services:
       - KAFKA_SCHEMA_REGISTRY_SASL_USERNAME=user
       - KAFKA_SCHEMA_REGISTRY_SASL_PW=pw
       - DBLISTENER_CHANGES_QUEUE_KEY=mongo_changes
+      - DBLISTENER_CHANGES_QUEUE_CONSUMER_NAME=notification_cg
       - DISPATCHER_RETRY_QUEUE_KEY=dispatcher_retry_queue
       - CHANGES_QUEUE_RETRY_COUNT=${CHANGES_QUEUE_RETRY_COUNT:-10}
       - DISPATCHER_RETRY_COUNT=${DISPATCHER_RETRY_COUNT:-50}
@@ -267,7 +268,7 @@ services:
       - "9092:9092"
       - "9101:9101"
     healthcheck:
-      test: ["CMD-SHELL", "cub kafka-ready -b localhost:29092 1 12 || exit 1"]
+      test: ["CMD-SHELL", "bash -c '</dev/tcp/localhost/29092' || exit 1"]
       interval: 10s
       timeout: 5s
       retries: 12

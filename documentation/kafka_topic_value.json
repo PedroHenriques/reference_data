@@ -1,0 +1,58 @@
+{
+  "$schema": "http://json-schema.org/draft-04/schema#",
+  "title": "NotifDataKafkaValue",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "metadata": {
+      "$ref": "#/definitions/NotifDataKafkaValueMetadata"
+    },
+    "data": {
+      "$ref": "#/definitions/NotifDataKafkaValueData"
+    }
+  },
+  "definitions": {
+    "NotifDataKafkaValueMetadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "action": {
+          "type": "string"
+        },
+        "actionDatetime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "correlationId": {
+          "type": "string"
+        },
+        "eventDatetime": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source": {
+          "type": "string"
+        }
+      }
+    },
+    "NotifDataKafkaValueData": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "document": {
+          "type": [
+            "null",
+            "object"
+          ],
+          "additionalProperties": {}
+        },
+        "entity": {
+          "type": "string"
+        },
+        "id": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

@@ -20,4 +20,7 @@ public static class Queue
     Environment.GetEnvironmentVariable("DISPATCHER_RETRY_COUNT")
     ?? throw new Exception("Could not get the 'DISPATCHER_RETRY_COUNT' environment variable")
   );
+
+  public static string ChangesQueueConsumerName = Environment.GetEnvironmentVariable("DBLISTENER_CHANGES_QUEUE_CONSUMER_NAME")
+    ?? throw new Exception("Could not get the 'DBLISTENER_CHANGES_QUEUE_CONSUMER_NAME' environment variable");
 }
