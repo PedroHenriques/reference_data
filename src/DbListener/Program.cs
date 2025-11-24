@@ -48,8 +48,9 @@ internal class Program
     );
     IFeatureFlags ff = new FeatureFlags(inputs);
 
-    await DbStream.Watch(cache, queue, db, ff, logger);
-
-    Thread.Sleep(Timeout.Infinite);
+    CancellationTokenSource mainCts = new CancellationTokenSource();
+    await Task.WhenAll([
+      DbStream.Watch(cache, queue, db, ff, logger, mainCts),
+    ]);
   }
 }

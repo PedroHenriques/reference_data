@@ -8,10 +8,11 @@ namespace DbListener.Services;
 public static class DbStream
 {
   public static Task Watch(
-    ICache cache, IQueue queue, IMongodb db, IFeatureFlags ff, ILogger logger
+    ICache cache, IQueue queue, IMongodb db, IFeatureFlags ff, ILogger logger,
+    CancellationTokenSource mainCts
   )
   {
-    CancellationTokenSource? cts = null;
+    CancellationTokenSource? watchCts = null;
     bool listenerActive = ff.GetBoolFlagValue(FeatureFlags.ListenerKeyActive);
     if (listenerActive)
     {
@@ -20,8 +21,8 @@ public static class DbStream
         null, "Feature flag is active. Subscribing to Mongo Stream."
       );
 
-      cts = new CancellationTokenSource();
-      WatchDb(cache, queue, db, logger, cts.Token);
+      watchCts = new CancellationTokenSource();
+      WatchDb(cache, queue, db, logger, mainCts, watchCts.Token);
     }
 
     ff.SubscribeToValueChanges(
@@ -30,8 +31,8 @@ public static class DbStream
       {
         if (ev.NewValue.AsBool)
         {
-          cts = new CancellationTokenSource();
-          WatchDb(cache, queue, db, logger, cts.Token);
+          watchCts = new CancellationTokenSource();
+          WatchDb(cache, queue, db, logger, mainCts, watchCts.Token);
 
           logger.Log(
             Microsoft.Extensions.Logging.LogLevel.Information,
@@ -40,8 +41,8 @@ public static class DbStream
         }
         else
         {
-          if (cts == null) { return; }
-          cts.Cancel();
+          if (watchCts == null) { return; }
+          watchCts.Cancel();
 
           logger.Log(
             Microsoft.Extensions.Logging.LogLevel.Information,
@@ -51,12 +52,12 @@ public static class DbStream
       }
     );
 
-    return Task.CompletedTask;
+    return Task.Delay(Timeout.Infinite, mainCts.Token);
   }
 
   private static async void WatchDb(
     ICache cache, IQueue queue, IMongodb db, ILogger logger,
-    CancellationToken token
+    CancellationTokenSource mainCts, CancellationToken token
   )
   {
     try
@@ -109,6 +110,7 @@ public static class DbStream
     }
     catch (Exception ex)
     {
+      mainCts.Cancel();
       logger.Log(
         Microsoft.Extensions.Logging.LogLevel.Error,
         ex, ex.Message
