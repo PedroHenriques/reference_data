@@ -48,6 +48,13 @@ case "${TEST_TYPE}" in
 esac
 
 if [ $RUN_LOCAL_ENV -eq 1 ]; then
+  if [ -f ./setup/local/.env.test ]; then
+    echo "Loading overrides from ./setup/local/.env.test";
+    set -a;
+    . ./setup/local/.env.test;
+    set +a;
+  fi
+
   START_ARGS="-d";
   if [ $RUNNING_IN_PIPELINE -eq 1 ]; then
     START_ARGS="${START_ARGS} --cicd";
